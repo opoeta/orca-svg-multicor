@@ -2,6 +2,14 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.3.3
+
+### Mudou
+- As versões são publicadas na OrcaCloud quando a release do GitHub é
+  publicada, como a OrcaCloud exige: uma tag deixa um rascunho de release com
+  o wheel e as notas, e publicar o rascunho publica a versão no GitHub e na
+  OrcaCloud.
+
 ## 3.3.2
 
 ### Mudou

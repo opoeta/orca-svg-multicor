@@ -41,5 +41,7 @@ python tools/dev_server.py        # http://127.0.0.1:8765/
 ## Releasing
 
 Update the version in `pyproject.toml` and `src/orca_svg_multicor/_version.py`,
-add a section to `CHANGELOG.md`, then push a tag `vX.Y.Z`. The release workflow
-builds the wheel and attaches it to a GitHub release.
+add a section to `CHANGELOG.md` and `CHANGELOG.pt-BR.md`, then push a tag
+`vX.Y.Z`. The release workflow tests and builds the wheel and leaves a draft
+release with it and the notes; publishing the draft releases it on GitHub and,
+through `publish-orcacloud.yml`, on OrcaCloud.

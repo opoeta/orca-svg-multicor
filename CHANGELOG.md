@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.3.3
+
+### Changed
+- Releases are published on OrcaCloud when the GitHub release is published,
+  as OrcaCloud requires: a tag leaves a draft release with the wheel and the
+  notes, and publishing it publishes the version on GitHub and OrcaCloud.
+
 ## 3.3.2
 
 ### Changed

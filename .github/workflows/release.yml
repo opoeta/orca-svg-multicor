@@ -1,12 +1,18 @@
 name: Release
 
+# A tag vX.Y.Z builds, tests and checks the plugin, then leaves a DRAFT release
+# with the wheel and the notes. Publishing the draft (by a person: GitHub's
+# page or `gh release edit vX.Y.Z --draft=false`) releases it, and
+# publish-orcacloud.yml, started by that, publishes it on OrcaCloud: OrcaCloud
+# only accepts runs started by a published release, and a release published
+# by this workflow's own token would start no workflow.
+
 on:
   push:
     tags: ["v*"]
 
 permissions:
   contents: write
-  id-token: write      # OrcaCloud trusted publishing (GitHub OIDC)
 
 jobs:
   release:
@@ -44,21 +50,9 @@ jobs:
               cat notes_pt.md
             fi
           } > notes.md
-      - name: Publish on GitHub
+      - name: Draft release on GitHub
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$GITHUB_REF_NAME" dist/*.whl \
-            --title "SVG Multicolor $GITHUB_REF_NAME" --notes-file notes.md
-
-      # OrcaCloud is where OrcaSlicer's Plugins dialog takes a plugin's image and
-      # changelog from. Enabled once the plugin exists on OrcaCloud and this
-      # repository is connected to it (Edit plugin > GitHub publishing), by
-      # setting the repository variable ORCACLOUD_PUBLISH to "true".
-      # OrcaCloud wants a target suffix in the file name ("_any" = every OS).
-      # publish-orcacloud.yml publishes an existing release by hand.
-      - name: Publish on OrcaCloud
-        if: vars.ORCACLOUD_PUBLISH == 'true'
-        run: |
-          cp dist/orca_svg_multicor-*-py3-none-any.whl dist/orca_svg_multicor_any.whl
-          bash tools/publish_orcacloud.sh "${GITHUB_REF_NAME#v}" notes.md dist/orca_svg_multicor_any.whl
+          gh release create "$GITHUB_REF_NAME" dist/*.whl --draft --title "SVG Multicolor $GITHUB_REF_NAME" --notes-file notes.md
+          echo "Draft release ready: publish it to release $GITHUB_REF_NAME on GitHub and OrcaCloud." >> "$GITHUB_STEP_SUMMARY"

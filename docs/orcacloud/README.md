@@ -43,15 +43,22 @@ release publishes the new version there, with its changelog.
 5. Save. Then **Edit plugin > GitHub publishing**, enter
    `opoeta/orca-svg-multicor` and **Connect**.
 6. In the GitHub repository: **Settings > Secrets and variables > Actions >
-   Variables**, add `ORCACLOUD_PUBLISH` = `true`. From then on, pushing a tag
-   `vX.Y.Z` publishes the release on GitHub and on OrcaCloud
-   (`.github/workflows/release.yml`), the changelog taken from `CHANGELOG.md`.
-   The tag must be higher than the version already on OrcaCloud.
-   **Actions > Publish on OrcaCloud > Run workflow** publishes a release that
-   already exists (`.github/workflows/publish-orcacloud.yml`), to check the
-   connection or to retry: OrcaCloud answers 201 when it publishes, 401 when
-   the repository is not connected, and a version error when it already has
-   that version.
+   Variables**, add `ORCACLOUD_PUBLISH` = `true`. From then on:
+   - pushing a tag `vX.Y.Z` tests and builds the plugin and leaves a **draft
+     release** with the wheel and the notes (`CHANGELOG.md` and
+     `CHANGELOG.pt-BR.md`), `.github/workflows/release.yml`;
+   - **publishing the draft** (on GitHub, or
+     `gh release edit vX.Y.Z --draft=false`) releases it and publishes it on
+     OrcaCloud, `.github/workflows/publish-orcacloud.yml`. OrcaCloud only
+     accepts runs started by a published release, and a release published by
+     a workflow's own token starts no workflow: that is why a person publishes
+     the draft.
+
+   The version must be higher than the one already on OrcaCloud. OrcaCloud
+   answers 201 when it publishes, 401 when the run does not come from a
+   published release of the connected repository, and a version error when it
+   already has that version. To try again, turn the release back into a draft
+   and publish it again.
 7. In OrcaSlicer, **delete the locally installed copy** (both would load the
    same Python package), then subscribe to the plugin in the Plugin Hub and
    activate it in **File > Plugins**.
