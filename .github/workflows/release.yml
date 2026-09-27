@@ -40,11 +40,7 @@ jobs:
           {
             cat notes_en.md
             if [ -s notes_pt.md ]; then
-              printf '
----
-
-**Português (Brasil)**
-'
+              printf '\n---\n\n**Português (Brasil)**\n'
               cat notes_pt.md
             fi
           } > notes.md
