@@ -49,8 +49,9 @@ release publishes the new version there, with its changelog.
 
 > Turns a multicolor SVG (a logo, a sign, a sticker design) into one printable
 > part per color, aligned and already assigned to your filaments. Applies the
-> colors to an object on the plate (inlaid or raised) or adds them as a new
-> object, optionally on a base plate. Understands the SVG like a browser:
+> colors to the surface you choose of an object on the plate (the top, a side,
+> the floor of a tray...), inlaid or raised, or adds them as a new object,
+> optionally on a base plate. Understands the SVG like a browser:
 > stacked shapes, fill rules, strokes, gradients. Limits the colors to your
 > filaments and matches each color to the closest one. A page next to Prepare
 > and Preview, in 13 languages, following OrcaSlicer's language.
