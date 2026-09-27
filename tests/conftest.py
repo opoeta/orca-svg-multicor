@@ -9,6 +9,12 @@ ROOT = os.path.dirname(HERE)
 EXAMPLES = os.path.join(ROOT, "examples")
 
 
+@pytest.fixture(autouse=True)
+def isolated_data_dir(tmp_path_factory, monkeypatch):
+    """Tests never write into the real OrcaSlicer data folder."""
+    monkeypatch.setenv("SVGM_DATA_DIR", str(tmp_path_factory.mktemp("svgm_data")))
+
+
 @pytest.fixture
 def svg(tmp_path):
     """svg('<rect .../>', viewBox='0 0 100 100') -> path of a new SVG file."""

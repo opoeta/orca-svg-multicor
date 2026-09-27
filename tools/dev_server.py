@@ -19,12 +19,14 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "src"))
+DATA = os.path.join(HERE, "_dev_data")
+# the dev server keeps its folders and log away from the real OrcaSlicer data
+os.environ.setdefault("SVGM_DATA_DIR", DATA)
 
 from orca_svg_multicor.host import BaseHost  # noqa: E402
 from orca_svg_multicor.panel import build_html  # noqa: E402
 from orca_svg_multicor.service import Service  # noqa: E402
 
-DATA = os.path.join(HERE, "_dev_data")
 CONFIG = os.path.join(DATA, "config.json")
 
 MOCK_BRIDGE = """<script>

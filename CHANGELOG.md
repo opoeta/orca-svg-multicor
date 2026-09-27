@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.0.1
+
+### Fixed
+- Browsing for a file made OrcaSlicer ask about a Python "open" event with no
+  target. It came from the pipe Python opens to read the picker's answer; the
+  picker now writes its answer to a file in the plugin's data folder, which
+  needs no permission. (Starting the picker process may still be asked once.)
+- numpy and shapely were imported as soon as the plugin loaded, through the
+  color helpers; they now load only when a design is processed.
+- The tests and the development server wrote into the real plugin log.
+
+### Added
+- A crisp SVG icon for the plugin page tab.
+- `docs/orcacloud/`: cover image and texts for publishing on OrcaCloud, the only
+  source OrcaSlicer uses for the preview image and changelog of its Plugins
+  dialog.
+
 ## 3.0.0
 
 A rewrite focused on correct results, projects saved by current slicers, and

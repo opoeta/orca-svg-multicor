@@ -170,7 +170,9 @@ def test_page_ui_icon_and_messages(plugin, tmp_path):
     configure(page, tmp_path)
     html = page.get_ui()
     assert '"lang": "pt_BR"' in html                        # follows OrcaSlicer's language
-    assert os.path.isfile(page.get_icon())
+    icon = page.get_icon()
+    assert os.path.isfile(icon)
+    assert os.path.isfile(icon[:-4] + ".svg")      # OrcaSlicer tries <name>.svg first
     page.on_message({"action": "init"})
     init = next(m for m in page.posted if m["type"] == "init")
     assert [f["color"] for f in init["filaments"]] == ["#ffffff", "#101010"]
@@ -227,3 +229,31 @@ def test_batch_with_empty_folder_is_skipped(plugin, tmp_path):
     batch = caps["BatchConvert"]()
     configure(batch, tmp_path)
     assert batch.execute().status == "skipped"
+
+
+def test_light_modules_do_not_import_numpy_or_shapely():
+    import subprocess
+    code = ("import sys; sys.path.insert(0, 'src');"
+            "import orca_svg_multicor.service, orca_svg_multicor.panel, orca_svg_multicor.host;"
+            "heavy = [m for m in ('numpy', 'shapely', 'svgelements') if m in sys.modules];"
+            "print(heavy); sys.exit(1 if heavy else 0)")
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    r = subprocess.run([sys.executable, "-c", code], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_run_captured_opens_no_file_descriptor(tmp_path):
+    """Pipes are opened by descriptor, which OrcaSlicer asks about without a target."""
+    from orca_svg_multicor.host import run_captured
+    seen = []
+
+    def hook(event, args):
+        if event == "open" and args and not isinstance(args[0], str):
+            seen.append(args[0])
+
+    sys.addaudithook(hook)       # stays installed; it only records
+    out = run_captured([sys.executable, "-c", "print('picked')"], folder=str(tmp_path))
+    before = len(seen)
+    assert out.strip() == "picked"
+    assert before == 0, seen
+    assert not list(tmp_path.iterdir())      # temporary files removed

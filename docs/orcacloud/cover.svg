@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#34383b"/>
+      <stop offset="1" stop-color="#1c1e20"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="320" height="320" rx="56" fill="url(#bg)"/>
+  <!-- the design, split into color layers -->
+  <g stroke="#111315" stroke-width="5" stroke-linejoin="round">
+    <path d="M160 190 L262 228 L160 266 L58 228 Z" fill="#E8A33D"/>
+    <path d="M160 132 L262 170 L160 208 L58 170 Z" fill="#E4E6E8"/>
+    <path d="M160 74 L262 112 L160 150 L58 112 Z" fill="#00AE42"/>
+  </g>
+  <path d="M160 94 L204 112 L160 130 L116 112 Z" fill="#1c1e20" opacity=".9"/>
+  <!-- the SVG it comes from -->
+  <g transform="translate(212 30)">
+    <rect width="84" height="58" rx="10" fill="#f1faee"/>
+    <text x="42" y="38" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700"
+          text-anchor="middle" fill="#1d3557">SVG</text>
+  </g>
+  <text x="160" y="302" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="600"
+        text-anchor="middle" fill="#e4e6e8">SVG Multicolor</text>
+</svg>

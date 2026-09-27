@@ -15,6 +15,7 @@ REQUIRED = [
     "orca_svg_multicor/__init__.py",
     "orca_svg_multicor/capabilities.py",
     "orca_svg_multicor/icon.png",
+    "orca_svg_multicor/icon.svg",
     "orca_svg_multicor/ui/panel.html",
     "orca_svg_multicor/ui/panel.css",
     "orca_svg_multicor/ui/panel.js",

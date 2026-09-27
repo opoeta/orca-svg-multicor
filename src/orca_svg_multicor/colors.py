@@ -11,9 +11,6 @@ differ by the same 12 units are much more distinct.
 
 import math
 
-from shapely.geometry.polygon import orient
-from shapely.ops import unary_union
-
 # Named reference colors. The keys are translated through i18n ("color.<key>").
 NAMED_COLORS = {
     "black": (0, 0, 0),
@@ -195,6 +192,9 @@ def _area(polys):
 
 def _fuse(regions, groups):
     """groups: {representative: [colors]} -> regions with the areas united."""
+    from shapely.geometry.polygon import orient  # heavy: only when merging
+    from shapely.ops import unary_union
+
     out = {}
     for rep, members in groups.items():
         polys = []

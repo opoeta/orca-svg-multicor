@@ -33,15 +33,10 @@ from .service import Service, settings_defaults
 NAME_PAGE = "SVG Multicolor"
 NAME_WINDOW = "SVG Multicolor - window"
 NAME_BATCH = "SVG Multicolor - batch"
+# OrcaSlicer drops the extension and tries <name>.svg before <name>.png, so the
+# crisp icon.svg next to icon.png is the one shown on the page tab.
 ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
-ICON_SVG = (
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">'
-    '<rect x="8" y="8" width="240" height="240" rx="52" fill="#2a2d30"/>'
-    '<g stroke="#141618" stroke-width="6" stroke-linejoin="round">'
-    '<path d="M128 154 L214 186 L128 218 L42 186 Z" fill="#E8A33D"/>'
-    '<path d="M128 104 L214 136 L128 168 L42 136 Z" fill="#E4E6E8"/>'
-    '<path d="M128 54 L214 86 L128 118 L42 86 Z" fill="#00AE42"/></g></svg>')
-
+ICON_SVG_PATH = ICON_PATH[:-4] + ".svg"
 _PLUGIN_TYPE = getattr(orca, "PluginType", None)
 
 
@@ -108,7 +103,11 @@ class _Common:
         except Exception:
             pass
         if mode == "svg":
-            return ICON_SVG
+            try:
+                with open(ICON_SVG_PATH, encoding="utf-8") as f:
+                    return f.read()
+            except OSError:
+                return ""
         if mode in ("data_uri", "base64"):
             try:
                 with open(ICON_PATH, "rb") as f:

@@ -43,6 +43,10 @@ def orca_data_dir():
 
 
 def plugin_data_dir():
+    """<OrcaSlicer data>/svg_multicor, or $SVGM_DATA_DIR (tests, dev server)."""
+    override = os.environ.get("SVGM_DATA_DIR")
+    if override:
+        return override
     return os.path.join(orca_data_dir(), PLUGIN_DIR_NAME)
 
 
@@ -143,6 +147,35 @@ def _picker_command(kind, title, initial, patterns, label):
     return None
 
 
+def run_captured(cmd, env=None, timeout=PICKER_TIMEOUT, folder=None):
+    """
+    Runs `cmd` and returns its standard output as text.
+
+    The output goes to a file in the plugin's data folder instead of a pipe:
+    Python opens pipes by file descriptor, and OrcaSlicer's audit hook then
+    asks the user about an "open" event it cannot even name. Files in the
+    data folder are allowed without a prompt.
+    """
+    folder = folder or plugin_data_dir()
+    os.makedirs(folder, exist_ok=True)
+    out_path = os.path.join(folder, f".run_{os.getpid()}_{threading.get_ident()}.out")
+    err_path = out_path[:-4] + ".err"
+    kw = {}
+    if sys.platform == "win32":
+        kw["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
+    try:
+        with open(out_path, "wb") as out, open(err_path, "wb") as err:
+            subprocess.run(cmd, stdout=out, stderr=err, env=env, timeout=timeout, **kw)
+        with open(out_path, "rb") as f:
+            return f.read().decode("utf-8", "replace")
+    finally:
+        for p in (out_path, err_path):
+            try:
+                os.remove(p)
+            except OSError:
+                pass
+
+
 def native_pick(kind, title, initial="", patterns=(), label=""):
     """
     Opens the system picker. Returns the chosen path, "" when cancelled.
@@ -156,11 +189,7 @@ def native_pick(kind, title, initial="", patterns=(), label=""):
     env["SVGM_TITLE"] = title
     env["SVGM_INITIAL"] = initial or ""
     env["SVGM_FILTER"] = f"{label} ({';'.join(patterns)})|{';'.join(patterns)}"
-    kw = {}
-    if sys.platform == "win32":
-        kw["creationflags"] = getattr(subprocess, "CREATE_NO_WINDOW", 0x08000000)
-    r = subprocess.run(cmd, capture_output=True, env=env, timeout=PICKER_TIMEOUT, **kw)
-    out = (r.stdout or b"").decode("utf-8", "replace").strip().strip('"')
+    out = run_captured(cmd, env).strip().strip('"')
     if not out:
         return ""
     if kind == "folder" and not os.path.isdir(out):
