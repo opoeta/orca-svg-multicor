@@ -1,0 +1,38 @@
+name: Publish on OrcaCloud
+
+# By hand (Actions > Publish on OrcaCloud > Run workflow): publishes a GitHub
+# release that already exists, with its wheel and its notes. Releases are
+# published on OrcaCloud by release.yml; this one is for checking the
+# connection or retrying. Publishing a version OrcaCloud already has fails
+# without side effects.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (vX.Y.Z)"
+        required: true
+
+permissions:
+  contents: read
+  id-token: write      # OrcaCloud trusted publishing (GitHub OIDC)
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Wheel and notes of the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          mkdir -p dist
+          gh release download "$TAG" --pattern '*-py3-none-any.whl' --dir dist
+          gh release view "$TAG" --json body --jq .body > notes.md
+          # OrcaCloud wants a target suffix in the file name ("_any" = every OS)
+          cp dist/orca_svg_multicor-*-py3-none-any.whl dist/orca_svg_multicor_any.whl
+      - name: Publish
+        env:
+          TAG: ${{ inputs.tag }}
+        run: bash tools/publish_orcacloud.sh "${TAG#v}" notes.md dist/orca_svg_multicor_any.whl

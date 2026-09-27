@@ -56,21 +56,9 @@ jobs:
       # repository is connected to it (Edit plugin > GitHub publishing), by
       # setting the repository variable ORCACLOUD_PUBLISH to "true".
       # OrcaCloud wants a target suffix in the file name ("_any" = every OS).
+      # publish-orcacloud.yml publishes an existing release by hand.
       - name: Publish on OrcaCloud
         if: vars.ORCACLOUD_PUBLISH == 'true'
         run: |
-          set -euo pipefail
           cp dist/orca_svg_multicor-*-py3-none-any.whl dist/orca_svg_multicor_any.whl
-          oidc_token="$(curl -sS -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
-            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=orcacloud" | jq -r .value)"
-          version="${GITHUB_REF_NAME#v}"
-          changelog="$(head -c 4000 notes.md)"
-          metadata="$(jq -cn --arg version "$version" --arg changelog "$changelog" \
-            '{version: $version} + (if $changelog == "" then {} else {changelog: $changelog} end)')"
-          status="$(curl -sS -o response.json -w '%{http_code}' \
-            -H "Authorization: Bearer $oidc_token" \
-            -F "metadata=$metadata" -F "files=@dist/orca_svg_multicor_any.whl" \
-            https://api.orcaslicer.com/api/v1/plugin-publish/releases)"
-          cat response.json
-          echo
-          [ "$status" = "201" ]
+          bash tools/publish_orcacloud.sh "${GITHUB_REF_NAME#v}" notes.md dist/orca_svg_multicor_any.whl

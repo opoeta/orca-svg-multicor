@@ -47,6 +47,11 @@ release publishes the new version there, with its changelog.
    `vX.Y.Z` publishes the release on GitHub and on OrcaCloud
    (`.github/workflows/release.yml`), the changelog taken from `CHANGELOG.md`.
    The tag must be higher than the version already on OrcaCloud.
+   **Actions > Publish on OrcaCloud > Run workflow** publishes a release that
+   already exists (`.github/workflows/publish-orcacloud.yml`), to check the
+   connection or to retry: OrcaCloud answers 201 when it publishes, 401 when
+   the repository is not connected, and a version error when it already has
+   that version.
 7. In OrcaSlicer, **delete the locally installed copy** (both would load the
    same Python package), then subscribe to the plugin in the Plugin Hub and
    activate it in **File > Plugins**.
