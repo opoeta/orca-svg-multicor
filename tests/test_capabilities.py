@@ -158,10 +158,31 @@ def configure(cap, tmp_path):
 
 def test_registration(plugin):
     orca, caps, pkg = plugin
-    assert set(caps) == {"PanelPage", "PanelWindow", "BatchConvert"}
+    # with plugin pages available, the window is not offered: one page, one script
+    assert set(caps) == {"PanelPage", "BatchConvert"}
     names = {c().get_name() for c in caps.values()}
-    assert names == {"SVG Multicolor", "SVG Multicolor - window", "SVG Multicolor - batch"}
+    assert names == {"SVG Multicolor", "SVG Multicolor - batch"}
     assert isinstance(caps["PanelPage"]().get_default_config(), dict)
+
+
+def test_config_tab_pages(plugin):
+    orca, caps, _ = plugin
+    page = caps["PanelPage"]()
+    assert page.has_config_ui() is True
+    html = page.get_config_ui()
+    assert "window.SVGM_CFG" in html and "/*BOOT*/" not in html
+    assert '"lang": "pt_BR"' in html and "## " in html        # translated, with the changelog
+    batch = caps["BatchConvert"]()
+    assert batch.get_default_config() == {}
+    assert "SVG Multicolor" in batch.get_config_ui()
+
+
+def test_batch_uses_the_page_settings(plugin, tmp_path):
+    orca, caps, _ = plugin
+    page = caps["PanelPage"]()
+    batch = caps["BatchConvert"]()
+    page.save_config(json.dumps({"size_mm": 42}))
+    assert batch._store()[0]()["size_mm"] == 42
 
 
 def test_page_ui_icon_and_messages(plugin, tmp_path):
@@ -179,9 +200,11 @@ def test_page_ui_icon_and_messages(plugin, tmp_path):
     badge = os.path.join(EXAMPLES, "badge.svg")
     page.on_message(json.dumps({"action": "analyze", "svg": badge}))   # JSON strings too
     assert any(m["type"] == "analysis" for m in page.posted)
-    page.on_message({"action": "generate", "svg": badge, "options": {}, "colors": []})
+    page.on_message({"action": "generate", "svg": badge, "options": {}, "colors": [],
+                     "reopen": True})
     done = next(m for m in page.posted if m["type"] == "done")
     assert os.path.isfile(done["path"])
+    assert done["open_after"] is True        # a new object goes back to OrcaSlicer
     dlg = orca.host.ui.dialogs[-1]                         # generate runs behind the native dialog
     assert dlg.values and dlg.closed
 
@@ -197,8 +220,8 @@ def test_page_generate_can_be_cancelled(plugin, tmp_path):
 
 
 def test_window_runs_heavy_work_in_a_thread(plugin, tmp_path):
-    orca, caps, _ = plugin
-    win_cap = caps["PanelWindow"]()
+    orca, caps, pkg = plugin
+    win_cap = pkg._capabilities.PanelWindow()        # only registered without plugin pages
     configure(win_cap, tmp_path)
     assert win_cap.execute().status == "success"
     win = orca.host.ui.windows[-1]
@@ -213,8 +236,9 @@ def test_window_runs_heavy_work_in_a_thread(plugin, tmp_path):
 
 def test_batch_converts_the_input_folder(plugin, tmp_path):
     orca, caps, _ = plugin
+    page = caps["PanelPage"]()
     batch = caps["BatchConvert"]()
-    inp, out = configure(batch, tmp_path)
+    inp, out = configure(page, tmp_path)
     shutil.copy(os.path.join(EXAMPLES, "badge.svg"), inp / "a.svg")
     (inp / "broken.svg").write_text("<svg", encoding="utf-8")
     result = batch.execute()
@@ -226,8 +250,9 @@ def test_batch_converts_the_input_folder(plugin, tmp_path):
 
 def test_batch_with_empty_folder_is_skipped(plugin, tmp_path):
     orca, caps, _ = plugin
+    page = caps["PanelPage"]()
     batch = caps["BatchConvert"]()
-    configure(batch, tmp_path)
+    configure(page, tmp_path)
     assert batch.execute().status == "skipped"
 
 

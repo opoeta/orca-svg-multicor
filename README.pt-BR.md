@@ -43,43 +43,51 @@ atribuídas aos seus filamentos.
 2. No OrcaSlicer, abra a janela de **Plugins** e instale o `.whl` como plugin
    local. O OrcaSlicer instala as dependências (numpy, shapely, svgelements,
    mapbox-earcut) sozinho.
-3. Ative o plugin. Aparecem três capacidades:
-   - **SVG Multicolor**: o painel, como página dentro do OrcaSlicer;
-   - **SVG Multicolor - window**: o mesmo painel numa janela (o trabalho pesado
-     roda em segundo plano e o OrcaSlicer não trava);
+3. Ative o plugin. Ele acrescenta:
+   - **SVG Multicolor**: uma página ao lado de Preparar e Visualizar;
    - **SVG Multicolor - batch**: converte todos os SVGs da pasta de entrada com
-     as configurações salvas, sem interface.
+     as mesmas configurações, pela ação Executar do diálogo de Plugins.
+
+   Versões do OrcaSlicer sem páginas de plugin recebem **SVG Multicolor -
+   window**: a mesma página numa janela.
 
 > **Atualizando da 2.x**: remova o plugin antigo antes. As duas versões usam o
 > mesmo nome de pacote Python e não podem ser carregadas juntas.
 
 ## Como usar
 
-1. **Escolha o SVG** (Procurar, um caminho, uma cópia enviada pela página ou um
-   arquivo da pasta de entrada). A análise roda sozinha.
-2. **Confira as cores** na pré-visualização. Passe o mouse numa linha para
-   destacar a cor. Renomeie as peças, desmarque o que não quer (um fundo, por
-   exemplo; cores que ocupam o desenho inteiro recebem a etiqueta *fundo?*) e
-   escolha o filamento de cada cor, ou deixe o *Casar filamentos pela cor* fazer
-   isso.
-3. **Saída**:
-   - *3MF novo*: escolha o formato e a pasta e clique em **Gerar 3MF**.
-   - *Aplicar num projeto*: salve o projeto no OrcaSlicer (Ctrl+S), clique em
-     **Usar o projeto aberto no OrcaSlicer** (ou escolha um `.3mf`), escolha o
-     objeto e o encaixe, clique em **Aplicar no objeto** e abra o
-     `*_svg.3mf` gerado.
+A página funciona como a aba Preparar: ajustes à esquerda, visualização à
+direita e a ação principal no canto superior direito.
 
-Marque *Abrir no OrcaSlicer ao terminar* para abrir o resultado na hora.
-*Salvar estas configurações como padrão* guarda suas escolhas.
+1. **Arquivo SVG**: *Procurar…* e escolha o SVG. As cores aparecem sozinhas.
+2. **Cores**: passe o mouse numa linha para destacá-la na visualização.
+   Renomeie as peças, desmarque o que não quer (um fundo, por exemplo; cores que
+   ocupam o desenho inteiro recebem a etiqueta *fundo?*) e escolha o filamento
+   de cada cor, ou deixe a varinha casar com os filamentos carregados no Orca.
+3. **Aplicar em**:
+   - **Um objeto da mesa**: salve o projeto (Ctrl+S), escolha o objeto, o
+     encaixe (*embutido*: mesma altura, as últimas camadas mudam de cor; ou *em
+     relevo*) e clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
+     altera a mesa diretamente, então o desenho vai para o projeto salvo, que
+     reabre no OrcaSlicer já com as peças novas. O arquivo original é mantido; o
+     resultado é salvo como `*_svg.3mf` na pasta de saída.
+   - **Um objeto novo na mesa**: com ou sem placa de base, clique em
+     **Adicionar à mesa**; o OrcaSlicer abre o 3MF novo.
+
+A página lembra os valores que você muda. Os padrões, a pasta de saída, o
+formato, o STL e o idioma ficam no diálogo de Plugins, aba **Config**, junto
+com as novidades de cada versão.
 
 ### Bom saber
 
 - **Texto** precisa ser convertido em curvas no editor; **imagens bitmap** são
   ignoradas; **máscaras e recortes** são ignorados. O painel avisa sobre tudo
   isso.
-- As **janelas nativas de seleção** rodam como processo separado (PowerShell no
-  Windows). O OrcaSlicer pergunta uma vez se o plugin pode iniciar um processo;
-  se você negar, use os botões de enviar arquivo.
+- A **janela de seleção de arquivo** roda como processo separado (PowerShell no
+  Windows), e o resultado é aberto iniciando o executável do OrcaSlicer, que
+  entrega o arquivo à janela já aberta. O OrcaSlicer pergunta uma vez se o
+  plugin pode iniciar um processo; se você negar, a página oferece enviar uma
+  cópia do SVG.
 - A janela de **Plugins do OrcaSlicer só mostra imagem de prévia e changelog
   para plugins instalados pela OrcaCloud**; num `.whl` local os dois ficam
   vazios por projeto do Orca. Veja [docs/orcacloud](docs/orcacloud/README.md)

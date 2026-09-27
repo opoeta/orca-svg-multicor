@@ -314,6 +314,35 @@ def list_objects(project_path):
     return {"objects": [o.as_dict() for o in prj.objects()], "filaments": prj.filaments()}
 
 
+def match_plate_objects(plate_items, file_objects):
+    """
+    For each object on the plate, the id of the same object in the saved
+    project, or None. A saved project lists its objects in the plate's order,
+    so the position decides; the name confirms it (and rescues the match when
+    the order differs). Objects not saved yet get None.
+    """
+    def norm(s):
+        return str(s or "").strip().lower()
+
+    used, out = set(), []
+    for i, item in enumerate(plate_items):
+        oid = None
+        if i < len(file_objects) and norm(file_objects[i]["name"]) == norm(item.get("name")):
+            oid = file_objects[i]["id"]
+        else:
+            same = [f["id"] for f in file_objects
+                    if norm(f["name"]) == norm(item.get("name")) and f["id"] not in used]
+            if len(same) == 1:
+                oid = same[0]
+        if oid is not None:
+            used.add(oid)
+        out.append(oid)
+    if len(plate_items) == len(file_objects) and all(o is None for o in out):
+        # names differ (renamed without saving the name?) but the counts agree
+        out = [f["id"] for f in file_objects]
+    return out
+
+
 def apply_to_project(svg_path, project_path, object_id, out_path, opts,
                      choices=None, filaments=None, tr=None, rep=None):
     """

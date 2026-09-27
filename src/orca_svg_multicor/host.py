@@ -65,12 +65,18 @@ def default_folders(base=None):
 class Log:
     """Appends to <data>/svg_multicor/plugin.log, rotating at 1 MB."""
 
-    def __init__(self, folder=None):
+    def __init__(self, folder=None, echo=True):
         self.path = os.path.join(folder or plugin_data_dir(), "plugin.log")
+        self.echo = echo and not os.environ.get("SVGM_DATA_DIR")
         self._lock = threading.Lock()
 
     def write(self, level, text):
         line = f"{datetime.datetime.now():%Y-%m-%d %H:%M:%S} [{level}] {text}\n"
+        if self.echo:
+            try:
+                print(f"[svg multicolor] {level}: {text}")
+            except Exception:
+                pass
         with self._lock:
             try:
                 os.makedirs(os.path.dirname(self.path), exist_ok=True)
@@ -200,11 +206,67 @@ def native_pick(kind, title, initial="", patterns=(), label=""):
 
 
 def open_with_system(path):
-    """Opens a file (OrcaSlicer is associated with .3mf) or a folder."""
+    """Opens a file or a folder with the system's default application."""
     if sys.platform == "win32":
         os.startfile(path)  # noqa: S606
     else:
         subprocess.Popen(["open" if sys.platform == "darwin" else "xdg-open", path])
+
+
+def find_orca_executable():
+    """
+    OrcaSlicer's executable, found from the embedded interpreter: the process
+    itself, or next to the bundled Python home. None when not found.
+    """
+    names = ("orca-slicer.exe", "OrcaSlicer.exe", "orca-slicer", "OrcaSlicer")
+    candidates = []
+    for p in (getattr(sys, "executable", ""), sys.argv[0] if sys.argv else ""):
+        if p and os.path.basename(p).lower().startswith("orca"):
+            candidates.append(p)
+    appimage = os.environ.get("APPIMAGE")
+    if appimage:
+        candidates.append(appimage)
+    for home in {getattr(sys, "base_prefix", ""), getattr(sys, "prefix", "")}:
+        if not home:
+            continue
+        for root in (home, os.path.dirname(home), os.path.dirname(os.path.dirname(home))):
+            candidates.extend(os.path.join(root, n) for n in names)
+            candidates.extend(os.path.join(root, "MacOS", n) for n in names)
+    for c in candidates:
+        if c and os.path.isfile(c):
+            return os.path.abspath(c)
+    return None
+
+
+def _app_bundle(exe):
+    """/Applications/OrcaSlicer.app for an executable inside it, else None."""
+    p = exe
+    while p and p != os.path.dirname(p):
+        if p.endswith(".app"):
+            return p
+        p = os.path.dirname(p)
+    return None
+
+
+def open_in_orca(path):
+    """
+    Opens a 3MF in OrcaSlicer. Starting the executable with the file hands it
+    to the window already open when OrcaSlicer runs as a single instance (its
+    default); the file association may point to another program.
+    Returns True when OrcaSlicer itself was asked to open it.
+    """
+    exe = find_orca_executable()
+    if not exe:
+        open_with_system(path)
+        return False
+    if sys.platform == "darwin" and _app_bundle(exe):
+        subprocess.Popen(["open", "-a", _app_bundle(exe), path])
+        return True
+    kw = {}
+    if sys.platform == "win32":
+        kw["creationflags"] = getattr(subprocess, "DETACHED_PROCESS", 0x08)
+    subprocess.Popen([exe, path], close_fds=True, **kw)
+    return True
 
 
 # ----------------------------------------------------------------------------
@@ -383,6 +445,12 @@ class OrcaHost(BaseHost):
                 break
         return {"objects": items, "dirty": dirty, "project": project}
 
+    def open_path(self, path):
+        if os.path.isfile(path) and path.lower().endswith(".3mf"):
+            open_in_orca(path)
+        else:
+            open_with_system(path)
+
     def message(self, text, title, icon="info"):
         fn = getattr(self.ui, "message", None)
         if fn is None or not self.native_ui:
@@ -402,9 +470,6 @@ class OrcaHost(BaseHost):
         if dlg is None or not hasattr(dlg, "update"):
             return NullProgress()
         return _ProgressWrap(dlg)
-
-    def open_path(self, path):
-        open_with_system(path)
 
 
 class _ProgressWrap:

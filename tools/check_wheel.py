@@ -19,6 +19,8 @@ REQUIRED = [
     "orca_svg_multicor/ui/panel.html",
     "orca_svg_multicor/ui/panel.css",
     "orca_svg_multicor/ui/panel.js",
+    "orca_svg_multicor/ui/config.html",
+    "orca_svg_multicor/CHANGELOG.md",
     "orca_svg_multicor/locales/en.json",
     "orca_svg_multicor/locales/pt_BR.json",
 ]

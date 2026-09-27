@@ -1,5 +1,36 @@
 # Changelog
 
+## 3.1.0
+
+### Changed: it behaves like a plugin now
+- The page is laid out like OrcaSlicer's Prepare tab (settings on the left,
+  the view on the right, the main action at the top), styled by OrcaSlicer's
+  own theme and plugin defaults, in OrcaSlicer's language. Gone: the page's own
+  header, language picker, log panel, input folder list, tabs and "save as
+  default" buttons.
+- Settings live in the Plugins dialog's **Config** tab, on a translated
+  settings page that also shows what's new. The page remembers the values you
+  change there, and the batch capability uses the same settings.
+- The result always goes back to OrcaSlicer.
+- The "window" capability is only offered by OrcaSlicer builds without plugin
+  pages.
+
+### Added
+- **Apply to an object on the plate**: pick an object of the project open in
+  Prepare; the design is applied to the saved project, which reopens in
+  OrcaSlicer with the new parts. OrcaSlicer's plugin API cannot change the
+  plate directly, so save the project (Ctrl+S) first; the page tells you when
+  it has unsaved changes or objects that are not in the saved file yet.
+- **Add as a new object**: the new 3MF opens in OrcaSlicer.
+- Files are opened by OrcaSlicer itself (its executable, which hands them to
+  the window already open) instead of the system's file association, which may
+  point to another program.
+- The plugin's messages also go to OrcaSlicer's Python log.
+
+### Removed
+- Applying to a different saved `.3mf` file from the page (the plate covers
+  it), the "open when done" option and the "use the project folder" link.
+
 ## 3.0.1
 
 ### Fixed

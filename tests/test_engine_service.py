@@ -118,11 +118,11 @@ def test_service_init_and_language_switch():
     svc, out, store = make_service("pt_BR")
     svc.handle({"action": "init"})
     init = next(m for m in out if m["type"] == "init")
-    assert init["lang"] == "pt_BR" and init["catalog"]["out.generate"] != "Generate 3MF"
+    assert init["lang"] == "pt_BR" and init["catalog"]["out.add_plate"] != "Add to the plate"
     assert any(l["code"] == "en" for l in init["languages"])
     svc.handle({"action": "set_language", "lang": "en"})
     msg = out[-1]
-    assert msg["type"] == "i18n" and msg["catalog"]["out.generate"] == "Generate 3MF"
+    assert msg["type"] == "i18n" and msg["catalog"]["out.add_plate"] == "Add to the plate"
     assert store["language"] == "en"
 
 

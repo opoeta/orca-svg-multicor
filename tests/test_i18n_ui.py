@@ -50,7 +50,7 @@ def test_every_key_used_in_code_exists():
         if fn.endswith(".py"):
             text = open(os.path.join(src, fn), encoding="utf-8").read()
             used |= set(re.findall(r'["\']((?:error|warn|progress|log|status|pick|part|objects|batch)\.[a-z_]+)["\']', text))
-    for fn in ("panel.html", "panel.js"):
+    for fn in ("panel.html", "panel.js", "config.html"):
         text = open(os.path.join(UI_DIR, fn), encoding="utf-8").read()
         used |= set(re.findall(r'data-i18n(?:-ph|-title|-aria)?="([a-z_]+\.[a-z_0-9]+)"', text))
         used |= set(re.findall(r"'([a-z]+\.[a-z_0-9]+)'", text))
@@ -78,9 +78,27 @@ def test_page_builds_translated_and_safe():
     assert "/*CSS*/" not in html and "/*BOOT*/" not in html and "/*JS*/" not in html
     boot = re.search(r"window\.SVGM_BOOT = (\{.*?\});</script>", html, re.S).group(1)
     data = json.loads(boot)
-    assert data["lang"] == "pt_BR" and data["catalog"]["app.title"]
+    assert data["lang"] == "pt_BR" and data["catalog"]["target.title"]
     # no external resources: the page must work offline inside OrcaSlicer
     assert not re.search(r'(src|href)="https?://', html)
+
+
+def test_config_page_builds():
+    from orca_svg_multicor.panel import build_config_html
+    html = build_config_html("de", {"size_mm": 100})
+    boot = json.loads(re.search(r"window\.SVGM_CFG = (\{.*?\});</script>", html, re.S).group(1))
+    assert boot["lang"] == "de" and boot["defaults"]["size_mm"] == 100
+    assert any(l["code"] == "pt_BR" for l in boot["languages"])
+    assert "3.1.0" in boot["changelog"] or boot["changelog"]
+    assert not re.search(r'(src|href)="https?://', html)
+
+
+def test_page_has_no_app_chrome():
+    """The page is part of OrcaSlicer: no own language picker, header, log or defaults buttons."""
+    html = build_html("en")
+    for gone in ('id="lang"', 'class="top"', 'id="log"', "btn_save_defaults", "svg_recent",
+                 'id="open_after"'):
+        assert gone not in html, gone
 
 
 @pytest.mark.skipif(not shutil.which("node"), reason="node not installed")

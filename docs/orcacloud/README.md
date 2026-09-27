@@ -33,6 +33,15 @@ gives both. Everything needed is here:
 
 ## Changelog entries
 
+**3.1.0**
+
+```
+- Works like part of OrcaSlicer: page laid out like the Prepare tab, OrcaSlicer's theme and language.
+- Apply to an object on the plate: the saved project reopens with the new parts.
+- Add as a new object: the new 3MF opens in OrcaSlicer.
+- Settings and what's new in the Plugins dialog's Config tab.
+```
+
 **3.0.1**
 
 ```

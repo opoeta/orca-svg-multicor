@@ -46,12 +46,13 @@ assigned to your filaments.
 2. In OrcaSlicer, open the **Plugins** dialog and install the `.whl` file as a
    local plugin. OrcaSlicer installs the dependencies (numpy, shapely,
    svgelements, mapbox-earcut) by itself.
-3. Enable the plugin. Three capabilities appear:
-   - **SVG Multicolor**: the panel, as a page inside OrcaSlicer;
-   - **SVG Multicolor - window**: the same panel in its own window (heavy work
-     runs in the background, OrcaSlicer stays responsive);
+3. Enable the plugin. It adds:
+   - **SVG Multicolor**: a page next to Prepare and Preview;
    - **SVG Multicolor - batch**: converts every SVG of the input folder with the
-     saved settings, no interface.
+     same settings, from the Plugins dialog's Run action.
+
+   Builds of OrcaSlicer without plugin pages get **SVG Multicolor - window**
+   instead: the same page in a window.
 
 > **Upgrading from 2.x**: remove the old plugin first. Both versions use the same
 > Python package name and cannot be loaded side by side.
@@ -60,21 +61,29 @@ Requires an OrcaSlicer build with Python plugin support.
 
 ## Using it
 
-1. **Choose the SVG** (Browse, a path, a copy uploaded from the page, or a file
-   in the input folder). The analysis runs by itself.
-2. **Check the colors** in the preview. Hover a row to highlight that color.
-   Rename parts, untick what you do not want (a plain background, for example;
-   colors that span the whole drawing are tagged *background?*), and pick the
-   filament of each color, or let *Match filaments by color* do it.
-3. **Output**:
-   - *New 3MF*: choose the format and the folder, then **Generate 3MF**.
-   - *Apply to a project*: save your project in OrcaSlicer (Ctrl+S), click
-     **Use the project open in OrcaSlicer** (or pick a `.3mf`), choose the
-     object and the placement, then **Apply to the object**, and open the
-     resulting `*_svg.3mf`.
+The page works like the Prepare tab: settings on the left, the view on the
+right, the main action at the top right.
 
-Tick *Open in OrcaSlicer when done* to open the result right away.
-*Save these settings as default* keeps your choices for next time.
+1. **SVG file**: *Browse…* and choose the SVG. The colors appear on their own.
+2. **Colors**: hover a row to highlight it in the view. Rename parts, untick
+   what you do not want (a plain background, for example; colors that span the
+   whole drawing are tagged *background?*), and pick each color's filament, or
+   let the wand match them to the filaments loaded in OrcaSlicer.
+3. **Apply to**:
+   - **An object on the plate**: save the project (Ctrl+S), pick the object,
+     choose *inlaid* (same height, the top layers change color) or *raised*,
+     then **Apply to the plate**. OrcaSlicer's plugin API cannot change the
+     plate directly, so the design goes into the saved project, which reopens
+     in OrcaSlicer with the new parts. The original file is kept; the result is
+     saved next to it as `*_svg.3mf` in the output folder.
+   - **A new object on the plate**: optionally on a base plate, then **Add to
+     the plate**; OrcaSlicer opens the new 3MF.
+
+The page remembers the values you change. Defaults, the output folder, the
+file format, STL export and the language are in the Plugins dialog, **Config**
+tab, along with what's new in each version.
+
+![Settings in the Config tab](docs/config.png)
 
 ### Settings
 
@@ -95,10 +104,11 @@ Tick *Open in OrcaSlicer when done* to open the result right away.
 - **Text** must be converted to paths (outlines) in your editor; **bitmap
   images** are ignored; **clipping paths and masks** are ignored (release them
   if shapes show up where they should not). The panel warns about all of these.
-- The **native file dialogs** run as a separate process (PowerShell on Windows,
-  `osascript` on macOS, `zenity`/`kdialog` on Linux). OrcaSlicer asks once
-  whether the plugin may start a process; if you say no, use the upload buttons
-  instead.
+- The **file dialog** runs as a separate process (PowerShell on Windows,
+  `osascript` on macOS, `zenity`/`kdialog` on Linux), and results are opened by
+  starting OrcaSlicer's executable, which hands the file to the window already
+  open. OrcaSlicer asks once whether the plugin may start a process; if you say
+  no, the page offers to upload a copy of the SVG instead.
 - Inlaying relies on OrcaSlicer giving parts added later priority where parts
   overlap, the same mechanism used when you add a part inside an object by hand.
 - OrcaSlicer's **Plugins dialog shows a preview image and a changelog only for
@@ -106,7 +116,7 @@ Tick *Open in OrcaSlicer when done* to open the result right away.
   design. See [docs/orcacloud](docs/orcacloud/README.md) to publish it there.
   The changelog is also in [CHANGELOG.md](CHANGELOG.md).
 - Files live in `<OrcaSlicer data folder>/svg_multicor/` (input, output and
-  `plugin.log`). Both folders can be changed in the panel or in the Config tab.
+  `plugin.log`); both folders can be changed in the Config tab.
 
 ## Adding a language
 
@@ -121,7 +131,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md).
 python -m venv .venv
 .venv/bin/pip install -e . -r requirements-dev.txt   # Windows: .venv\Scripts\pip
 .venv/bin/pytest
-python tools/dev_server.py --lang pt_BR   # the panel in your browser, real engine, fake host
+python tools/dev_server.py --lang pt_BR --project some.3mf   # the page in a browser, OrcaSlicer's look, fake plate
 python -m build --wheel                   # dist/orca_svg_multicor-<version>-py3-none-any.whl
 ```
 

@@ -2,9 +2,12 @@
 """
 OrcaSlicer capabilities. Imported only inside OrcaSlicer.
 
-  SVG Multicolor                 (Pages)  the panel as a page inside OrcaSlicer
-  SVG Multicolor - window        (Script) the same panel in its own window
-  SVG Multicolor - batch         (Script) converts every SVG of the input folder
+  SVG Multicolor           (Pages)  a page next to Prepare/Preview; owns the
+                                    settings, edited in the Config tab
+  SVG Multicolor - batch   (Script) converts every SVG of the input folder with
+                                    the same settings
+  SVG Multicolor - window  (Script) only on builds without plugin pages: the
+                                    same page in a window
 
 Capability names are identifiers: OrcaSlicer keys their config and on/off
 state by name, so they are NOT translated.
@@ -27,7 +30,7 @@ import orca
 
 from . import i18n
 from .host import OrcaHost, config_store_for
-from .panel import build_html
+from .panel import build_config_html, build_html, build_note_html
 from .service import Service, settings_defaults
 
 NAME_PAGE = "SVG Multicolor"
@@ -83,14 +86,29 @@ def _try_calls(fn, attempts):
     return None, err
 
 
+_SETTINGS_OWNER = []
+
+
+def _claim_settings(capability):
+    """The page (or the window, without pages) owns the settings everyone uses."""
+    _SETTINGS_OWNER[:] = [capability]
+
+
 class _Common:
-    """Config shared by every capability (each keeps its own copy)."""
+    """Settings live in the owner's config (Config tab); others borrow them."""
 
     def get_default_config(self):
         return settings_defaults()
 
     def _store(self):
-        return config_store_for(self, settings_defaults())
+        owner = _SETTINGS_OWNER[0] if _SETTINGS_OWNER else self
+        return config_store_for(owner, settings_defaults())
+
+    def has_config_ui(self):
+        return True
+
+    def get_config_ui(self):
+        return build_config_html(self._language(OrcaHost(orca)), settings_defaults())
 
     def _language(self, host):
         lang = self._store()[0]().get("language") or "auto"
@@ -126,6 +144,10 @@ _PagesBase = getattr(getattr(orca, "pages", None), "PagesPluginCapabilityBase", 
 if _PagesBase is not None:
 
     class PanelPage(_Common, _PagesBase):
+
+        def __init__(self, *a, **k):
+            super().__init__(*a, **k)
+            _claim_settings(self)
 
         def get_name(self):
             return NAME_PAGE
@@ -185,6 +207,8 @@ class PanelWindow(_Common, orca.script.ScriptPluginCapabilityBase):
         self.window = None
         self._svc = None
         self._worker = None
+        if PanelPage is None:
+            _claim_settings(self)
 
     def get_name(self):
         return NAME_WINDOW
@@ -278,6 +302,13 @@ class BatchConvert(_Common, orca.script.ScriptPluginCapabilityBase):
     def get_name(self):
         return NAME_BATCH
 
+    def get_default_config(self):
+        return {}      # the settings are the page's
+
+    def get_config_ui(self):
+        tr = i18n.Translator(self._language(OrcaHost(orca)))
+        return build_note_html(tr("cfg.batch_note"))
+
     def get_type(self):
         return _type("Script")
 
@@ -353,5 +384,6 @@ class BatchConvert(_Common, orca.script.ScriptPluginCapabilityBase):
 def register_all(orca_module):
     if PanelPage is not None:
         orca_module.register_capability(PanelPage)
-    orca_module.register_capability(PanelWindow)
+    else:
+        orca_module.register_capability(PanelWindow)
     orca_module.register_capability(BatchConvert)

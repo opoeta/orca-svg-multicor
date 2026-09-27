@@ -2,7 +2,10 @@
 """
 Development server: runs the panel in a normal browser, without OrcaSlicer.
 
-    python tools/dev_server.py [--port 8765] [--lang pt_BR]
+    python tools/dev_server.py [--port 8765] [--lang pt_BR] [--project saved.3mf]
+
+    /          the page (?svg=<path>&target=new&theme=light&adv=1 to preload)
+    /config    the settings page of the Plugins dialog's Config tab
 
 The page gets a stand-in `window.orca` that forwards every message to the real
 Python service over HTTP, so analysis, preview and 3MF generation are the real
@@ -29,22 +32,52 @@ from orca_svg_multicor.service import Service  # noqa: E402
 
 CONFIG = os.path.join(DATA, "config.json")
 
+# What OrcaSlicer injects into plugin pages: the theme variables and the default
+# plugin stylesheet (copied from OrcaSlicer's own injection), so the page looks
+# here the way it looks inside OrcaSlicer. ?theme=light switches the variables.
+HOST_THEMES = {
+    "dark": ":root{--orca-bg:#2d2d31;--orca-fg:#e6e6e6;--orca-muted:#9a9aa0;--orca-border:#48484e;"
+            "--orca-accent:#009688;--orca-accent-fg:#ffffff;"
+            "--orca-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color-scheme:dark;}",
+    "light": ":root{--orca-bg:#ffffff;--orca-fg:#262e30;--orca-muted:#6b6b6b;--orca-border:#dbdbdb;"
+             "--orca-accent:#009688;--orca-accent-fg:#ffffff;"
+             "--orca-font:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color-scheme:light;}",
+}
+HOST_DEFAULTS = (
+    "html,body{background:var(--orca-bg);color:var(--orca-fg);font-family:var(--orca-font);font-size:13px;}"
+    "body{margin:0;}h1,h2,h3,h4,h5,h6{color:var(--orca-fg);font-weight:600;}a{color:var(--orca-accent);}"
+    "hr{border:0;border-top:1px solid var(--orca-border);}"
+    "button{font:inherit;color:var(--orca-accent-fg);background:var(--orca-accent);"
+    "border:1px solid var(--orca-accent);border-radius:4px;padding:5px 14px;cursor:pointer;}"
+    "button:hover{filter:brightness(1.1);}button:disabled{opacity:.5;cursor:default;}"
+    "input,select,textarea{font:inherit;color:var(--orca-fg);background:var(--orca-bg);"
+    "border:1px solid var(--orca-border);border-radius:4px;padding:4px 8px;}"
+    "input:focus,select:focus,textarea:focus{outline:none;border-color:var(--orca-accent);}"
+    "table{border-collapse:collapse;}th,td{text-align:left;padding:6px 10px;"
+    "border-bottom:1px solid var(--orca-border);}th{color:var(--orca-muted);font-weight:600;}"
+    "::-webkit-scrollbar{width:12px;height:12px;}"
+    "::-webkit-scrollbar-thumb{background:var(--orca-border);border-radius:6px;}"
+    "::-webkit-scrollbar-track{background:transparent;}")
+
+
+def host_head(theme):
+    return (f'<style id="orca-host-theme-vars">{HOST_THEMES.get(theme, HOST_THEMES["dark"])}</style>'
+            f'<style id="orca-plugin-defaults">{HOST_DEFAULTS}</style>')
+
+
 MOCK_BRIDGE = """<script>
 (function () {
   var handlers = [];
-  // ?svg=<path>&tab=apply&log=1&project=<path> preload the page (screenshots, demos)
+  // ?svg=<path>&target=new preload the page (screenshots, demos)
   var q = new URLSearchParams(location.search), preloaded = false;
   function preload() {
     if (preloaded) return; preloaded = true;
     setTimeout(function () {
-      if (q.get('tab')) { var b = document.querySelector('[data-tab="' + q.get('tab') + '"]'); if (b) b.click(); }
-      if (q.get('log')) document.getElementById('btn_log').click();
-      if (q.get('project')) { var p = document.getElementById('project_path'); p.value = q.get('project'); p.dispatchEvent(new Event('change')); }
-      if (q.get('svg')) {
-        var i = document.getElementById('svg_path'); i.value = q.get('svg');
-        setTimeout(function () { i.dispatchEvent(new Event('change')); }, q.get('project') ? 400 : 0);
-      }
-    }, 0);
+      if (q.get('target')) { var r = document.querySelector('input[name=target][value="' + q.get('target') + '"]');
+        if (r) { r.checked = true; r.dispatchEvent(new Event('change')); } }
+      if (q.get('adv')) document.getElementById('adv').open = true;
+      if (q.get('svg')) window.__svgmUse && window.__svgmUse(q.get('svg'));
+    }, 50);
   }
   function dispatch(list) {
     list.forEach(function (m) {
@@ -84,12 +117,17 @@ class DevHost(BaseHost):
         ]}
 
     def plate(self):
+        """The objects of --project, as if that project were open in Prepare."""
         if not self.project:
             return {"objects": [], "dirty": None, "project": ""}
-        return {"objects": [{"index": 0, "name": os.path.basename(self.project),
-                             "size": None, "parts": 1, "file": self.project,
-                             "painted": False}],
+        from orca_svg_multicor.engine import list_objects
+        objs = list_objects(self.project)["objects"]
+        return {"objects": [{"index": i, "name": o["name"], "size": o["size"], "parts": o["parts"],
+                             "file": self.project, "painted": False} for i, o in enumerate(objs)],
                 "dirty": False, "project": self.project}
+
+    def open_path(self, path):
+        print(f"[dev] OrcaSlicer would open: {path}")
 
 
 def config_store():
@@ -126,9 +164,22 @@ def make_handler(service, outbox, lock, lang):
 
         def do_GET(self):
             if self.path.split("?")[0] in ("/", "/index.html"):
-                html = build_html(service.tr.lang, mode="dev", extra_head=MOCK_BRIDGE)
+                theme = "light" if "theme=light" in self.path else "dark"
+                html = build_html(service.tr.lang, mode="dev", extra_head=host_head(theme) + MOCK_BRIDGE)
                 page = ("<!doctype html><html><head><title>SVG Multicolor (dev)</title>"
                         "</head><body>" + html + "</body></html>")
+                self._send(200, page, "text/html; charset=utf-8")
+            elif self.path.split("?")[0] == "/config":
+                from orca_svg_multicor.panel import build_config_html
+                from orca_svg_multicor.service import settings_defaults
+                stored = json.dumps(service.get_config())
+                page = ("<!doctype html><html><head><title>Config (dev)</title>"
+                        + host_head("dark").split("<style id=\"orca-plugin-defaults\">")[0]
+                        + "<script>window.orca={getConfig:function(){return " + stored + ";},"
+                        "saveConfig:function(c){fetch('/msg',{method:'POST',body:JSON.stringify("
+                        "{action:'save_settings',settings:c})});},restoreDefaults:function(){},"
+                        "onConfig:function(cb){cb(this.getConfig());}};</script></head><body>"
+                        + build_config_html(service.tr.lang, settings_defaults()) + "</body></html>")
                 self._send(200, page, "text/html; charset=utf-8")
             else:
                 self._send(404, "not found", "text/plain")

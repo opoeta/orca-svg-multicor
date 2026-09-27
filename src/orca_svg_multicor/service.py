@@ -26,7 +26,7 @@ from .host import Log, default_folders, plugin_data_dir
 from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
-         "save_settings", "open_path", "reset_settings"}
+         "save_settings", "open_path", "reset_settings", "changelog"}
 HEAVY = {"analyze", "generate", "apply", "objects"}
 UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
@@ -35,7 +35,7 @@ ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 def settings_defaults():
     inp, out = default_folders()
     d = {"language": "auto", "input_folder": inp, "output_folder": out,
-         "open_after": False, "icon_mode": "path"}
+         "target": "plate", "open_after": False, "icon_mode": "path"}
     d.update(Options.DEFAULTS)
     return d
 
@@ -90,6 +90,7 @@ class Service:
         self.respond = respond
         self.mode = mode
         self.log_file = Log()
+        self._listing_cache = {}
         self.tr = i18n.Translator(self._language_setting())
 
     # ------------------------------------------------------------ helpers
@@ -235,7 +236,27 @@ class Service:
             self.error("plate", self.tr("error.plate", detail=str(e)))
             return
         d["type"] = "plate"
+        # which object of the saved project each plate object is
+        if d.get("project"):
+            try:
+                from . import engine
+                key = (d["project"], os.path.getmtime(d["project"]))
+                listing = self._listing_cache.get(key)
+                if listing is None:
+                    listing = engine.list_objects(d["project"])
+                    self._listing_cache = {key: listing}
+                ids = engine.match_plate_objects(d["objects"], listing["objects"])
+                for item, oid in zip(d["objects"], ids):
+                    item["object_id"] = oid
+            except UserError as e:
+                d["project_error"] = self.tr(e.key, **e.params)
+            except Exception as e:  # noqa: BLE001 - a broken file must not break the page
+                d["project_error"] = self.tr("error.project_read", detail=str(e)[:200])
         self.send(d)
+
+    def do_changelog(self, msg):
+        from .panel import read_changelog
+        self.send({"type": "changelog", "text": read_changelog(), "version": __version__})
 
     def do_inputs(self, msg):
         self.send(self._inputs())
@@ -385,7 +406,7 @@ class Service:
                    "filaments": listing["filaments"]})
         self.info(self.tr("log.objects", count=len(out), name=os.path.basename(path)))
 
-    def _finish(self, action, dest, report):
+    def _finish(self, action, dest, report, reopen=False):
         bad = [r["name"] for r in report if not r["watertight"]]
         for r in report:
             self.info(self.tr("log.part", name=r["name"], color=r["color"],
@@ -396,7 +417,8 @@ class Service:
         s = self.settings()
         self.send({"type": "done", "action": action, "path": dest,
                    "folder": os.path.dirname(dest), "report": report,
-                   "open_after": bool(s.get("open_after")),
+                   "open_after": reopen or bool(s.get("open_after")),
+                   "reopen": reopen,
                    "text": self.tr("status.saved_to", path=dest)})
 
     def do_generate(self, msg, rep):
@@ -406,7 +428,7 @@ class Service:
         out = self._out_dir(msg)
         dest, report = engine.generate(svg, out, opts, self._choices(msg),
                                        filaments=msg.get("filaments"), tr=self.tr, rep=rep)
-        self._finish("generate", dest, report)
+        self._finish("generate", dest, report, reopen=bool(msg.get("reopen")))
 
     def do_apply(self, msg, rep):
         from . import engine
@@ -422,4 +444,4 @@ class Service:
                                                self._choices(msg),
                                                filaments=msg.get("filaments"),
                                                tr=self.tr, rep=rep)
-        self._finish("apply", dest, report)
+        self._finish("apply", dest, report, reopen=bool(msg.get("reopen")))

@@ -1,0 +1,187 @@
+<meta charset="utf-8">
+<style>
+  /* Runs in the Plugins dialog's Config tab, sandboxed: only the theme
+     variables are provided, so the few controls are styled like the host's
+     plugin defaults. */
+  :root { --bg: var(--orca-bg, #2d2d31); --fg: var(--orca-fg, #e6e6e6); --muted: var(--orca-muted, #9a9aa0);
+          --line: var(--orca-border, #48484e); --accent: var(--orca-accent, #009688); --accent-fg: var(--orca-accent-fg, #fff); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--fg);
+               font: 13px/1.4 var(--orca-font, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif); }
+  body { padding: 4px 12px 16px; }
+  h3 { font-size: 13px; margin: 14px 0 6px; font-weight: 600; }
+  .hint { color: var(--muted); font-size: 12px; margin: 2px 0 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); column-gap: 28px; }
+  .row { display: grid; grid-template-columns: minmax(0, 1fr) 210px; gap: 10px; align-items: center; min-height: 30px; }
+  .row > span:first-child { color: var(--muted); }
+  .row > :last-child { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+  .row .u { width: 28px; color: var(--muted); font-size: 12px; }
+  .row.path { grid-template-columns: 1fr; gap: 4px; margin: 4px 0; }
+  .row.path > :last-child { justify-content: stretch; }
+  .row.path input { width: 100%; }
+  input, select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid var(--line);
+                  border-radius: 4px; padding: 4px 8px; }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  input[type=number] { width: 96px; }
+  input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; margin: 0; }
+  select { width: 100%; max-width: 210px; }
+  .row .two select { width: 100px; }
+  button { font: inherit; color: var(--accent-fg); background: var(--accent); border: 1px solid var(--accent);
+           border-radius: 4px; padding: 5px 14px; cursor: pointer; }
+  button.flat { color: var(--fg); background: transparent; border-color: var(--line); }
+  button:hover { filter: brightness(1.1); }
+  .bar { display: flex; gap: 8px; align-items: center; margin: 14px 0 4px; }
+  .bar .msg { color: var(--muted); font-size: 12px; }
+  details { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 6px; }
+  summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+  .md h3 { color: var(--accent); margin: 12px 0 4px; }
+  .md h4 { font-size: 11.5px; margin: 8px 0 2px; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .md ul { margin: 4px 0; padding-left: 18px; }
+  .md li { margin: 2px 0; }
+  .md p { margin: 6px 0; color: var(--muted); }
+  .md code { font: 12px ui-monospace, Consolas, monospace; }
+</style>
+<script>window.SVGM_CFG = /*BOOT*/;</script>
+
+<p class="hint" data-i18n="cfg.hint">SVG Multicolor starts with these values and remembers what you change on its page.</p>
+<form id="form" autocomplete="off">
+  <div class="grid">
+    <div>
+      <h3 data-i18n="src.title">SVG file</h3>
+      <label class="row"><span data-i18n="opt.size">Size</span>
+        <span class="two"><select name="size_mode">
+          <option value="width" data-i18n="opt.size_width">Width</option>
+          <option value="height" data-i18n="opt.size_height">Height</option>
+          <option value="original" data-i18n="opt.size_original">Original size</option>
+        </select> <input name="size_mm" type="number" min="1" step="1"><span class="u">mm</span></span></label>
+      <label class="row"><span data-i18n="opt.thickness">Color thickness</span><span><input name="thickness_mm" type="number" min="0.04" step="0.04"><span class="u">mm</span></span></label>
+      <label class="row"><span data-i18n="opt.max_colors">Max. colors</span><span><input name="max_colors" type="number" min="0" max="64" step="1"><span class="u"></span></span></label>
+      <label class="row"><span data-i18n="opt.merge">Merge similar tones</span><span><input name="merge_tolerance" type="number" min="0" max="100" step="1"><span class="u">ΔE</span></span></label>
+      <label class="row"><span data-i18n="opt.strokes">Include outlines (strokes)</span><span><input name="include_strokes" type="checkbox"><span class="u"></span></span></label>
+      <label class="row"><span data-i18n="adv.precision">Precision</span><span><input name="precision_mm" type="number" min="0" step="0.01"><span class="u">mm</span></span></label>
+      <label class="row"><span data-i18n="adv.min_area">Ignore specks under</span><span><input name="min_area_mm2" type="number" min="0" step="0.01"><span class="u">mm²</span></span></label>
+      <label class="row"><span data-i18n="adv.min_detail">Remove details thinner than</span><span><input name="min_detail_mm" type="number" min="0" step="0.05"><span class="u">mm</span></span></label>
+    </div>
+    <div>
+      <h3 data-i18n="target.title">Apply to</h3>
+      <label class="row"><span></span>
+        <select name="target">
+          <option value="plate" data-i18n="target.plate">An object on the plate</option>
+          <option value="new" data-i18n="target.new">A new object on the plate</option>
+        </select></label>
+      <label class="row"><span data-i18n="apply.fit">Placement</span>
+        <select name="fit">
+          <option value="inlay" data-i18n="apply.fit_inlay">Inlaid in the top</option>
+          <option value="raised" data-i18n="apply.fit_raised">Raised on the top</option>
+        </select></label>
+      <label class="row"><span data-i18n="apply.width">Width</span><span><input name="apply_width_mm" type="number" min="0" step="1"><span class="u">mm</span></span></label>
+      <label class="row"><span data-i18n="base.section">Base plate</span><span><input name="base_thickness_mm" type="number" min="0" step="0.2"><span class="u">mm</span></span></label>
+      <label class="row"><span data-i18n="base.margin">Margin</span><span><input name="base_margin_mm" type="number" min="0" step="0.5"><span class="u">mm</span></span></label>
+      <label class="row"><span data-i18n="base.shape">Shape</span>
+        <select name="base_shape">
+          <option value="outline" data-i18n="base.shape_outline">Follow the outline</option>
+          <option value="rectangle" data-i18n="base.shape_rect">Rounded rectangle</option>
+        </select></label>
+      <label class="row"><span data-i18n="base.filament">Filament</span><span><input name="base_filament" type="number" min="1" max="64" step="1"><span class="u"></span></span></label>
+
+      <h3 data-i18n="cfg.files">Files</h3>
+      <label class="row"><span data-i18n="out.format">Format</span>
+        <select name="output_format">
+          <option value="orca" data-i18n="out.format_orca">OrcaSlicer / Bambu project</option>
+          <option value="standard" data-i18n="out.format_std">Standard 3MF</option>
+        </select></label>
+      <label class="row"><span data-i18n="out.stl">Also save one STL per color</span><span><input name="export_stl" type="checkbox"><span class="u"></span></span></label>
+      <label class="row path"><span data-i18n="out.folder">Save to</span><span><input name="output_folder" type="text" spellcheck="false"></span></label>
+      <label class="row path"><span data-i18n="cfg.input_folder">Input folder (batch)</span><span><input name="input_folder" type="text" spellcheck="false"></span></label>
+      <label class="row"><span data-i18n="ui.language">Language</span><select name="language" id="language"></select></label>
+    </div>
+  </div>
+  <div class="bar">
+    <button type="submit" id="save" data-i18n="cfg.save">Save</button>
+    <button type="button" class="flat" id="restore" data-i18n="out.reset_defaults">Restore defaults</button>
+    <span class="msg" id="msg"></span>
+  </div>
+</form>
+
+<details id="news" open>
+  <summary data-i18n="whatsnew.title">What's new</summary>
+  <div class="md" id="news_body"></div>
+</details>
+
+<script>
+(function () {
+  'use strict';
+  var B = window.SVGM_CFG || {};
+  var cat = B.catalog || {};
+  var defaults = B.defaults || {};
+  var form = document.getElementById('form');
+  function t(k) { return typeof cat[k] === 'string' && cat[k] ? cat[k] : k; }
+  function el(tag, text) { var e = document.createElement(tag); if (text != null) e.textContent = text; return e; }
+
+  Array.prototype.forEach.call(document.querySelectorAll('[data-i18n]'), function (e) {
+    e.textContent = t(e.getAttribute('data-i18n'));
+  });
+  var lang = document.getElementById('language');
+  var auto = el('option', t('ui.language_auto')); auto.value = 'auto'; lang.appendChild(auto);
+  (B.languages || []).forEach(function (l) { var o = el('option', l.name); o.value = l.code; lang.appendChild(o); });
+
+  function fill(cfg) {
+    var v = {};
+    Object.keys(defaults).forEach(function (k) { v[k] = defaults[k]; });
+    Object.keys(cfg || {}).forEach(function (k) { v[k] = cfg[k]; });
+    Array.prototype.forEach.call(form.elements, function (e) {
+      if (!e.name || !(e.name in v)) return;
+      if (e.type === 'checkbox') e.checked = !!v[e.name]; else e.value = v[e.name];
+    });
+  }
+  function read() {
+    var out = {};
+    var current = (window.orca && window.orca.getConfig) ? (window.orca.getConfig() || {}) : {};
+    Object.keys(current).forEach(function (k) { out[k] = current[k]; });   // keeps what the page remembered
+    Array.prototype.forEach.call(form.elements, function (e) {
+      if (!e.name) return;
+      if (e.type === 'checkbox') out[e.name] = e.checked;
+      else if (e.type === 'number') out[e.name] = e.value === '' ? 0 : parseFloat(e.value);
+      else out[e.name] = e.value;
+    });
+    return out;
+  }
+  var msg = document.getElementById('msg');
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (window.orca && window.orca.saveConfig) window.orca.saveConfig(read());
+    msg.textContent = t('status.saved');
+  });
+  document.getElementById('restore').addEventListener('click', function () {
+    if (window.orca && window.orca.restoreDefaults) window.orca.restoreDefaults();
+  });
+  if (window.orca && window.orca.onConfig) window.orca.onConfig(fill); else fill({});
+
+  // what's new: the changelog OrcaSlicer only shows for OrcaCloud plugins
+  function inline(node, text) {
+    var re = /(\*\*[^*]+\*\*|`[^`]+`)/g, last = 0, m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) node.appendChild(document.createTextNode(text.slice(last, m.index)));
+      node.appendChild(m[0].charAt(0) === '*' ? el('strong', m[0].slice(2, -2)) : el('code', m[0].slice(1, -1)));
+      last = re.lastIndex;
+    }
+    if (last < text.length) node.appendChild(document.createTextNode(text.slice(last)));
+  }
+  var box = document.getElementById('news_body'), list = null, para = null, shown = 0;
+  (B.changelog || '').split(/\r?\n/).forEach(function (line) {
+    var m;
+    if (/^#\s/.test(line)) return;
+    if ((m = line.match(/^##\s+(.*)/))) { shown += 1; list = para = null; if (shown <= 3) box.appendChild(el('h3', m[1])); return; }
+    if (shown > 3) return;
+    if ((m = line.match(/^###\s+(.*)/))) { list = para = null; box.appendChild(el('h4', m[1])); return; }
+    if ((m = line.match(/^[-*]\s+(.*)/))) {
+      if (!list) { list = el('ul'); box.appendChild(list); }
+      var li = el('li'); inline(li, m[1]); list.appendChild(li); para = null; return;
+    }
+    if (/^\s+\S/.test(line) && list && list.lastChild) { inline(list.lastChild, ' ' + line.trim()); return; }
+    if (!line.trim()) { list = para = null; return; }
+    if (para) inline(para, ' ' + line.trim()); else { para = el('p'); inline(para, line.trim()); box.appendChild(para); }
+  });
+  if (!box.childNodes.length) box.appendChild(el('p', t('whatsnew.empty')));
+})();
+</script>
