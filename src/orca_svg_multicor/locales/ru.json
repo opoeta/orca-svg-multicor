@@ -166,6 +166,8 @@
   "error.no_window": "Эта сборка OrcaSlicer не может открывать окна плагинов. Используйте страницу SVG Multicolor.",
   "error.unknown_action": "Неизвестное действие: {action}",
   "error.unexpected": "Непредвиденная ошибка: {detail}",
+  "error.denied_name": "OrcaSlicer не разрешает плагинам использовать файлы и папки, в имени которых есть «conf», «cert» или «secret»: {path}. Переименуйте или переместите файл в другую папку.",
+  "error.permission": "OrcaSlicer запретил плагину доступ к файлу ({detail}). Если вы отклонили запрос разрешения, разрешите в следующий раз или используйте файл из другой папки.",
 
   "batch.empty": "В папке нет файлов .svg:\n{folder}",
   "batch.file": "{name} ({k}/{n})",

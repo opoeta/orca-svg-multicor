@@ -22,7 +22,7 @@ import traceback
 from . import i18n
 from ._version import __version__
 from .errors import Cancelled, EngineError, UserError
-from .host import Log, default_folders, plugin_data_dir
+from .host import Log, default_folders, denied_name, plugin_data_dir
 from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
@@ -157,6 +157,10 @@ class Service:
                 self.send({"type": "cancelled", "action": action,
                            "text": self.tr("status.cancelled")})
                 return
+            if isinstance(e, PermissionError):
+                self.log_file.write("ERROR", traceback.format_exc())
+                self.error(action, self.tr("error.permission", detail=str(e)[:160]))
+                return
             if isinstance(e, UserError):
                 self.error(action, self.tr(e.key, **e.params))
                 return
@@ -172,15 +176,15 @@ class Service:
         """
         for key in ("svg", "project"):
             p = msg.get(key)
-            if p and os.path.isfile(p):
+            if p and not denied_name(p) and os.path.isfile(p):
                 try:
                     with open(p, "rb") as f:
                         f.read(1)
                 except Exception:
                     pass
         if msg.get("action") in ("generate", "apply"):
-            out = self._out_dir(msg)
             try:
+                out = self._out_dir(msg)
                 os.makedirs(out, exist_ok=True)
                 probe = os.path.join(out, ".svg_multicor_probe")
                 with open(probe, "w") as f:
@@ -281,6 +285,10 @@ class Service:
             self.send({"type": "picked", "kind": kind, "path": "", "failed": True,
                        "text": self.tr("error.picker", detail=str(e)[:200])})
             return
+        if path and denied_name(path):
+            self.send({"type": "picked", "kind": kind, "path": "", "failed": True,
+                       "text": self.tr("error.denied_name", path=path)})
+            return
         self.send({"type": "picked", "kind": kind, "path": path,
                    "cancelled": not path})
 
@@ -347,7 +355,7 @@ class Service:
         out = (msg.get("output_folder") or "").strip()
         if not out:
             out = self.folders()[1]
-        return out
+        return self._allowed(out)
 
     def _choices(self, msg):
         out = {}
@@ -356,8 +364,16 @@ class Service:
                 out[str(c["color"]).lower()] = c
         return out
 
+    @staticmethod
+    def _allowed(path):
+        """Refuses early, and clearly, a path OrcaSlicer would block anyway."""
+        if path and denied_name(path):
+            raise EngineError("error.denied_name", path=path)
+        return path
+
     def _svg(self, msg):
         p = (msg.get("svg") or "").strip()
+        self._allowed(p)
         if not p or not os.path.isfile(p):
             raise EngineError("error.no_svg")
         return p
@@ -433,7 +449,7 @@ class Service:
     def do_apply(self, msg, rep):
         from . import engine
         svg = self._svg(msg)
-        project = (msg.get("project") or "").strip()
+        project = self._allowed((msg.get("project") or "").strip())
         obj = str(msg.get("object_id") or "").strip()
         if not obj:
             raise EngineError("error.no_object")

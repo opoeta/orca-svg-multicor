@@ -50,12 +50,12 @@ def build_html(lang=None, mode="page", extra_head=""):
     return extra_head + html if extra_head else html
 
 
-def build_config_html(lang=None, defaults=None):
+def build_settings_html(lang=None, defaults=None):
     """Settings page for the Plugins dialog's Config tab (window.orca.getConfig/saveConfig)."""
     tr = i18n.Translator(lang)
     boot = {"lang": tr.lang, "catalog": tr.catalog(), "languages": i18n.available(),
             "defaults": defaults or {}, "changelog": read_changelog(), "version": __version__}
-    return _read("config.html").replace("/*BOOT*/", _json(boot), 1)
+    return _read("settings.html").replace("/*BOOT*/", _json(boot), 1)
 
 
 def build_note_html(text):

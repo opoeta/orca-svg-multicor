@@ -170,7 +170,7 @@ def make_handler(service, outbox, lock, lang):
                         "</head><body>" + html + "</body></html>")
                 self._send(200, page, "text/html; charset=utf-8")
             elif self.path.split("?")[0] == "/config":
-                from orca_svg_multicor.panel import build_config_html
+                from orca_svg_multicor.panel import build_settings_html
                 from orca_svg_multicor.service import settings_defaults
                 stored = json.dumps(service.get_config())
                 page = ("<!doctype html><html><head><title>Config (dev)</title>"
@@ -179,7 +179,7 @@ def make_handler(service, outbox, lock, lang):
                         "saveConfig:function(c){fetch('/msg',{method:'POST',body:JSON.stringify("
                         "{action:'save_settings',settings:c})});},restoreDefaults:function(){},"
                         "onConfig:function(cb){cb(this.getConfig());}};</script></head><body>"
-                        + build_config_html(service.tr.lang, settings_defaults()) + "</body></html>")
+                        + build_settings_html(service.tr.lang, settings_defaults()) + "</body></html>")
                 self._send(200, page, "text/html; charset=utf-8")
             else:
                 self._send(404, "not found", "text/plain")

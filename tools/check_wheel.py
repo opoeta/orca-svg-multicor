@@ -19,7 +19,7 @@ REQUIRED = [
     "orca_svg_multicor/ui/panel.html",
     "orca_svg_multicor/ui/panel.css",
     "orca_svg_multicor/ui/panel.js",
-    "orca_svg_multicor/ui/config.html",
+    "orca_svg_multicor/ui/settings.html",
     "orca_svg_multicor/CHANGELOG.md",
     "orca_svg_multicor/locales/en.json",
     "orca_svg_multicor/locales/pt_BR.json",
@@ -51,6 +51,12 @@ def check(path):
             problems.append(f"METADATA does not require {d}")
     if any(n.endswith((".pyc", "_dev_data/")) or "/tests/" in n for n in names):
         problems.append("stray files in the wheel")
+    # OrcaSlicer's audit hook refuses plugins any path with these words in a name
+    for n in names:
+        if n.split("/")[0].endswith(".dist-info"):
+            continue
+        if any(w in n.lower() for w in ("secret", "cert", "conf")):
+            problems.append(f"OrcaSlicer would refuse to read {n} (conf/cert/secret in the name)")
     print(f"{path}: {len(names)} files, {len(locales)} languages")
     return problems
 

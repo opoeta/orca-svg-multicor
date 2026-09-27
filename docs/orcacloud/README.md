@@ -33,6 +33,13 @@ gives both. Everything needed is here:
 
 ## Changelog entries
 
+**3.1.1**
+
+```
+- Fixed: the settings page in the Config tab did not load.
+- Clear message when OrcaSlicer blocks a file (names with "conf", "cert" or "secret").
+```
+
 **3.1.0**
 
 ```

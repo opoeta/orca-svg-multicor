@@ -282,3 +282,51 @@ def test_run_captured_opens_no_file_descriptor(tmp_path):
     assert out.strip() == "picked"
     assert before == 0, seen
     assert not list(tmp_path.iterdir())      # temporary files removed
+
+
+# ---------------------------------------------------------------- OrcaSlicer's audit rules
+def test_nothing_shipped_or_written_trips_the_denied_words(tmp_path):
+    """OrcaSlicer refuses plugins any path with "conf", "cert" or "secret" in a name."""
+    from orca_svg_multicor.host import DENIED_WORDS, Log, default_folders, denied_name
+    pkg = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                       "src", "orca_svg_multicor")
+    for _root, dirs, files in os.walk(pkg):
+        dirs[:] = [d for d in dirs if d != "__pycache__"]
+        for name in dirs + files:
+            assert not any(w in name.lower() for w in DENIED_WORDS), name
+    for folder in default_folders(str(tmp_path)):
+        assert not any(w in os.path.basename(folder).lower() for w in DENIED_WORDS), folder
+    assert not any(w in os.path.basename(Log(str(tmp_path)).path) for w in DENIED_WORDS)
+    assert denied_name(r"C:\Users\me\Conferencia\logo.svg") == "Conferencia"
+    assert denied_name("/home/me/logos/badge.svg") is None
+
+
+def test_service_explains_blocked_paths(tmp_path):
+    from orca_svg_multicor.host import BaseHost
+    from orca_svg_multicor.service import Service
+    out = []
+    svc = Service(BaseHost(), (lambda: {"language": "pt_BR"}, lambda c: True), out.append)
+    folder = tmp_path / "certificados"
+    folder.mkdir()
+    svg = folder / "a.svg"
+    shutil.copy(os.path.join(EXAMPLES, "badge.svg"), svg)
+    svc.handle({"action": "analyze", "svg": str(svg)})
+    err = out[-1]
+    assert err["type"] == "error" and "certificados" in err["text"]
+    assert err["text"] == svc.tr("error.denied_name", path=str(svg))
+
+
+def test_permission_errors_get_a_clear_message(monkeypatch):
+    from orca_svg_multicor import engine
+    from orca_svg_multicor.host import BaseHost
+    from orca_svg_multicor.service import Service
+    out = []
+    svc = Service(BaseHost(), (lambda: {}, lambda c: True), out.append)
+
+    def blocked(*a, **k):
+        raise PermissionError("Plugin attempted an audited operation without permission")
+
+    monkeypatch.setattr(engine, "analyze", blocked)
+    svc.handle({"action": "analyze", "svg": os.path.join(EXAMPLES, "badge.svg")})
+    assert out[-1]["type"] == "error"
+    assert out[-1]["text"].startswith("OrcaSlicer blocked the plugin")

@@ -166,6 +166,8 @@
   "error.no_window": "此版本的 OrcaSlicer 无法打开插件窗口。请改用“SVG Multicolor”页面。",
   "error.unknown_action": "未知操作：{action}",
   "error.unexpected": "意外错误：{detail}",
+  "error.denied_name": "OrcaSlicer 不允许插件使用名称中包含“conf”、“cert”或“secret”的文件或文件夹：{path}。请重命名，或将文件移到其他文件夹。",
+  "error.permission": "OrcaSlicer 阻止了插件访问文件（{detail}）。如果你拒绝了权限请求，请在下次允许，或使用其他文件夹中的文件。",
 
   "batch.empty": "以下位置没有 .svg 文件：\n{folder}",
   "batch.file": "{name} ({k}/{n})",

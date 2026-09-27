@@ -19,9 +19,25 @@ import threading
 from .colors import normalize_hex
 
 APP_DIR_NAME = "OrcaSlicer"
+# OrcaSlicer's audit hook refuses plugins any path with one of these words in a
+# file or folder name (it guards OrcaSlicer.conf, certificates and credentials),
+# before it even looks at the allowed folders. Nothing the plugin ships or
+# writes may contain them.
+DENIED_WORDS = ("secret", "cert", "conf")
 PLUGIN_DIR_NAME = "svg_multicor"
 LOG_MAX_BYTES = 1024 * 1024
 PICKER_TIMEOUT = 600
+
+
+def denied_name(path):
+    """The file or folder name in `path` OrcaSlicer will refuse to a plugin, or None."""
+    if not path:
+        return None
+    for part in re.split(r"[\\/]+", os.path.abspath(str(path))):
+        low = part.lower()
+        if any(w in low for w in DENIED_WORDS):
+            return part
+    return None
 
 
 def orca_data_dir():

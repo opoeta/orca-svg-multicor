@@ -166,6 +166,8 @@
   "error.no_window": "この OrcaSlicer ビルドではプラグインウィンドウを開けません。代わりに「SVG Multicolor」ページを使用してください。",
   "error.unknown_action": "不明なアクション：{action}",
   "error.unexpected": "予期しないエラー：{detail}",
+  "error.denied_name": "OrcaSlicer では、名前に「conf」「cert」「secret」を含むファイルやフォルダーをプラグインが使えません: {path}。名前を変更するか、ファイルを別のフォルダーに移動してください。",
+  "error.permission": "OrcaSlicer がプラグインのファイルへのアクセスをブロックしました（{detail}）。許可の確認を拒否した場合は次回許可するか、別のフォルダーのファイルを使ってください。",
 
   "batch.empty": ".svg ファイルがありません：\n{folder}",
   "batch.file": "{name} ({k}/{n})",

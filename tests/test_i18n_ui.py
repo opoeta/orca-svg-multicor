@@ -50,7 +50,7 @@ def test_every_key_used_in_code_exists():
         if fn.endswith(".py"):
             text = open(os.path.join(src, fn), encoding="utf-8").read()
             used |= set(re.findall(r'["\']((?:error|warn|progress|log|status|pick|part|objects|batch)\.[a-z_]+)["\']', text))
-    for fn in ("panel.html", "panel.js", "config.html"):
+    for fn in ("panel.html", "panel.js", "settings.html"):
         text = open(os.path.join(UI_DIR, fn), encoding="utf-8").read()
         used |= set(re.findall(r'data-i18n(?:-ph|-title|-aria)?="([a-z_]+\.[a-z_0-9]+)"', text))
         used |= set(re.findall(r"'([a-z]+\.[a-z_0-9]+)'", text))
@@ -84,8 +84,8 @@ def test_page_builds_translated_and_safe():
 
 
 def test_config_page_builds():
-    from orca_svg_multicor.panel import build_config_html
-    html = build_config_html("de", {"size_mm": 100})
+    from orca_svg_multicor.panel import build_settings_html
+    html = build_settings_html("de", {"size_mm": 100})
     boot = json.loads(re.search(r"window\.SVGM_CFG = (\{.*?\});</script>", html, re.S).group(1))
     assert boot["lang"] == "de" and boot["defaults"]["size_mm"] == 100
     assert any(l["code"] == "pt_BR" for l in boot["languages"])

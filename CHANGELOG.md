@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.1.1
+
+### Fixed
+- The settings page of the Config tab failed to load ("PermissionError: Plugin
+  attempted an audited operation without permission"). OrcaSlicer refuses
+  plugins any path with "conf", "cert" or "secret" in a file or folder name,
+  and the page's file was called `config.html`; it is now `settings.html`, and
+  the tests and the wheel check reject such names.
+- An SVG, project or output folder whose path contains one of those words now
+  gets a clear message saying why OrcaSlicer blocks it, instead of an
+  unexpected error; so does any other permission OrcaSlicer refuses.
+
 ## 3.1.0
 
 ### Changed: it behaves like a plugin now

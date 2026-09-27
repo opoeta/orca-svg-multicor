@@ -166,6 +166,8 @@
   "error.no_window": "Esta versão do OrcaSlicer não abre janelas de plugin. Use a página SVG Multicolor.",
   "error.unknown_action": "Ação desconhecida: {action}",
   "error.unexpected": "Erro inesperado: {detail}",
+  "error.denied_name": "O OrcaSlicer não deixa plugins usarem arquivos ou pastas cujo nome contenha “conf”, “cert” ou “secret”: {path}. Renomeie ou mova o arquivo para outra pasta.",
+  "error.permission": "O OrcaSlicer bloqueou o acesso do plugin a um arquivo ({detail}). Se você negou um pedido de permissão, permita na próxima vez, ou use um arquivo em outra pasta.",
 
   "batch.empty": "Nenhum arquivo .svg em:\n{folder}",
   "batch.file": "{name} ({k}/{n})",

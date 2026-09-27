@@ -30,7 +30,7 @@ import orca
 
 from . import i18n
 from .host import OrcaHost, config_store_for
-from .panel import build_config_html, build_html, build_note_html
+from .panel import build_settings_html, build_html, build_note_html
 from .service import Service, settings_defaults
 
 NAME_PAGE = "SVG Multicolor"
@@ -108,7 +108,7 @@ class _Common:
         return True
 
     def get_config_ui(self):
-        return build_config_html(self._language(OrcaHost(orca)), settings_defaults())
+        return build_settings_html(self._language(OrcaHost(orca)), settings_defaults())
 
     def _language(self, host):
         lang = self._store()[0]().get("language") or "auto"
