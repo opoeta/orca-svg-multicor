@@ -106,3 +106,17 @@ def test_panel_js_syntax():
     r = subprocess.run(["node", "--check", os.path.join(UI_DIR, "panel.js")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+
+
+def test_changelogs_cover_the_same_versions():
+    """CHANGELOG.pt-BR.md follows CHANGELOG.md; the release notes use both."""
+    from orca_svg_multicor import __version__
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    def versions(name):
+        with open(os.path.join(root, name), encoding="utf-8") as f:
+            return re.findall(r"^## (\S+)", f.read(), re.M)
+
+    en, pt = versions("CHANGELOG.md"), versions("CHANGELOG.pt-BR.md")
+    assert en == pt
+    assert en[0] == __version__

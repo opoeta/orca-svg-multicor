@@ -127,7 +127,8 @@ tab, along with what's new in each version.
   installed from OrcaCloud**; for a local `.whl` both stay empty by design. Once
   the plugin is on OrcaCloud, install it from the Plugin Hub to get them
   ([docs/orcacloud](docs/orcacloud/README.md)). The changelog is also in the
-  plugin's Config tab and in [CHANGELOG.md](CHANGELOG.md).
+  plugin's Config tab and in [CHANGELOG.md](CHANGELOG.md)
+  ([Português](CHANGELOG.pt-BR.md)).
 - Files live in `<OrcaSlicer data folder>/svg_multicor/` (input, output and
   `plugin.log`); both folders can be changed in the Config tab.
 

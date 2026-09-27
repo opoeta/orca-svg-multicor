@@ -30,11 +30,24 @@ jobs:
           tag="${GITHUB_REF_NAME#v}"
           ver=$(python -c "import sys; sys.path.insert(0, 'src'); from orca_svg_multicor._version import __version__; print(__version__)")
           test "$tag" = "$ver" || { echo "tag $tag != version $ver"; exit 1; }
-      - name: Release notes from CHANGELOG.md
+      - name: Release notes from CHANGELOG.md and CHANGELOG.pt-BR.md
         run: |
           ver="${GITHUB_REF_NAME#v}"
-          awk -v v="## $ver" '$0==v{on=1;next} /^## /{if(on)exit} on' CHANGELOG.md > notes.md
-          test -s notes.md || echo "See CHANGELOG.md" > notes.md
+          section() { awk -v v="## $ver" '$0==v{on=1;next} /^## /{if(on)exit} on' "$1"; }
+          section CHANGELOG.md > notes_en.md
+          section CHANGELOG.pt-BR.md > notes_pt.md
+          test -s notes_en.md || echo "See CHANGELOG.md" > notes_en.md
+          {
+            cat notes_en.md
+            if [ -s notes_pt.md ]; then
+              printf '
+---
+
+**Português (Brasil)**
+'
+              cat notes_pt.md
+            fi
+          } > notes.md
       - name: Publish on GitHub
         env:
           GH_TOKEN: ${{ github.token }}

@@ -106,7 +106,7 @@ com as novidades de cada versão.
   instalados pela OrcaCloud**; num `.whl` local os dois ficam vazios por projeto
   do Orca. Quando o plugin estiver na OrcaCloud, instale pela Plugin Hub para
   tê-los ([docs/orcacloud](docs/orcacloud/README.md)). O changelog também está
-  na aba Config do plugin e em [CHANGELOG.md](CHANGELOG.md).
+  na aba Config do plugin e em [CHANGELOG.pt-BR.md](CHANGELOG.pt-BR.md).
 - Se o OrcaSlicer perguntar se o plugin pode iniciar um processo ao usar
   "Procurar…", pode responder Sim: é a janela nativa de seleção de arquivos.
 - Os arquivos ficam em `<pasta de dados do OrcaSlicer>/svg_multicor/`
