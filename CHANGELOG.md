@@ -1,5 +1,28 @@
 # Changelog
 
+## 3.3.0
+
+### Added
+- **Choose the surface**: applying to an object on the plate now offers every
+  flat face of the object, named as you see them on the plate (Top, Bottom,
+  Front, Back, Left, Right, Slanted) with their size, and the inside of a
+  wall as "Front (inner)" and so on. The design goes on the face you choose,
+  along its direction: inlaid into the object or raised from it, clipped to
+  the face outline.
+- **Rotation** of the design on the face (0, 90, 180 or 270 degrees).
+- **On the object** view: the chosen face with the design on it, at the size
+  it will have; what falls outside the face is faded, and the size turns
+  orange when the design is larger than the face.
+
+### Fixed
+- On a hollow object (a tray, a box) the design went on top of the highest
+  point, floating over the cavity on the rim. The first surface offered is now
+  the largest face looking up that is really on the outside (the floor of the
+  tray), and the faces where two parts of the object touch are not offered.
+- "Inlaid" and "raised" no longer say "the top", and the design no longer
+  follows the object's bounding box, which on a rotated or irregular object
+  was not a surface of it.
+
 ## 3.2.0
 
 ### Changed

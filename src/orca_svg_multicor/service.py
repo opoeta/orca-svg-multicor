@@ -27,7 +27,7 @@ from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
          "save_settings", "open_path", "reset_settings", "changelog"}
-HEAVY = {"analyze", "generate", "apply", "objects"}
+HEAVY = {"analyze", "generate", "apply", "objects", "faces"}
 UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 
@@ -91,6 +91,7 @@ class Service:
         self.mode = mode
         self.log_file = Log()
         self._listing_cache = {}
+        self._faces_cache = {}
         self.tr = i18n.Translator(self._language_setting())
 
     # ------------------------------------------------------------ helpers
@@ -245,6 +246,7 @@ class Service:
             try:
                 from . import engine
                 key = (d["project"], os.path.getmtime(d["project"]))
+                d["project_mtime"] = key[1]
                 listing = self._listing_cache.get(key)
                 if listing is None:
                     listing = engine.list_objects(d["project"])
@@ -422,6 +424,20 @@ class Service:
                    "filaments": listing["filaments"]})
         self.info(self.tr("log.objects", count=len(out), name=os.path.basename(path)))
 
+    def do_faces(self, msg, rep):
+        from . import engine
+        project = self._allowed((msg.get("project") or "").strip())
+        oid = str(msg.get("object_id") or "").strip()
+        if not project or not os.path.isfile(project):
+            raise EngineError("error.no_project")
+        key = (project, os.path.getmtime(project), oid)
+        listing = self._faces_cache.get(key)
+        if listing is None:
+            listing = engine.list_faces(project, oid)
+            self._faces_cache = {key: listing}
+        self.send({"type": "faces", "project": project, "object_id": oid, "mtime": key[1],
+                   "faces": listing["faces"], "default": listing["default"]})
+
     def _finish(self, action, dest, report, reopen=False):
         bad = [r["name"] for r in report if not r["watertight"]]
         for r in report:
@@ -459,5 +475,5 @@ class Service:
         dest, report = engine.apply_to_project(svg, project, obj, dest, opts,
                                                self._choices(msg),
                                                filaments=msg.get("filaments"),
-                                               tr=self.tr, rep=rep)
+                                               tr=self.tr, rep=rep, face_id=msg.get("face_id"))
         self._finish("apply", dest, report, reopen=bool(msg.get("reopen")))

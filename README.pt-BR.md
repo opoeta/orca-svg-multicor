@@ -19,8 +19,10 @@ atribuídas aos seus filamentos.
   arredondado). Abre no OrcaSlicer / Bambu Studio pronto para fatiar. Também gera
   3MF padrão (com cores) para outros fatiadores e um STL por cor.
 - **Aplicar num projeto**: acrescenta as cores como novas peças de um objeto de
-  um projeto salvo, centradas na face superior, **embutidas** (mesma altura, as
-  últimas camadas trocam de cor) ou **em relevo**. Funciona com os projetos que o
+  um projeto salvo, na **superfície plana que você escolher** (o fundo de uma
+  bandeja, uma lateral, o lado de dentro de uma parede, a base...),
+  **embutidas** (o objeto mantém a forma, a superfície muda de cor) ou **em
+  relevo**, com a rotação que quiser. Funciona com os projetos que o
   OrcaSlicer e o Bambu Studio salvam hoje. O projeto original nunca é
   sobrescrito.
 - **Enxerga o SVG como o navegador**: o que é pintado depois cobre o que veio
@@ -65,9 +67,15 @@ direita e a ação principal no canto superior direito.
    ocupam o desenho inteiro recebem a etiqueta *fundo?*) e escolha o filamento
    de cada cor, ou deixe a varinha casar com os filamentos carregados no Orca.
 3. **Aplicar em**:
-   - **Um objeto da mesa**: salve o projeto (Ctrl+S), escolha o objeto, o
-     encaixe (*embutido*: mesma altura, as últimas camadas mudam de cor; ou *em
-     relevo*) e clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
+   - **Um objeto da mesa**: salve o projeto (Ctrl+S), escolha o objeto e a
+     **superfície** onde o desenho vai. A lista traz todas as faces planas do
+     objeto, com os nomes que você vê na mesa (*Topo*, *Frente*, *Frente
+     (interna)* para o lado de dentro da parede da frente...) e o tamanho; de
+     início fica a maior face virada para cima. A visualização **No objeto**
+     mostra o desenho sobre essa face: o que sobra para fora aparece apagado,
+     porque é cortado. Escolha a **rotação**, o encaixe (*embutido*: a
+     superfície muda de cor; ou *em relevo*) e a largura (vazio = 85% da face)
+     e clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
      altera a mesa diretamente, então o desenho vai para o projeto salvo, que
      reabre no OrcaSlicer já com as peças novas. O arquivo original é mantido; o
      resultado é salvo como `*_svg.3mf` na pasta de saída.
@@ -84,10 +92,11 @@ com as novidades de cada versão.
   ignoradas; **máscaras e recortes** são ignorados. O painel avisa sobre tudo
   isso.
 - A **janela de seleção de arquivo** roda como processo separado (PowerShell no
-  Windows), e o resultado é aberto iniciando o executável do OrcaSlicer, que
-  entrega o arquivo à janela já aberta. O OrcaSlicer pergunta uma vez se o
-  plugin pode iniciar um processo; se você negar, a página oferece enviar uma
-  cópia do SVG.
+  Windows); o OrcaSlicer pergunta uma vez se o plugin pode iniciar um processo,
+  e se você negar, a página oferece enviar uma cópia do SVG. O resultado é
+  entregue à janela do OrcaSlicer já aberta, do mesmo jeito que o próprio
+  inicializador dele faz; iniciar o executável do OrcaSlicer fica como
+  alternativa.
 - A janela de **Plugins do OrcaSlicer só mostra imagem e changelog para plugins
   instalados pela OrcaCloud**; num `.whl` local os dois ficam vazios por projeto
   do Orca. Quando o plugin estiver na OrcaCloud, instale pela Plugin Hub para

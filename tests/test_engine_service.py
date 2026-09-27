@@ -76,7 +76,7 @@ def test_apply_places_design_on_top_face(bbs_project, tmp_path):
     obj = Project(dest).objects()[0]
     assert obj.parts == 1 + len(report)
     assert obj.size == pytest.approx((20, 20, 20))          # 85% of the face, inlay keeps height
-    assert any(k == "log.placed" for _lvl, k, _p in rep.messages)
+    assert any(k == "log.placed_face" for _lvl, k, _p in rep.messages)
 
 
 def test_options_are_validated():

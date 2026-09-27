@@ -7,7 +7,7 @@ import pytest
 
 from conftest import cube
 from orca_svg_multicor.errors import ProjectError
-from orca_svg_multicor.project3mf import Project, object_frame
+from orca_svg_multicor.project3mf import Project
 from orca_svg_multicor.threemf import Part, write_orca_project, write_standard_3mf
 
 CORE = "{http://schemas.microsoft.com/3dmanufacturing/core/2015/02}"
@@ -64,8 +64,9 @@ def _mesh_part(name, filament, z0, height=0.6):
 def test_apply_to_bbs_project_keeps_prefixes_and_adds_parts(bbs_project, tmp_path):
     prj = Project(bbs_project)
     (obj,) = prj.objects()
-    cx, cy, z0, w, h, height = object_frame(obj, "inlay", 0.6)
-    assert (w, h, height) == pytest.approx((20, 20, 20))
+    lo, hi = obj.bbox
+    assert [b - a for a, b in zip(lo, hi)] == pytest.approx([20, 20, 20])
+    z0 = hi[2] - 0.6                                # inlaid in the top
     assert z0 == pytest.approx(10 - 0.6)
     prj.add_parts(obj.id, [_mesh_part("logo", 3, z0), _mesh_part("text", 4, z0)])
     out = tmp_path / "out.3mf"
@@ -93,7 +94,7 @@ def test_apply_to_bbs_project_keeps_prefixes_and_adds_parts(bbs_project, tmp_pat
 def test_apply_raised_grows_the_object(bbs_project, tmp_path):
     prj = Project(bbs_project)
     obj = prj.objects()[0]
-    _, _, z0, *_ = object_frame(obj, "raised", 1.0)
+    z0 = obj.bbox[1][2]                             # raised on the top
     prj.add_parts(obj.id, [_mesh_part("logo", 2, z0, 1.0)])
     out = tmp_path / "raised.3mf"
     prj.save(str(out))

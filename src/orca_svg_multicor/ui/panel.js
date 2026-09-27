@@ -20,11 +20,15 @@
     busy: null,
     quiet: false,
     pendingAnalyze: null,
-    view: 'result',
+    view: 'auto',        // auto = on the object when there is a surface, else the result
     target: 'plate',
     plate: null,
     plateApply: false,
     plateReadAt: 0,
+    faces: null,         // {project, object_id, mtime, list, chosen}
+    faceWant: null,      // the surface the user picked, found again after a new save
+    facesApply: false,
+    pendingFaces: null,
     lastDone: null,
     status: { key: 'status.ready', params: null, cls: '', raw: null }
   };
@@ -32,6 +36,7 @@
   var REANALYZE = ['size_mode', 'size_mm', 'max_colors', 'merge_tolerance', 'include_strokes',
                    'precision_mm', 'min_area_mm2', 'min_detail_mm', 'base_thickness_mm',
                    'base_margin_mm', 'base_shape'];
+  var PLACEMENT = ['rotation', 'apply_width_mm', 'fit'];
 
   function $(id) { return document.getElementById(id); }
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
@@ -69,9 +74,10 @@
     renderStatus();
     renderBaseFilament();
     renderColors();
-    renderAnalysisInfo();
     renderPlate();
+    renderFaces();
     updateTarget();
+    renderAnalysisInfo();
     updateMergeOut();
   }
 
@@ -147,6 +153,7 @@
     setBar(null);
     renderStatus();
     if (S.pendingAnalyze) { var q = S.pendingAnalyze; S.pendingAnalyze = null; analyze(q); }
+    else if (S.pendingFaces) { S.pendingFaces = null; requestFaces(false); }
   }
 
   /* ------------------------------------------------------------ form */
@@ -154,6 +161,7 @@
     if (e.type === 'checkbox') return e.checked;
     if (e.type === 'number' || e.type === 'range') return e.value === '' ? 0 : num(e.value, 0);
     if (e.id === 'base_filament') return parseInt(e.value, 10) || 1;
+    if (e.id === 'rotation') return num(e.value, 0);
     return e.value;
   }
   function options() {
@@ -195,6 +203,7 @@
     $('target_new').hidden = S.target !== 'new';
     $('base_opts').hidden = num($('base_thickness_mm').value, 0) <= 0;
     $('btn_run_label').textContent = t(S.target === 'plate' ? 'out.apply_plate' : 'out.add_plate');
+    $('view_place').hidden = S.target !== 'plate';
   }
 
   /* ------------------------------------------------------------ filaments */
@@ -235,20 +244,57 @@
 
   function renderAnalysisInfo() {
     var a = S.analysis, dims = $('dims'), warn = $('warnings');
-    if (!a) { dims.textContent = ''; warn.hidden = true; return; }
-    var parts = [t('prev.dims', { w: fmt(a.size_mm[0]), h: fmt(a.size_mm[1]) })];
-    parts.push(a.raw_count !== a.colors.length
-      ? t('prev.colors_reduced', { n: a.colors.length, raw: a.raw_count })
-      : t('prev.colors', { n: a.colors.length }));
-    dims.textContent = parts.join('  ·  ');
+    var view = currentView(), face = selectedFace();
+    dims.className = 'dims';
+    if (view === 'placement' && face) {
+      var fit = placement(a, face, rotation());
+      var where = faceLabel(face, S.faces.list);
+      dims.textContent = fit
+        ? t('prev.on_face', { design: t('prev.dims', { w: fmt(fit.w), h: fmt(fit.h) }), face: where })
+        : where;
+      dims.title = dims.textContent;
+      if (fit && (fit.w > face.w + 0.05 || fit.h > face.h + 0.05)) {
+        dims.className = 'dims warn';
+        dims.title += '\n' + t('warn.exceeds_face', { w: fmt(face.w), h: fmt(face.h) });
+      }
+    }
+    if (!a) {
+      if (view !== 'placement' || !face) { dims.textContent = ''; dims.title = ''; }
+      warn.hidden = true;
+      return;
+    }
+    if (view !== 'placement' || !face) {
+      var parts = [t('prev.dims', { w: fmt(a.size_mm[0]), h: fmt(a.size_mm[1]) })];
+      parts.push(a.raw_count !== a.colors.length
+        ? t('prev.colors_reduced', { n: a.colors.length, raw: a.raw_count })
+        : t('prev.colors', { n: a.colors.length }));
+      dims.textContent = parts.join('  ·  ');
+      dims.title = dims.textContent;
+    }
     warn.textContent = '';
     (a.warnings || []).forEach(function (w) { warn.appendChild(el('li', null, w)); });
     warn.hidden = !(a.warnings || []).length;
   }
 
+  function currentView() {
+    var v = S.view;
+    var canPlace = S.target === 'plate' && !!selectedFace();
+    if (v === 'auto') v = canPlace ? 'placement' : 'result';
+    if (v === 'placement' && !canPlace) v = 'result';
+    if (v === 'original' && !(S.analysis && S.analysis.original)) v = 'result';
+    return v;
+  }
+
   function renderPreview() {
     var a = S.analysis, res = $('preview_result'), img = $('preview_original');
-    $('preview_empty').hidden = !!a;
+    var view = currentView();
+    each('#view_seg button', function (b) {
+      b.setAttribute('aria-selected', String(b.getAttribute('data-view') === view));
+    });
+    $('preview_empty').hidden = !!a || view === 'placement';
+    $('preview_place').hidden = view !== 'placement';
+    if (view === 'placement') renderPlacement();
+    renderAnalysisInfo();
     if (!a) { res.hidden = true; img.hidden = true; return; }
     if (res.getAttribute('data-src') !== a.svg + a.preview.length) {
       res.innerHTML = a.preview;   // SVG built by the plugin: numbers and hex colors only
@@ -256,17 +302,158 @@
     }
     if (a.original) img.src = 'data:image/svg+xml;base64,' + a.original;
     else img.removeAttribute('src');
-    res.hidden = S.view !== 'result' && !!a.original;
-    img.hidden = S.view !== 'original' || !a.original;
+    res.hidden = view !== 'result';
+    img.hidden = view !== 'original';
   }
 
   function highlight(color) {
-    var stage = $('preview_result');
-    stage.classList.toggle('focus', !!color);
-    Array.prototype.forEach.call(stage.querySelectorAll('path'), function (p) {
-      p.classList.toggle('on', p.getAttribute('data-key') === color);
+    ['preview_result', 'preview_place'].forEach(function (id) {
+      var stage = $(id);
+      stage.classList.toggle('focus', !!color);
+      Array.prototype.forEach.call(stage.querySelectorAll('path[data-key]'), function (p) {
+        p.classList.toggle('on', p.getAttribute('data-key') === color);
+      });
     });
     each('.crow', function (r) { r.classList.toggle('hl', r.getAttribute('data-color') === color); });
+  }
+
+  /* ------------------------------------------------------------ surfaces */
+  function rotation() { return num($('rotation').value, 0); }
+
+  function facesMatchItem() {
+    var f = S.faces, item = plateItem();
+    return !!(f && S.plate && item && f.project === S.plate.project && f.object_id === item.object_id);
+  }
+  function facesFresh() { return facesMatchItem() && S.faces.mtime === S.plate.project_mtime; }
+
+  function selectedFace() {
+    if (!facesMatchItem()) return null;
+    var list = S.faces.list;
+    for (var i = 0; i < list.length; i++) if (list[i].id === S.faces.chosen) return list[i];
+    return null;
+  }
+
+  function faceName(f) {
+    var name = t('face.' + f.dir);
+    return f.inner ? t('face.inner', { dir: name }) : name;
+  }
+  function faceLabel(f, list) {
+    var s = t('face.label', { dir: faceName(f), w: fmt(f.w), h: fmt(f.h) });
+    var twin = list.some(function (g) { return g !== f && g.dir === f.dir && !g.inner === !f.inner; });
+    return twin ? s + ' · ' + t('face.at_z', { z: fmt(f.z) }) : s;
+  }
+
+  function renderFaces() {
+    var sel = $('face_select'), f = S.faces;
+    sel.textContent = '';
+    if (!facesMatchItem() || !f.list.length) {
+      var none = el('option', null, '—'); none.value = '';
+      sel.appendChild(none);
+      sel.disabled = true;
+      sel.title = facesMatchItem() ? t('error.no_faces') : '';
+      return;
+    }
+    var seen = {};
+    f.list.forEach(function (x) {
+      var label = faceLabel(x, f.list);
+      seen[label] = (seen[label] || 0) + 1;
+      if (seen[label] > 1) label += ' (' + seen[label] + ')';
+      var o = el('option', null, label);
+      o.value = String(x.id);
+      sel.appendChild(o);
+    });
+    sel.disabled = false;
+    sel.value = String(f.chosen);
+    sel.title = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
+  }
+
+  // the same scale the plugin will use (engine.apply_to_project)
+  function placement(a, face, rot) {
+    if (!a || !a.box_mm || !(a.box_mm[0] > 0 && a.box_mm[1] > 0)) return null;
+    var W = a.box_mm[0], H = a.box_mm[1];
+    var r = rot * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
+    var rw = W * c + H * s, rh = W * s + H * c;
+    var width = num($('apply_width_mm').value, 0);
+    var k = width > 0 ? width / W : num(S.settings.apply_fraction, 0.85) * Math.min(face.w / rw, face.h / rh);
+    return { k: k, w: rw * k, h: rh * k };
+  }
+
+  var designCache = { src: null, html: '' };
+  function designPaths(a) {
+    var src = a.svg + ':' + a.preview.length;
+    if (designCache.src !== src) {
+      var paths = a.preview.match(/<path [^>]*\/>/g) || [];
+      designCache = { src: src, html: paths.filter(function (p) {
+        return p.indexOf('data-key="base"') < 0;           // the base plate is not applied
+      }).join('') };
+    }
+    return designCache.html;
+  }
+
+  function renderPlacement() {
+    var box = $('preview_place'), face = selectedFace(), a = S.analysis;
+    if (!face) { box.textContent = ''; box.removeAttribute('data-key'); return; }
+    var rot = rotation(), fit = placement(a, face, rot);
+    var key = [S.faces.project, S.faces.mtime, face.id, rot, fit ? fit.k.toFixed(6) : '',
+               a ? a.svg + a.preview.length : ''].join('|');
+    if (box.getAttribute('data-key') === key) return;
+    box.setAttribute('data-key', key);
+    var b = face.bounds.slice();
+    if (fit) {   // the design is centered on the face: show what falls outside too
+      b = [Math.min(b[0], -fit.w / 2), Math.min(b[1], -fit.h / 2),
+           Math.max(b[2], fit.w / 2), Math.max(b[3], fit.h / 2)];
+    }
+    var w = b[2] - b[0], h = b[3] - b[1], pad = Math.max(w, h) * 0.06 + 1;
+    var vb = [b[0] - pad, b[1] - pad, w + 2 * pad, h + 2 * pad].map(function (n) { return n.toFixed(2); });
+    var design = '';
+    if (fit) {
+      // the plugin rotates counterclockwise with Y up; this SVG has Y down
+      var g = '<g transform="rotate(' + (-rot) + ') scale(' + fit.k.toFixed(6) + ')">' + designPaths(a) + '</g>';
+      design = '<g class="ghost">' + g + '</g><g clip-path="url(#svgm_face)">' + g + '</g>';
+    }
+    // outlines and paths come from the plugin: numbers and hex colors only
+    box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb.join(' ') +
+      '" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="svgm_face">' +
+      '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
+      '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
+      '<path class="face-edge" d="' + face.outline + '"/></svg>';
+  }
+
+  function requestFaces(thenApply) {
+    var item = plateItem();
+    if (!S.plate || !S.plate.project || !item || !item.object_id) return false;
+    if (S.busy && S.busy !== 'plate') { S.pendingFaces = true; return true; }
+    S.facesApply = !!thenApply;
+    begin('faces', thenApply ? 'status.reading_plate' : null);
+    send({ action: 'faces', project: S.plate.project, object_id: item.object_id });
+    return true;
+  }
+  function ensureFaces() { if (!facesFresh()) requestFaces(false); }
+
+  function onFaces(m) {
+    var list = m.faces || [], want = S.faceWant, keep = null;
+    if (want && want.project === m.project && want.object_id === m.object_id) {
+      keep = list.filter(function (x) {
+        return x.dir === want.dir && Math.abs(x.w - want.w) < 0.6 && Math.abs(x.h - want.h) < 0.6 &&
+               Math.abs(x.z - want.z) < 0.6;
+      })[0] || null;
+    }
+    S.faces = { project: m.project, object_id: m.object_id, mtime: m.mtime, list: list,
+                chosen: keep ? keep.id : m.default };
+    renderFaces();
+    if (S.facesApply) { S.facesApply = false; sendApply(); renderPreview(); return; }
+    end();
+    renderPreview();
+  }
+
+  function sendApply() {
+    var item = plateItem(), face = selectedFace();
+    var msg = jobMessage('apply');
+    msg.project = S.plate.project;
+    msg.object_id = item.object_id;
+    msg.face_id = face ? face.id : null;
+    begin('apply', 'status.applying');
+    send(msg);
   }
 
   function renderColors() {
@@ -503,6 +690,7 @@
       case 'picked': onPicked(m); break;
       case 'analysis': onAnalysis(m); break;
       case 'plate': onPlate(m); break;
+      case 'faces': onFaces(m); break;
       case 'progress':
         if (S.busy) { setBar(m.pct); if (!S.quiet && m.text) setStatus(null, null, 'busy', m.text); }
         break;
@@ -511,6 +699,8 @@
       case 'cancelled': end(); setStatus(null, null, '', m.text); break;
       case 'saved': if (!m.ok) setStatus(null, null, 'err', m.text); break;
       case 'error':
+        S.plateApply = false;
+        S.facesApply = false;
         if (S.busy) end();
         if (m.action === 'pick' || m.action === 'upload') { showPickFallback(m.text); }
         setStatus(null, null, 'err', m.text);
@@ -576,26 +766,33 @@
     }
   }
 
+  function plateProblem(m) {
+    var item = plateItem();
+    if (!(m.objects || []).length) return ['status.plate_empty'];
+    if (!m.project) return ['status.plate_unsaved'];
+    if (m.project_error) return [null, null, m.project_error];
+    if (m.dirty) return ['apply.dirty'];
+    if (!item) return ['error.no_object'];
+    if (!item.object_id) return ['plate.no_match', { name: item.name }];
+    return null;
+  }
+
   function onPlate(m) {
     var apply = S.plateApply;
     S.plateApply = false;
-    end();
     S.plate = m;
     renderPlate();
-    if (!apply) return;
-    var objs = m.objects || [];
-    if (!objs.length) { setStatus('status.plate_empty', null, 'err'); return; }
-    if (!m.project) { setStatus('status.plate_unsaved', null, 'err'); return; }
-    if (m.project_error) { setStatus(null, null, 'err', m.project_error); return; }
-    if (m.dirty) { setStatus('apply.dirty', null, 'err'); return; }
-    var item = plateItem();
-    if (!item) { setStatus('error.no_object', null, 'err'); return; }
-    if (!item.object_id) { setStatus('plate.no_match', { name: item.name }, 'err'); return; }
-    var msg = jobMessage('apply');
-    msg.project = m.project;
-    msg.object_id = item.object_id;
-    begin('apply', 'status.applying');
-    send(msg);
+    renderFaces();
+    var problem = apply ? plateProblem(m) : null;
+    if (apply && !problem) {
+      // the surface list must be the one of the file that will be changed
+      if (facesFresh()) sendApply(); else requestFaces(true);
+      return;
+    }
+    end();
+    renderPreview();
+    if (problem) { setStatus(problem[0], problem[1], 'err', problem[2]); return; }
+    ensureFaces();
   }
 
   function onDone(m) {
@@ -608,6 +805,12 @@
     } else {
       setStatus(null, null, 'ok', m.text);
     }
+  }
+
+  // changing where the design goes shows it there
+  function showPlacement() {
+    if (S.target === 'plate' && selectedFace()) S.view = 'placement';
+    renderPreview();
   }
 
   /* ------------------------------------------------------------ wiring */
@@ -625,21 +828,41 @@
       var k = e.getAttribute('data-opt');
       e.addEventListener('change', rememberSoon);
       if (REANALYZE.indexOf(k) >= 0) e.addEventListener('change', scheduleAnalyze);
+      if (PLACEMENT.indexOf(k) >= 0) {
+        e.addEventListener(e.tagName === 'INPUT' ? 'input' : 'change', showPlacement);
+      }
     });
     each('input[name=target]', function (r) {
       r.addEventListener('change', function () {
         if (!r.checked) return;
         S.target = r.value;
         updateTarget();
+        renderPreview();
         rememberSoon();
         if (S.target === 'plate' && !S.busy) readPlate(false);
       });
     });
 
+    $('plate_object').addEventListener('change', function () {
+      renderFaces();
+      renderPreview();
+      ensureFaces();
+    });
+    $('face_select').addEventListener('change', function () {
+      if (!facesMatchItem()) return;
+      S.faces.chosen = parseInt($('face_select').value, 10);
+      var f = selectedFace();
+      if (f) {
+        S.faceWant = { project: S.faces.project, object_id: S.faces.object_id,
+                       dir: f.dir, w: f.w, h: f.h, z: f.z };
+      }
+      renderFaces();
+      showPlacement();
+    });
+
     $('view_seg').addEventListener('click', function (e) {
       var b = e.target.closest('button[data-view]'); if (!b) return;
       S.view = b.getAttribute('data-view');
-      each('#view_seg button', function (x) { x.setAttribute('aria-selected', String(x === b)); });
       renderPreview();
     });
 

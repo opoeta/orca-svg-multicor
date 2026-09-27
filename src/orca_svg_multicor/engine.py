@@ -14,6 +14,7 @@ Messages go through a Reporter as (i18n key, params), so the caller decides
 the language.
 """
 
+import math
 import os
 import threading
 
@@ -24,7 +25,8 @@ from .errors import Cancelled, EngineError, ProjectError, SvgError
 from .geometry import Frame
 from .i18n import Translator
 from .options import Options, _i
-from .project3mf import Project, object_frame
+from .faces import default_face, place, planar_faces, to_object
+from .project3mf import Project
 from .svgread import PX_TO_MM, read_svg
 from .threemf import Part, write_3mf
 
@@ -199,6 +201,7 @@ def analyze(svg_path, opts, filaments=None, tr=None, rep=None):
         "size_mm": [round(size[0], 2), round(size[1], 2)],
         "design_mm": [round(bounds[2] - bounds[0], 2), round(bounds[3] - bounds[1], 2)] if bounds else [0, 0],
         "original_mm": [round(x, 2) for x in doc.size_mm],
+        "box_mm": [round(doc.size_px[0] * scale, 3), round(doc.size_px[1] * scale, 3)],
         "physical": doc.physical,
         "preview": G.preview_svg(layers),
         "warnings": [(k, p) for k, p in doc.warnings],
@@ -217,8 +220,12 @@ def _choice(choices, color, index, tr, fils):
 
 
 def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
-                filaments=None, with_base=False):
-    """Extrudes every enabled color (and the base plate) into Parts."""
+                filaments=None, with_base=False, transform=None):
+    """
+    Extrudes every enabled color (and the base plate) into Parts.
+    `transform` maps the extruded vertices (N x 3) into the object, when the
+    parts go on a face of an existing object.
+    """
     order = ordered(regions)
     fils = _default_filaments(order, filaments)
     known = set((choices or {}).keys())
@@ -255,6 +262,8 @@ def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
             continue
         V[:, 0] += dx
         V[:, 1] += dy
+        if transform is not None:
+            V = transform(V)
         parts.append(Part(name, V, F, c, fil))
     if not parts:
         raise EngineError("error.nothing_selected")
@@ -343,11 +352,42 @@ def match_plate_objects(plate_items, file_objects):
     return out
 
 
+def object_faces(project, obj, mesh=None):
+    V, F = mesh if mesh is not None else project.object_mesh(obj.id)
+    return planar_faces(V, F, world=obj.item_matrix)
+
+
+def face_name(tr, face):
+    """"Front", or "Front (inner)" for the inside of the front wall."""
+    name = tr("face." + face.direction)
+    return tr("face.inner", dir=name) if face.inner else name
+
+
+def list_faces(project_path, object_id):
+    """{"faces": [...], "default": id} of an object of a saved project."""
+    if not project_path or not os.path.isfile(project_path):
+        raise EngineError("error.no_project")
+    prj = Project(project_path)
+    obj = prj.object(object_id)
+    faces = object_faces(prj, obj)
+    best = default_face(faces)
+    return {"faces": [f.as_dict() for f in faces], "default": best.id if best else None}
+
+
+def _rotated_size(w, h, degrees):
+    a = math.radians(degrees)
+    c, s_ = abs(math.cos(a)), abs(math.sin(a))
+    return w * c + h * s_, w * s_ + h * c
+
+
 def apply_to_project(svg_path, project_path, object_id, out_path, opts,
-                     choices=None, filaments=None, tr=None, rep=None):
+                     choices=None, filaments=None, tr=None, rep=None, face_id=None):
     """
-    Adds the colors as new parts of object `object_id`, centered on its top
-    face. The source project is never overwritten. Returns (path, report).
+    Adds the colors as new parts of object `object_id`, on one of its flat
+    faces (`face_id` from list_faces(); the largest face looking up when
+    omitted): inlaid into the object or raised from the face, along its
+    normal, clipped to the face outline. The source project is never
+    overwritten. Returns (path, report).
     """
     tr = tr or Translator()
     rep = rep or Reporter()
@@ -358,29 +398,46 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
     doc = load_document(svg_path, opts.include_strokes)
     project = Project(project_path)
     obj = project.object(object_id)
-    cx, cy, z0, face_w, face_h, height = object_frame(obj, opts.fit, opts.thickness_mm)
+    V_obj, F_obj = project.object_mesh(obj.id)
+    faces = object_faces(project, obj, (V_obj, F_obj))
+    face = None
+    if face_id not in (None, ""):
+        face = next((f for f in faces if str(f.id) == str(face_id)), None)
+    face = face or default_face(faces)
+    if face is None:
+        raise EngineError("error.no_faces")
+
+    rotation = opts.rotation
     w_px, h_px = doc.size_px
+    rw, rh = _rotated_size(w_px, h_px, rotation)
+    face_w, face_h = face.size
     if opts.apply_width_mm > 0:
         scale = opts.apply_width_mm / w_px
     else:
-        scale = opts.apply_fraction * min(face_w / w_px, face_h / h_px)
-    rep.log("log.object", name=obj.name, w=f"{face_w:.2f}", h=f"{face_h:.2f}",
-            z=f"{height:.2f}")
-    if w_px * scale > face_w + 1e-6 or h_px * scale > face_h + 1e-6:
+        scale = opts.apply_fraction * min(face_w / rw, face_h / rh)
+    rep.log("log.face", name=obj.name, face=face_name(tr, face),
+            w=f"{face_w:.2f}", h=f"{face_h:.2f}")
+    if rw * scale > face_w + 1e-6 or rh * scale > face_h + 1e-6:
         rep.warn("warn.exceeds_face", w=f"{face_w:.2f}", h=f"{face_h:.2f}")
-    if opts.fit == "inlay" and opts.thickness_mm > height:
+    depth = float((V_obj @ face.normal).max() - (V_obj @ face.normal).min())
+    if opts.fit == "inlay" and opts.thickness_mm > depth:
         rep.warn("warn.too_thick")
 
     regions, _mapping, _raw = process(doc, scale, opts, rep)
+    placed = place(regions, face, rotation)
+    if not placed:
+        raise EngineError("error.nothing_on_face")
+    z0 = -opts.thickness_mm if opts.fit == "inlay" else 0.0
     project_fils = project.filaments()
-    parts = build_parts(regions, opts, choices, tr, rep, z0=z0, dx=cx, dy=cy,
-                        filaments=filaments or project_fils, with_base=False)
+    parts = build_parts(placed, opts, choices, tr, rep, z0=z0,
+                        filaments=filaments or project_fils, with_base=False,
+                        transform=lambda V: to_object(V, face))
     if project_fils:
         beyond = [p.name for p in parts if p.extruder > len(project_fils)]
         if beyond:
             rep.warn("warn.project_filaments", n=len(project_fils), names=", ".join(beyond))
-    rep.log("log.placed", w=f"{w_px * scale:.2f}", h=f"{h_px * scale:.2f}",
-            z0=f"{z0:.2f}", z1=f"{z0 + opts.thickness_mm:.2f}")
+    rep.log("log.placed_face", w=f"{rw * scale:.2f}", h=f"{rh * scale:.2f}",
+            t=f"{opts.thickness_mm:.2f}")
     rep.progress(0.96, "progress.writing")
     project.add_parts(obj.id, parts)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)

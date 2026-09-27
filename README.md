@@ -20,8 +20,9 @@ assigned to your filaments.
   standard 3MF (with colors) is also available for other slicers, plus one STL
   per color.
 - **Apply to a project**: adds the colors as new parts of an object in a saved
-  project, centered on its top face, **inlaid** (same height, the top layers
-  change color) or **raised**. Works with the projects OrcaSlicer and Bambu
+  project, on the flat **surface you choose** (the floor of a tray, a side, the
+  inside of a wall, the bottom...), **inlaid** (the object keeps its shape, the
+  surface changes color) or **raised**, rotated as you like. Works with the projects OrcaSlicer and Bambu
   Studio save today. The original project is never overwritten.
 - **Sees the SVG like a browser does**: shapes painted later cover earlier
   ones, so the parts fit together instead of overlapping; fill rules
@@ -70,9 +71,15 @@ right, the main action at the top right.
    whole drawing are tagged *background?*), and pick each color's filament, or
    let the wand match them to the filaments loaded in OrcaSlicer.
 3. **Apply to**:
-   - **An object on the plate**: save the project (Ctrl+S), pick the object,
-     choose *inlaid* (same height, the top layers change color) or *raised*,
-     then **Apply to the plate**. OrcaSlicer's plugin API cannot change the
+   - **An object on the plate**: save the project (Ctrl+S), pick the object
+     and the **surface** the design goes on. The list has every flat face of
+     the object, named as you see them on the plate (*Top*, *Front*,
+     *Front (inner)* for the inside of the front wall...) with their size; the
+     largest face looking up is chosen at first. The **On the object** view
+     shows the design on that face: what falls outside it is faded, because it
+     is cut off. Choose the **rotation**, *inlaid* (the surface changes color)
+     or *raised*, and the width (empty = 85% of the face), then **Apply to
+     the plate**. OrcaSlicer's plugin API cannot change the
      plate directly, so the design goes into the saved project, which reopens
      in OrcaSlicer with the new parts. The original file is kept; the result is
      saved next to it as `*_svg.3mf` in the output folder.
@@ -105,10 +112,11 @@ tab, along with what's new in each version.
   images** are ignored; **clipping paths and masks** are ignored (release them
   if shapes show up where they should not). The panel warns about all of these.
 - The **file dialog** runs as a separate process (PowerShell on Windows,
-  `osascript` on macOS, `zenity`/`kdialog` on Linux), and results are opened by
-  starting OrcaSlicer's executable, which hands the file to the window already
-  open. OrcaSlicer asks once whether the plugin may start a process; if you say
-  no, the page offers to upload a copy of the SVG instead.
+  `osascript` on macOS, `zenity`/`kdialog` on Linux); OrcaSlicer asks once
+  whether the plugin may start a process, and if you say no, the page offers to
+  upload a copy of the SVG instead. Results are handed to the OrcaSlicer window
+  already open, the way its own launcher does; starting OrcaSlicer's
+  executable is the fallback.
 - Inlaying relies on OrcaSlicer giving parts added later priority where parts
   overlap, the same mechanism used when you add a part inside an object by hand.
 - OrcaSlicer's **Plugins dialog shows an image and a changelog only for plugins
@@ -147,6 +155,7 @@ OrcaSlicer:
 | `mesh.py` | extrusion, watertightness check, STL |
 | `threemf.py` | OrcaSlicer/Bambu project layout and standard 3MF writers |
 | `project3mf.py` | reading and editing saved projects |
+| `faces.py` | the flat surfaces of an object, placing a design on one |
 | `engine.py` | analyze / generate / apply pipeline |
 | `service.py` | messages between the page and the engine, translated |
 | `host.py` | OrcaSlicer host API, native pickers, log |

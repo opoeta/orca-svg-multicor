@@ -60,6 +60,7 @@ class ProjectObject:
         self.parts = 0
         self.triangles = 0
         self.bbox = None            # (min xyz, max xyz) in object coordinates
+        self.item_matrix = None     # 4x4, object -> plate (first instance)
 
     @property
     def size(self):
@@ -172,7 +173,11 @@ class Project:
                           for v in vs], dtype=float).reshape(-1, 3)
             if len(V):
                 V = V @ matrix[:3, :3].T + matrix[:3, 3]
-            out.append((V, len(ts)))
+            F = np.array([(int(t.get("v1")), int(t.get("v2")), int(t.get("v3"))) for t in ts],
+                         dtype=np.int64).reshape(-1, 3)
+            if np.linalg.det(matrix[:3, :3]) < 0:        # a mirror flips the winding
+                F = F[:, ::-1]
+            out.append((V, F))
             return
         comps = obj_el.find(_C + "components")
         if comps is None:
@@ -189,12 +194,13 @@ class Project:
         """Objects placed on the build plate(s), with their size."""
         root = self.tree(self.root_name)
         build = root.find(_C + "build")
-        placed = []
+        placed, matrices = [], {}
         if build is not None:
             for item in build.findall(_C + "item"):
                 oid = item.get("objectid")
                 if oid not in placed:
                     placed.append(oid)
+                    matrices[oid] = _matrix(item.get("transform"))
         out = []
         for oid in placed:
             el = self._object_el(self.root_name, oid)
@@ -205,13 +211,14 @@ class Project:
             name = (self._config_name(oid) or el.get("name")
                     or f"#{oid}")
             obj = ProjectObject(oid, name, kind)
+            obj.item_matrix = matrices.get(oid)
             meshes = []
             self._collect(self.root_name, el, np.eye(4), meshes)
             if not meshes:
                 continue
             allv = np.concatenate([m[0] for m in meshes if len(m[0])]) \
                 if any(len(m[0]) for m in meshes) else np.zeros((0, 3))
-            obj.triangles = sum(m[1] for m in meshes)
+            obj.triangles = sum(len(m[1]) for m in meshes)
             obj.parts = len(comps.findall(_C + "component")) if comps is not None else 1
             if len(allv):
                 obj.bbox = (allv.min(axis=0), allv.max(axis=0))
@@ -223,6 +230,22 @@ class Project:
             if o.id == str(oid):
                 return o
         raise ProjectError("error.project_no_object", id=oid)
+
+    def object_mesh(self, oid):
+        """(V, F) of object `oid`, every component merged, in object coordinates."""
+        el = self._object_el(self.root_name, oid)
+        if el is None:
+            raise ProjectError("error.project_no_object", id=oid)
+        meshes = []
+        self._collect(self.root_name, el, np.eye(4), meshes)
+        if not meshes:
+            raise ProjectError("error.project_no_mesh")
+        Vs, Fs, off = [], [], 0
+        for V, F in meshes:
+            Vs.append(V)
+            Fs.append(F + off)
+            off += len(V)
+        return np.concatenate(Vs), np.concatenate(Fs)
 
     def filaments(self):
         """
@@ -468,16 +491,3 @@ class Project:
             for name in order:
                 z.writestr(name, self.files[name])
 
-
-def object_frame(obj, fit, thickness):
-    """
-    Where the design goes on `obj`: (center_x, center_y, z_bottom, face_w,
-    face_h). fit "inlay" keeps the object height (parts take the top
-    `thickness` mm), fit "raised" puts the parts on top of the face.
-    """
-    if obj.bbox is None:
-        raise ProjectError("error.project_no_mesh")
-    lo, hi = obj.bbox
-    cx, cy = (lo[0] + hi[0]) / 2.0, (lo[1] + hi[1]) / 2.0
-    z0 = hi[2] - thickness if fit == "inlay" else hi[2]
-    return cx, cy, z0, float(hi[0] - lo[0]), float(hi[1] - lo[1]), float(hi[2] - lo[2])
