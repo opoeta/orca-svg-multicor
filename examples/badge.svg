@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Example design for SVG Multicolor: stacked shapes, a stroke, a gradient
+     and two almost identical whites, which is what real exports look like. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="80mm" height="80mm" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd166"/>
+      <stop offset="1" stop-color="#ffb703"/>
+    </linearGradient>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="#1d3557"/>
+  <circle cx="100" cy="100" r="84" fill="none" stroke="#f1faee" stroke-width="6"/>
+  <circle cx="132" cy="76" r="22" fill="url(#sun)"/>
+  <path d="M26 150 L78 86 L104 116 L128 92 L176 150 Z" fill="#f1faee"/>
+  <path d="M66 101 L78 86 L91 101 L84 98 L78 104 L72 98 Z" fill="#1d3557"/>
+  <path d="M117 103 L128 92 L139 105 L133 102 L128 107 L123 102 Z" fill="#1d3557"/>
+  <path d="M30 150 Q100 134 170 150 L166 166 Q100 182 34 166 Z" fill="#e63946"/>
+  <rect x="60" y="152" width="80" height="4" rx="2" fill="#f0f9ed"/>
+</svg>

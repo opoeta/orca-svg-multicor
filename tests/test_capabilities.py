@@ -1,0 +1,229 @@
+"""
+The OrcaSlicer glue, against a stand-in `orca` module that mirrors the host API
+(registration, pages, script capabilities, host.ui, presets).
+"""
+import importlib
+import json
+import os
+import shutil
+import sys
+import types
+
+import pytest
+
+from conftest import EXAMPLES
+
+
+class _Result:
+    def __init__(self, status, message=""):
+        self.status, self.message = status, message
+
+    @classmethod
+    def success(cls, message="", data=""):
+        return cls("success", message)
+
+    @classmethod
+    def skipped(cls, message=""):
+        return cls("skipped", message)
+
+    @classmethod
+    def failure(cls, status, message, data=""):
+        return cls("failure", message)
+
+
+class _Capability:
+    """What the pybind base classes give a Python subclass."""
+
+    def __init__(self, *a, **k):
+        self._config = "{}"
+
+    def get_config(self):
+        return self._config
+
+    def save_config(self, text):
+        json.loads(text)
+        self._config = text
+        return True
+
+
+class _Progress:
+    def __init__(self, cancel_at=None):
+        self.values, self.closed, self.cancel_at = [], False, cancel_at
+
+    def update(self, value, text=""):
+        self.values.append((value, text))
+        return not (self.cancel_at is not None and value >= self.cancel_at)
+
+    def close(self):
+        self.closed = True
+
+
+class _Window:
+    def __init__(self, on_message):
+        self.on_message, self.posted, self.open = on_message, [], True
+
+    def post(self, payload):
+        self.posted.append(payload)
+
+    def is_open(self):
+        return self.open
+
+    def close(self):
+        self.open = False
+
+
+def make_orca(tmp_path):
+    orca = types.ModuleType("orca")
+    orca.registered = []
+    orca.plugin_class = None
+
+    def plugin(cls):
+        orca.plugin_class = cls
+        return cls
+
+    orca.plugin = plugin
+    orca.base = type("base", (), {})
+    orca.register_capability = orca.registered.append
+    orca.PluginType = types.SimpleNamespace(Pages="Pages", Script="Script")
+    orca.PluginResult = types.SimpleNamespace(RecoverableError="RecoverableError")
+    orca.ExecutionResult = _Result
+
+    class PagesBase(_Capability):
+        def __init__(self, *a, **k):
+            super().__init__()
+            self.posted = []
+
+        def post_message(self, payload):
+            self.posted.append(payload)
+
+    orca.pages = types.SimpleNamespace(PagesPluginCapabilityBase=PagesBase)
+    orca.script = types.SimpleNamespace(ScriptPluginCapabilityBase=_Capability)
+
+    ui = types.SimpleNamespace(PD_APP_MODAL=2, PD_AUTO_HIDE=4, PD_CAN_ABORT=1,
+                               WINDOW_MODELESS=0, WINDOW_MODAL=1)
+    ui.messages, ui.dialogs, ui.windows = [], [], []
+
+    def message(text, title="OrcaSlicer", buttons="ok", icon="info"):
+        ui.messages.append((title, text, icon))
+        return "ok"
+
+    def create_progress_dialog(title, message, maximum=100, style=0):
+        d = _Progress()
+        ui.dialogs.append(d)
+        return d
+
+    def create_window(html, title="OrcaSlicer", width=820, height=600, on_message=None,
+                      on_close=None, style=0, on_submit=None):
+        w = _Window(on_message)
+        w.html = html
+        ui.windows.append(w)
+        return w
+
+    ui.message, ui.create_progress_dialog, ui.create_window = message, create_progress_dialog, create_window
+
+    bundle = types.SimpleNamespace(
+        current_filament_preset_names=lambda: ["White PLA", "Black PLA"],
+        current_filament_presets=lambda: [],
+        full_config_value=lambda key: "#FFFFFF;#101010" if key == "filament_colour" else None)
+    orca.host = types.SimpleNamespace(
+        ui=ui, app_language=lambda: "pt_BR", preset_bundle=lambda: bundle,
+        model=lambda: types.SimpleNamespace(objects=lambda: []),
+        plater=lambda: types.SimpleNamespace(is_project_dirty=lambda: False))
+    return orca
+
+
+@pytest.fixture
+def plugin(tmp_path, monkeypatch):
+    orca = make_orca(tmp_path)
+    monkeypatch.setitem(sys.modules, "orca", orca)
+    monkeypatch.setenv("APPDATA", str(tmp_path))          # data folder goes to tmp
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path))
+    for name in [m for m in sys.modules if m.startswith("orca_svg_multicor")]:
+        monkeypatch.delitem(sys.modules, name)
+    pkg = importlib.import_module("orca_svg_multicor")
+    orca.plugin_class().register_capabilities()
+    caps = {c.__name__: c for c in orca.registered}
+    yield orca, caps, pkg
+    for name in [m for m in sys.modules if m.startswith("orca_svg_multicor")]:
+        sys.modules.pop(name, None)
+
+
+def configure(cap, tmp_path):
+    inp, out = tmp_path / "in", tmp_path / "out"
+    inp.mkdir(exist_ok=True)
+    out.mkdir(exist_ok=True)
+    cap.save_config(json.dumps({"input_folder": str(inp), "output_folder": str(out)}))
+    return inp, out
+
+
+def test_registration(plugin):
+    orca, caps, pkg = plugin
+    assert set(caps) == {"PanelPage", "PanelWindow", "BatchConvert"}
+    names = {c().get_name() for c in caps.values()}
+    assert names == {"SVG Multicolor", "SVG Multicolor - window", "SVG Multicolor - batch"}
+    assert isinstance(caps["PanelPage"]().get_default_config(), dict)
+
+
+def test_page_ui_icon_and_messages(plugin, tmp_path):
+    orca, caps, _ = plugin
+    page = caps["PanelPage"]()
+    configure(page, tmp_path)
+    html = page.get_ui()
+    assert '"lang": "pt_BR"' in html                        # follows OrcaSlicer's language
+    assert os.path.isfile(page.get_icon())
+    page.on_message({"action": "init"})
+    init = next(m for m in page.posted if m["type"] == "init")
+    assert [f["color"] for f in init["filaments"]] == ["#ffffff", "#101010"]
+    badge = os.path.join(EXAMPLES, "badge.svg")
+    page.on_message(json.dumps({"action": "analyze", "svg": badge}))   # JSON strings too
+    assert any(m["type"] == "analysis" for m in page.posted)
+    page.on_message({"action": "generate", "svg": badge, "options": {}, "colors": []})
+    done = next(m for m in page.posted if m["type"] == "done")
+    assert os.path.isfile(done["path"])
+    dlg = orca.host.ui.dialogs[-1]                         # generate runs behind the native dialog
+    assert dlg.values and dlg.closed
+
+
+def test_page_generate_can_be_cancelled(plugin, tmp_path):
+    orca, caps, _ = plugin
+    page = caps["PanelPage"]()
+    configure(page, tmp_path)
+    orca.host.ui.create_progress_dialog = lambda *a, **k: _Progress(cancel_at=0)
+    page.on_message({"action": "generate", "svg": os.path.join(EXAMPLES, "badge.svg"),
+                     "options": {}, "colors": []})
+    assert page.posted[-1]["type"] == "cancelled"
+
+
+def test_window_runs_heavy_work_in_a_thread(plugin, tmp_path):
+    orca, caps, _ = plugin
+    win_cap = caps["PanelWindow"]()
+    configure(win_cap, tmp_path)
+    assert win_cap.execute().status == "success"
+    win = orca.host.ui.windows[-1]
+    assert "SVGM_BOOT" in win.html
+    win_cap.on_message({"action": "init"})
+    assert win.posted[0]["type"] == "init"
+    win_cap.on_message({"action": "analyze", "svg": os.path.join(EXAMPLES, "badge.svg")})
+    win_cap._worker.join(60)
+    assert any(m["type"] == "analysis" for m in win.posted)
+    assert win_cap.execute().message == "already open"
+
+
+def test_batch_converts_the_input_folder(plugin, tmp_path):
+    orca, caps, _ = plugin
+    batch = caps["BatchConvert"]()
+    inp, out = configure(batch, tmp_path)
+    shutil.copy(os.path.join(EXAMPLES, "badge.svg"), inp / "a.svg")
+    (inp / "broken.svg").write_text("<svg", encoding="utf-8")
+    result = batch.execute()
+    assert result.status == "success"
+    assert (out / "a_multicolor.3mf").is_file() and (out / "batch_report.txt").is_file()
+    assert len(orca.host.ui.messages) == 1                   # one summary, not one box per file
+    assert "1" in orca.host.ui.messages[0][1]
+
+
+def test_batch_with_empty_folder_is_skipped(plugin, tmp_path):
+    orca, caps, _ = plugin
+    batch = caps["BatchConvert"]()
+    configure(batch, tmp_path)
+    assert batch.execute().status == "skipped"

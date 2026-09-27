@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "orca-svg-multicor"
+version = "3.0.0"
+description = "Split a multicolor SVG into aligned color parts for OrcaSlicer: a new multi-part 3MF, or an inlay inside an object of a saved project. Multilingual."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Israel Fernandes" }]
+keywords = ["orcaslicer", "plugin", "svg", "3mf", "multicolor", "ams", "3d-printing"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Topic :: Multimedia :: Graphics :: 3D Modeling",
+]
+dependencies = [
+    "numpy>=1.26",
+    "shapely>=2.0",
+    "svgelements>=1.9",
+    "mapbox-earcut>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/opoeta/orca-svg-multicor"
+Issues = "https://github.com/opoeta/orca-svg-multicor/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/orca_svg_multicor"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests", "tools", "README*.md", "CHANGELOG.md", "LICENSE", "pyproject.toml"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
