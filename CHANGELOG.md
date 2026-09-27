@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.2.0
+
+### Changed
+- Results reach OrcaSlicer through the channel its own launcher uses when it
+  runs as a single instance (on Windows, a message to the main window), like
+  other plugins do: no process is started, so there is no permission prompt.
+  Starting OrcaSlicer's executable remains the fallback.
+
+### Added
+- Releases can be published on OrcaCloud automatically (GitHub trusted
+  publishing). OrcaSlicer's Plugins dialog shows the image and the changelog
+  only for plugins installed from OrcaCloud; `docs/orcacloud/README.md`
+  explains the one-time setup.
+
 ## 3.1.1
 
 ### Fixed

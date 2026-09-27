@@ -1,67 +1,58 @@
 # Publishing on OrcaCloud
 
-OrcaSlicer's **Plugins** dialog shows a preview image and a changelog only for
-plugins that come from OrcaCloud. For a plugin installed from a local `.whl`
-file both stay empty: in OrcaSlicer's source, the thumbnail is documented as
-"Cloud main_image … empty for local plugins" and the changelog as "Cloud release
-changelog" (`src/slic3r/plugin/PluginDescriptor.hpp`). A plugin cannot fill them
-itself.
+## Why
 
-Publishing on OrcaCloud (cloud.orcaslicer.com, signed in with your account)
-gives both. Everything needed is here:
+OrcaSlicer's **Plugins** dialog shows an image in *Plugin Info* and entries in
+*Changelog* only for plugins that come from OrcaCloud ("Subscribed" or "Mine").
+Every plugin that shows them there was installed from OrcaCloud; none carries
+them in its package. For a plugin installed from a local file both stay empty
+(`src/slic3r/plugin/PluginDescriptor.hpp`: the thumbnail is the "Cloud
+main_image … empty for local plugins", the changelog is the "Cloud release
+changelog"), and OrcaSlicer only merges cloud data into a plugin whose key is
+the OrcaCloud id, that is, one installed from OrcaCloud.
 
-| Field | Use |
-| --- | --- |
-| Main image | `cover.png` (320 × 320, same size as the plugins already published) |
-| Package | `orca_svg_multicor-<version>-py3-none-any.whl` from the GitHub release |
-| Name | SVG Multicolor |
-| Tags | utility, workflow, multicolor, svg |
-| Description | below |
-| Changelog | one entry per version, below |
+So: publish once on OrcaCloud, connect this repository, and every GitHub
+release publishes the new version there, with its changelog.
+
+## First publication (once, on your OrcaCloud account)
+
+1. Sign in at <https://cloud.orcaslicer.com> (or from OrcaSlicer's menu).
+2. **Plugins > Shared Plugins**, then the **+** button (bottom right).
+3. Upload the wheel **renamed with a target suffix**, as OrcaCloud requires:
+   `orca_svg_multicor_any.whl` (the same file as
+   `orca_svg_multicor-<version>-py3-none-any.whl` from the GitHub release).
+4. Fill in:
+
+   | Field | Value |
+   | --- | --- |
+   | Name | SVG Multicolor |
+   | Plugin image | `cover.png` in this folder (320 × 320) |
+   | Description | below |
+   | Version | the version of the file you uploaded |
+   | Plugin type | Script (it also adds a page next to Prepare/Preview) |
+   | Changelog | the section of that version in `CHANGELOG.md` |
+   | Tags | utility, workflow, multicolor, svg |
+   | Public | on, to appear in the Plugin Hub |
+
+5. Save. Then **Edit plugin > GitHub publishing**, enter
+   `opoeta/orca-svg-multicor` and **Connect**.
+6. In the GitHub repository: **Settings > Secrets and variables > Actions >
+   Variables**, add `ORCACLOUD_PUBLISH` = `true`. From then on, pushing a tag
+   `vX.Y.Z` publishes the release on GitHub and on OrcaCloud
+   (`.github/workflows/release.yml`), the changelog taken from `CHANGELOG.md`.
+   The tag must be higher than the version already on OrcaCloud.
+7. In OrcaSlicer, **delete the locally installed copy** (both would load the
+   same Python package), then subscribe to the plugin in the Plugin Hub and
+   activate it in **File > Plugins**.
 
 ## Description
 
 > Turns a multicolor SVG (a logo, a sign, a sticker design) into one printable
-> part per color, aligned and already assigned to your filaments. Generates a new
-> 3MF (one object, one named part per color, optional base plate) or inlays the
-> colors into an object of a saved project. Understands the SVG like a browser:
+> part per color, aligned and already assigned to your filaments. Applies the
+> colors to an object on the plate (inlaid or raised) or adds them as a new
+> object, optionally on a base plate. Understands the SVG like a browser:
 > stacked shapes, fill rules, strokes, gradients. Limits the colors to your
-> filaments and matches each color to the closest filament. Interface in 13
-> languages, following OrcaSlicer's language.
+> filaments and matches each color to the closest one. A page next to Prepare
+> and Preview, in 13 languages, following OrcaSlicer's language.
 >
 > Source and issues: https://github.com/opoeta/orca-svg-multicor
-
-## Changelog entries
-
-**3.1.1**
-
-```
-- Fixed: the settings page in the Config tab did not load.
-- Clear message when OrcaSlicer blocks a file (names with "conf", "cert" or "secret").
-```
-
-**3.1.0**
-
-```
-- Works like part of OrcaSlicer: page laid out like the Prepare tab, OrcaSlicer's theme and language.
-- Apply to an object on the plate: the saved project reopens with the new parts.
-- Add as a new object: the new 3MF opens in OrcaSlicer.
-- Settings and what's new in the Plugins dialog's Config tab.
-```
-
-**3.0.1**
-
-```
-- No more "open" permission prompt when browsing for a file.
-- Crisp icon on the plugin page tab.
-- Faster plugin loading (heavy libraries load only when needed).
-```
-
-**3.0.0**
-
-```
-- Colors no longer overlap: shapes painted on top cut the ones below, like in a browser.
-- "Apply to a project" works with projects saved by OrcaSlicer and Bambu Studio, and uses the project's filaments.
-- Exact fill rules, strokes, gradients, invisible shapes; new 3MF with named parts and filaments; base plate.
-- New panel with live preview, per-color filament and name, 13 languages.
-```

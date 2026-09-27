@@ -88,13 +88,13 @@ com as novidades de cada versão.
   entrega o arquivo à janela já aberta. O OrcaSlicer pergunta uma vez se o
   plugin pode iniciar um processo; se você negar, a página oferece enviar uma
   cópia do SVG.
-- A janela de **Plugins do OrcaSlicer só mostra imagem de prévia e changelog
-  para plugins instalados pela OrcaCloud**; num `.whl` local os dois ficam
-  vazios por projeto do Orca. Veja [docs/orcacloud](docs/orcacloud/README.md)
-  para publicar lá. O changelog também está em [CHANGELOG.md](CHANGELOG.md).
-- Se o OrcaSlicer perguntar se o plugin pode abrir um evento "open" ou iniciar
-  um processo ao usar "Procurar…", pode responder Sim: é a janela nativa de
-  seleção de arquivos.
+- A janela de **Plugins do OrcaSlicer só mostra imagem e changelog para plugins
+  instalados pela OrcaCloud**; num `.whl` local os dois ficam vazios por projeto
+  do Orca. Quando o plugin estiver na OrcaCloud, instale pela Plugin Hub para
+  tê-los ([docs/orcacloud](docs/orcacloud/README.md)). O changelog também está
+  na aba Config do plugin e em [CHANGELOG.md](CHANGELOG.md).
+- Se o OrcaSlicer perguntar se o plugin pode iniciar um processo ao usar
+  "Procurar…", pode responder Sim: é a janela nativa de seleção de arquivos.
 - Os arquivos ficam em `<pasta de dados do OrcaSlicer>/svg_multicor/`
   (entrada, saída e `plugin.log`).
 

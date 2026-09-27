@@ -330,3 +330,27 @@ def test_permission_errors_get_a_clear_message(monkeypatch):
     svc.handle({"action": "analyze", "svg": os.path.join(EXAMPLES, "badge.svg")})
     assert out[-1]["type"] == "error"
     assert out[-1]["text"].startswith("OrcaSlicer blocked the plugin")
+
+
+def test_open_path_hands_3mf_to_orca_window_or_falls_back(monkeypatch, tmp_path):
+    import types
+    from orca_svg_multicor import host as H
+    f = tmp_path / "result.3mf"
+    f.write_bytes(b"x")
+    calls = []
+    monkeypatch.setattr(H, "open_in_orca", lambda p: calls.append(("exe", p)))
+    monkeypatch.setattr(H, "send_to_window", lambda hwnd, p: calls.append(("ipc", hwnd, p)))
+    h = H.OrcaHost(types.SimpleNamespace(host=None))
+    # outside OrcaSlicer there is no OrcaSlicer window in this process
+    assert H.find_orca_window() is None
+    h.open_path(str(f))
+    assert calls == [("exe", str(f))]
+    # inside OrcaSlicer: the window gets the file, from a thread, without a new process
+    calls.clear()
+    monkeypatch.setattr(H, "find_orca_window", lambda: 1234)
+    monkeypatch.setattr(H.time, "sleep", lambda s: None)
+    h.open_path(str(f))
+    for t in list(__import__("threading").enumerate()):
+        if t.name == "svg-multicolor-open":
+            t.join(5)
+    assert calls == [("ipc", 1234, str(f))]

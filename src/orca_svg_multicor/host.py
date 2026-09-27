@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 
 from .colors import normalize_hex
 
@@ -264,6 +265,71 @@ def _app_bundle(exe):
     return None
 
 
+# ----------------------------------------------------------------------------
+# handing a file to the OrcaSlicer window we live in
+#
+# The plugin API cannot add objects to the plate, so the file goes through the
+# channel OrcaSlicer's own launcher uses when it runs as a single instance: on
+# Windows, WM_COPYDATA to the main window, with an argv-style payload
+# ("exe;file") whose first element is ignored. No process is started, so
+# OrcaSlicer does not ask for a permission (ctypes is not an audited event).
+# ----------------------------------------------------------------------------
+WM_COPYDATA = 0x004A
+
+
+def find_orca_window():
+    """OrcaSlicer's main window in this process (Windows), or None."""
+    if sys.platform != "win32":
+        return None
+    import ctypes
+    from ctypes import wintypes
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.GetClassNameW.argtypes = (wintypes.HWND, wintypes.LPWSTR, ctypes.c_int)
+    user32.GetPropW.argtypes = (wintypes.HWND, wintypes.LPCWSTR)
+    user32.GetPropW.restype = wintypes.HANDLE
+    user32.GetWindowThreadProcessId.argtypes = (wintypes.HWND, ctypes.POINTER(wintypes.DWORD))
+    enum_proc = ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
+    user32.EnumWindows.argtypes = (enum_proc, wintypes.LPARAM)
+    me, found = os.getpid(), []
+
+    def visit(hwnd, _lparam):
+        name = ctypes.create_unicode_buffer(64)
+        if not user32.GetClassNameW(hwnd, name, 64) or name.value != "wxWindowNR":
+            return True
+        # only OrcaSlicer's main frame carries the single-instance properties
+        if not (user32.GetPropW(hwnd, "Instance_Hash_Minor")
+                and user32.GetPropW(hwnd, "Instance_Hash_Major")):
+            return True
+        pid = wintypes.DWORD()
+        user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
+        if pid.value != me:
+            return True
+        found.append(hwnd)
+        return False
+
+    callback = enum_proc(visit)       # kept alive for the duration of the call
+    user32.EnumWindows(callback, 0)
+    return found[0] if found else None
+
+
+def send_to_window(hwnd, path):
+    """Delivers `path` to OrcaSlicer's window, as a second instance would."""
+    import ctypes
+    from ctypes import wintypes
+
+    class COPYDATASTRUCT(ctypes.Structure):
+        _fields_ = [("dwData", ctypes.c_size_t), ("cbData", wintypes.DWORD),
+                    ("lpData", ctypes.c_void_p)]
+
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.SendMessageW.argtypes = (wintypes.HWND, wintypes.UINT, wintypes.WPARAM, wintypes.LPARAM)
+    user32.SendMessageW.restype = ctypes.c_ssize_t
+    text = ctypes.create_unicode_buffer("orca-slicer;" + path)
+    data = COPYDATASTRUCT(1, ctypes.sizeof(text), ctypes.cast(text, ctypes.c_void_p))
+    user32.SendMessageW(hwnd, WM_COPYDATA, 0, ctypes.addressof(data))
+
+
 def open_in_orca(path):
     """
     Opens a 3MF in OrcaSlicer. Starting the executable with the file hands it
@@ -462,10 +528,29 @@ class OrcaHost(BaseHost):
         return {"objects": items, "dirty": dirty, "project": project}
 
     def open_path(self, path):
-        if os.path.isfile(path) and path.lower().endswith(".3mf"):
-            open_in_orca(path)
-        else:
+        if not (os.path.isfile(path) and path.lower().endswith(".3mf")):
             open_with_system(path)
+            return
+        hwnd = None
+        if ";" not in path:                   # ";" separates the payload's arguments
+            try:
+                hwnd = find_orca_window()
+            except Exception:
+                hwnd = None
+        if hwnd is None:
+            open_in_orca(path)                # the launcher: hands it to the open window
+            return
+
+        def deliver():
+            # on_message is still running on the UI thread: let it return first,
+            # so OrcaSlicer opens the file from its idle event loop
+            time.sleep(0.5)
+            try:
+                send_to_window(hwnd, path)
+            except Exception as e:
+                print(f"[svg multicolor] could not hand {path} to OrcaSlicer: {e}")
+
+        threading.Thread(target=deliver, name="svg-multicolor-open", daemon=True).start()
 
     def message(self, text, title, icon="info"):
         fn = getattr(self.ui, "message", None)

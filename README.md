@@ -111,10 +111,11 @@ tab, along with what's new in each version.
   no, the page offers to upload a copy of the SVG instead.
 - Inlaying relies on OrcaSlicer giving parts added later priority where parts
   overlap, the same mechanism used when you add a part inside an object by hand.
-- OrcaSlicer's **Plugins dialog shows a preview image and a changelog only for
-  plugins installed from OrcaCloud**; for a local `.whl` both stay empty by
-  design. See [docs/orcacloud](docs/orcacloud/README.md) to publish it there.
-  The changelog is also in [CHANGELOG.md](CHANGELOG.md).
+- OrcaSlicer's **Plugins dialog shows an image and a changelog only for plugins
+  installed from OrcaCloud**; for a local `.whl` both stay empty by design. Once
+  the plugin is on OrcaCloud, install it from the Plugin Hub to get them
+  ([docs/orcacloud](docs/orcacloud/README.md)). The changelog is also in the
+  plugin's Config tab and in [CHANGELOG.md](CHANGELOG.md).
 - Files live in `<OrcaSlicer data folder>/svg_multicor/` (input, output and
   `plugin.log`); both folders can be changed in the Config tab.
 
