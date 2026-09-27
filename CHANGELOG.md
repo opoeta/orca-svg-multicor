@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.3.2
+
+### Changed
+- The Config tab shows what's new in Portuguese when OrcaSlicer is in
+  Portuguese (`CHANGELOG.pt-BR.md`, now shipped with the plugin); the other
+  languages keep the English changelog.
+- The release notes on GitHub and OrcaCloud come in English and Portuguese.
+- New screenshots in the documentation.
+
 ## 3.3.1
 
 ### Fixed

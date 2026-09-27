@@ -82,9 +82,14 @@ direita e a ação principal no canto superior direito.
    - **Um objeto novo na mesa**: com ou sem placa de base, clique em
      **Adicionar à mesa**; o OrcaSlicer abre o 3MF novo.
 
+![Um objeto novo sobre uma placa de base](docs/screenshot-new-pt_BR.png)
+
 A página lembra os valores que você muda. Os padrões, a pasta de saída, o
 formato, o STL e o idioma ficam no diálogo de Plugins, aba **Config**, junto
-com as novidades de cada versão.
+com as novidades de cada versão, em português quando o OrcaSlicer está em
+português.
+
+![As configurações na aba Config](docs/config-pt_BR.png)
 
 ### Bom saber
 

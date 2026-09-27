@@ -21,6 +21,7 @@ REQUIRED = [
     "orca_svg_multicor/ui/panel.js",
     "orca_svg_multicor/ui/settings.html",
     "orca_svg_multicor/CHANGELOG.md",
+    "orca_svg_multicor/CHANGELOG.pt-BR.md",
     "orca_svg_multicor/locales/en.json",
     "orca_svg_multicor/locales/pt_BR.json",
 ]

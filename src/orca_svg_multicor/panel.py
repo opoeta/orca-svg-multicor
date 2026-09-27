@@ -25,14 +25,25 @@ def _json(value):
     return json.dumps(value, ensure_ascii=False).replace("</", "<\\/")
 
 
-def read_changelog():
-    """CHANGELOG.md shipped in the wheel (or the repository's, when developing)."""
-    for p in (os.path.join(HERE, "CHANGELOG.md"), os.path.join(HERE, "..", "..", "CHANGELOG.md")):
-        try:
-            with open(p, encoding="utf-8") as f:
-                return f.read()
-        except OSError:
-            continue
+def read_changelog(lang=None):
+    """
+    The changelog shipped in the wheel (or the repository's, when developing):
+    CHANGELOG.pt-BR.md for pt_BR, and so on, when there is one for `lang`;
+    CHANGELOG.md, in English, otherwise.
+    """
+    names = ["CHANGELOG.md"]
+    if lang and lang != "en":
+        names.insert(0, f"CHANGELOG.{lang.replace('_', '-')}.md")
+    for name in names:
+        for folder in (HERE, os.path.join(HERE, "..", "..")):
+            p = os.path.join(folder, name)
+            if not os.path.isfile(p):
+                continue
+            try:
+                with open(p, encoding="utf-8") as f:
+                    return f.read()
+            except OSError:
+                continue
     return ""
 
 
@@ -54,7 +65,7 @@ def build_settings_html(lang=None, defaults=None):
     """Settings page for the Plugins dialog's Config tab (window.orca.getConfig/saveConfig)."""
     tr = i18n.Translator(lang)
     boot = {"lang": tr.lang, "catalog": tr.catalog(), "languages": i18n.available(),
-            "defaults": defaults or {}, "changelog": read_changelog(), "version": __version__}
+            "defaults": defaults or {}, "changelog": read_changelog(tr.lang), "version": __version__}
     return _read("settings.html").replace("/*BOOT*/", _json(boot), 1)
 
 

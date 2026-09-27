@@ -38,7 +38,8 @@ release publishes the new version there, with its changelog.
    them (PNG, JPG, WEBP or GIF, up to 2 MB each), or paste the description
    below, which shows the images of this repository. OrcaSlicer's Plugins
    dialog shows only the plugin image; the screenshots appear on the plugin's
-   page on OrcaCloud (Plugin Hub).
+   page on OrcaCloud (Plugin Hub). `docs/` has each one in English and in
+   Portuguese (`*-pt_BR.png`).
 5. Save. Then **Edit plugin > GitHub publishing**, enter
    `opoeta/orca-svg-multicor` and **Connect**.
 6. In the GitHub repository: **Settings > Secrets and variables > Actions >
@@ -63,6 +64,8 @@ release publishes the new version there, with its changelog.
 >
 > Source and issues: https://github.com/opoeta/orca-svg-multicor
 >
-> ![The page, next to Prepare and Preview](https://raw.githubusercontent.com/opoeta/orca-svg-multicor/main/docs/screenshot.png)
+> ![The page, next to Prepare and Preview: the design on the chosen surface](https://raw.githubusercontent.com/opoeta/orca-svg-multicor/main/docs/screenshot.png)
+>
+> ![A new object on a base plate](https://raw.githubusercontent.com/opoeta/orca-svg-multicor/main/docs/screenshot-new.png)
 >
 > ![Settings in the Config tab](https://raw.githubusercontent.com/opoeta/orca-svg-multicor/main/docs/config.png)

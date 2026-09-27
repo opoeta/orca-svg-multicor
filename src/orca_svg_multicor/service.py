@@ -263,7 +263,7 @@ class Service:
 
     def do_changelog(self, msg):
         from .panel import read_changelog
-        self.send({"type": "changelog", "text": read_changelog(), "version": __version__})
+        self.send({"type": "changelog", "text": read_changelog(self.tr.lang), "version": __version__})
 
     def do_inputs(self, msg):
         self.send(self._inputs())

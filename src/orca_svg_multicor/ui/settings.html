@@ -172,7 +172,7 @@
     var m;
     if (/^#\s/.test(line)) return;
     if ((m = line.match(/^##\s+(.*)/))) { shown += 1; list = para = null; if (shown <= 3) box.appendChild(el('h3', m[1])); return; }
-    if (shown > 3) return;
+    if (!shown || shown > 3) return;          // before the first version: title, language links
     if ((m = line.match(/^###\s+(.*)/))) { list = para = null; box.appendChild(el('h4', m[1])); return; }
     if ((m = line.match(/^[-*]\s+(.*)/))) {
       if (!list) { list = el('ul'); box.appendChild(list); }

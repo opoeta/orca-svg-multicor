@@ -2,6 +2,15 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.3.2
+
+### Mudou
+- A aba Config mostra as novidades em português quando o OrcaSlicer está em
+  português (`CHANGELOG.pt-BR.md`, que agora vai junto com o plugin); nos
+  outros idiomas continua o changelog em inglês.
+- As notas das versões no GitHub e na OrcaCloud saem em inglês e em português.
+- Prints novas na documentação.
+
 ## 3.3.1
 
 ### Corrigido

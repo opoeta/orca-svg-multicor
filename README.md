@@ -86,9 +86,12 @@ right, the main action at the top right.
    - **A new object on the plate**: optionally on a base plate, then **Add to
      the plate**; OrcaSlicer opens the new 3MF.
 
+![A new object on a base plate](docs/screenshot-new.png)
+
 The page remembers the values you change. Defaults, the output folder, the
 file format, STL export and the language are in the Plugins dialog, **Config**
-tab, along with what's new in each version.
+tab, along with what's new in each version (in Portuguese when OrcaSlicer is
+in Portuguese).
 
 ![Settings in the Config tab](docs/config.png)
 

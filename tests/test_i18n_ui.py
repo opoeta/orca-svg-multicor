@@ -120,3 +120,12 @@ def test_changelogs_cover_the_same_versions():
     en, pt = versions("CHANGELOG.md"), versions("CHANGELOG.pt-BR.md")
     assert en == pt
     assert en[0] == __version__
+
+
+def test_config_tab_shows_the_changelog_in_the_language():
+    from orca_svg_multicor.panel import build_settings_html, read_changelog
+    assert "### Corrigido" in read_changelog("pt_BR")
+    assert "### Fixed" in read_changelog("en") and "Corrigido" not in read_changelog("en")
+    assert read_changelog("fr") == read_changelog("en")        # no French changelog: English
+    assert "### Corrigido" in build_settings_html("pt_BR")
+    assert "### Fixed" in build_settings_html("de")
