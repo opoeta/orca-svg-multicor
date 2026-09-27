@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.3.1
+
+### Fixed
+- After restarting OrcaSlicer, reading an SVG failed with "OrcaSlicer blocked
+  the plugin's access to a file (Plugin attempted an audited operation without
+  permission)". OrcaSlicer refuses plugins any path with "conf" in a name, and
+  numpy cannot be imported without reading `numpy/__config__.py`; the plugin
+  imported numpy when first needed, which OrcaSlicer audits. It now loads its
+  libraries while OrcaSlicer loads the plugin, which OrcaSlicer does not audit,
+  so no permission is needed later either for the standard library modules it
+  uses. If that still fails, the message says to restart OrcaSlicer.
+
 ## 3.3.0
 
 ### Added

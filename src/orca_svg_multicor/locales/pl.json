@@ -184,6 +184,7 @@
   "error.unexpected": "Nieoczekiwany błąd: {detail}",
   "error.denied_name": "OrcaSlicer nie pozwala wtyczkom używać plików ani folderów, których nazwa zawiera „conf”, „cert” lub „secret”: {path}. Zmień nazwę lub przenieś plik do innego folderu.",
   "error.permission": "OrcaSlicer zablokował wtyczce dostęp do pliku ({detail}). Jeśli odrzucono prośbę o uprawnienia, zezwól następnym razem albo użyj pliku z innego folderu.",
+  "error.deps_blocked": "OrcaSlicer nie pozwala wtyczce wczytać jej bibliotek (numpy, shapely) w tej chwili. Uruchom ponownie OrcaSlicer: wtyczka wczytuje je przy starcie OrcaSlicer.",
 
   "batch.empty": "Brak plików .svg w:\n{folder}",
   "batch.file": "{name} ({k}/{n})",

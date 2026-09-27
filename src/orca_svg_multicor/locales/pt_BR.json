@@ -184,6 +184,7 @@
   "error.unexpected": "Erro inesperado: {detail}",
   "error.denied_name": "O OrcaSlicer não deixa plugins usarem arquivos ou pastas cujo nome contenha “conf”, “cert” ou “secret”: {path}. Renomeie ou mova o arquivo para outra pasta.",
   "error.permission": "O OrcaSlicer bloqueou o acesso do plugin a um arquivo ({detail}). Se você negou um pedido de permissão, permita na próxima vez, ou use um arquivo em outra pasta.",
+  "error.deps_blocked": "O OrcaSlicer não deixa o plugin carregar as bibliotecas dele (numpy, shapely) neste momento. Reinicie o OrcaSlicer: o plugin as carrega quando o OrcaSlicer abre.",
 
   "batch.empty": "Nenhum arquivo .svg em:\n{folder}",
   "batch.file": "{name} ({k}/{n})",

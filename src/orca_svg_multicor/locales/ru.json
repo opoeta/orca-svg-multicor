@@ -184,6 +184,7 @@
   "error.unexpected": "Непредвиденная ошибка: {detail}",
   "error.denied_name": "OrcaSlicer не разрешает плагинам использовать файлы и папки, в имени которых есть «conf», «cert» или «secret»: {path}. Переименуйте или переместите файл в другую папку.",
   "error.permission": "OrcaSlicer запретил плагину доступ к файлу ({detail}). Если вы отклонили запрос разрешения, разрешите в следующий раз или используйте файл из другой папки.",
+  "error.deps_blocked": "OrcaSlicer сейчас не даёт плагину загрузить его библиотеки (numpy, shapely). Перезапустите OrcaSlicer: плагин загружает их при запуске OrcaSlicer.",
 
   "batch.empty": "В папке нет файлов .svg:\n{folder}",
   "batch.file": "{name} ({k}/{n})",

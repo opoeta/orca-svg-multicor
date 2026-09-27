@@ -97,6 +97,11 @@ com as novidades de cada versão.
   entregue à janela do OrcaSlicer já aberta, do mesmo jeito que o próprio
   inicializador dele faz; iniciar o executável do OrcaSlicer fica como
   alternativa.
+- O OrcaSlicer recusa aos plugins qualquer caminho com "conf", "cert" ou
+  "secret" no nome, inclusive o `numpy/__config__.py` do próprio numpy; por
+  isso o plugin carrega as bibliotecas dele (numpy, shapely) quando o
+  OrcaSlicer abre, o que leva um instante. Mantenha SVGs e projetos fora de
+  pastas com essas palavras no nome.
 - A janela de **Plugins do OrcaSlicer só mostra imagem e changelog para plugins
   instalados pela OrcaCloud**; num `.whl` local os dois ficam vazios por projeto
   do Orca. Quando o plugin estiver na OrcaCloud, instale pela Plugin Hub para

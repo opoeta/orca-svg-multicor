@@ -314,7 +314,8 @@ class BatchConvert(_Common, orca.script.ScriptPluginCapabilityBase):
 
     def execute(self, *a, **k):
         import glob
-        from . import engine
+
+        from .deps import load_engine
         from .errors import Cancelled, UserError
         from .options import Options
 
@@ -325,6 +326,7 @@ class BatchConvert(_Common, orca.script.ScriptPluginCapabilityBase):
         inp = cfg.get("input_folder") or settings_defaults()["input_folder"]
         out = cfg.get("output_folder") or settings_defaults()["output_folder"]
         try:
+            engine = load_engine()
             files = sorted(glob.glob(os.path.join(inp, "*.svg")))
             if not files:
                 host.message(tr("batch.empty", folder=inp), NAME_BATCH, "warning")
@@ -375,6 +377,9 @@ class BatchConvert(_Common, orca.script.ScriptPluginCapabilityBase):
                 pass
             host.message(text[:3000], NAME_BATCH, "warning" if failed else "info")
             return orca.ExecutionResult.success(summary)
+        except UserError as e:
+            host.message(tr(e.key, **e.params), NAME_BATCH, "error")
+            return orca.ExecutionResult.failure(orca.PluginResult.RecoverableError, e.key)
         except Exception as e:
             traceback.print_exc()
             return orca.ExecutionResult.failure(orca.PluginResult.RecoverableError,

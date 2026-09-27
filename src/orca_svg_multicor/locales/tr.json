@@ -184,6 +184,7 @@
   "error.unexpected": "Beklenmeyen hata: {detail}",
   "error.denied_name": "OrcaSlicer, adında “conf”, “cert” veya “secret” geçen dosya ya da klasörleri eklentilerin kullanmasına izin vermez: {path}. Adını değiştirin veya dosyayı başka bir klasöre taşıyın.",
   "error.permission": "OrcaSlicer eklentinin bir dosyaya erişmesini engelledi ({detail}). Bir izin isteğini reddettiyseniz bir dahaki sefere izin verin veya başka bir klasördeki dosyayı kullanın.",
+  "error.deps_blocked": "OrcaSlicer, eklentinin kitaplıklarını (numpy, shapely) şu anda yüklemesine izin vermiyor. OrcaSlicer'ı yeniden başlatın: eklenti bunları OrcaSlicer açılırken yükler.",
 
   "batch.empty": "Şurada .svg dosyası yok:\n{folder}",
   "batch.file": "{name} ({k}/{n})",

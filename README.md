@@ -117,6 +117,10 @@ tab, along with what's new in each version.
   upload a copy of the SVG instead. Results are handed to the OrcaSlicer window
   already open, the way its own launcher does; starting OrcaSlicer's
   executable is the fallback.
+- OrcaSlicer refuses plugins any path with "conf", "cert" or "secret" in a
+  name, including numpy's own `numpy/__config__.py`, so the plugin loads its
+  libraries (numpy, shapely) when OrcaSlicer starts, which takes a moment.
+  Keep SVGs and projects out of folders with those words in the name.
 - Inlaying relies on OrcaSlicer giving parts added later priority where parts
   overlap, the same mechanism used when you add a part inside an object by hand.
 - OrcaSlicer's **Plugins dialog shows an image and a changelog only for plugins

@@ -21,6 +21,7 @@ import traceback
 
 from . import i18n
 from ._version import __version__
+from .deps import load_engine
 from .errors import Cancelled, EngineError, UserError
 from .host import Log, default_folders, denied_name, plugin_data_dir
 from .options import Options
@@ -244,7 +245,7 @@ class Service:
         # which object of the saved project each plate object is
         if d.get("project"):
             try:
-                from . import engine
+                engine = load_engine()
                 key = (d["project"], os.path.getmtime(d["project"]))
                 d["project_mtime"] = key[1]
                 listing = self._listing_cache.get(key)
@@ -381,7 +382,7 @@ class Service:
         return p
 
     def do_analyze(self, msg, rep):
-        from . import engine
+        engine = load_engine()
         svg = self._svg(msg)
         opts = self._options(msg)
         fil = msg.get("filaments")
@@ -406,7 +407,7 @@ class Service:
         self.info(self.tr("log.analyzed", name=os.path.basename(svg), count=n, raw=raw))
 
     def do_objects(self, msg, rep):
-        from . import engine
+        engine = load_engine()
         path = (msg.get("project") or "").strip()
         rep.progress(0.1, "progress.reading_project")
         listing = engine.list_objects(path)
@@ -425,7 +426,7 @@ class Service:
         self.info(self.tr("log.objects", count=len(out), name=os.path.basename(path)))
 
     def do_faces(self, msg, rep):
-        from . import engine
+        engine = load_engine()
         project = self._allowed((msg.get("project") or "").strip())
         oid = str(msg.get("object_id") or "").strip()
         if not project or not os.path.isfile(project):
@@ -454,7 +455,7 @@ class Service:
                    "text": self.tr("status.saved_to", path=dest)})
 
     def do_generate(self, msg, rep):
-        from . import engine
+        engine = load_engine()
         svg = self._svg(msg)
         opts = self._options(msg)
         out = self._out_dir(msg)
@@ -463,7 +464,7 @@ class Service:
         self._finish("generate", dest, report, reopen=bool(msg.get("reopen")))
 
     def do_apply(self, msg, rep):
-        from . import engine
+        engine = load_engine()
         svg = self._svg(msg)
         project = self._allowed((msg.get("project") or "").strip())
         obj = str(msg.get("object_id") or "").strip()

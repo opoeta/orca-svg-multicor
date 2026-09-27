@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "orca-svg-multicor"
-version = "3.3.0"
+version = "3.3.1"
 description = "Split a multicolor SVG into aligned color parts for OrcaSlicer: a new multi-part 3MF, or an inlay inside an object of a saved project. Multilingual."
 readme = "README.md"
 requires-python = ">=3.10"

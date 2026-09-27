@@ -184,6 +184,7 @@
   "error.unexpected": "予期しないエラー：{detail}",
   "error.denied_name": "OrcaSlicer では、名前に「conf」「cert」「secret」を含むファイルやフォルダーをプラグインが使えません: {path}。名前を変更するか、ファイルを別のフォルダーに移動してください。",
   "error.permission": "OrcaSlicer がプラグインのファイルへのアクセスをブロックしました（{detail}）。許可の確認を拒否した場合は次回許可するか、別のフォルダーのファイルを使ってください。",
+  "error.deps_blocked": "OrcaSlicer が今はプラグインのライブラリ (numpy、shapely) の読み込みを許可していません。OrcaSlicer を再起動してください。プラグインは起動時に読み込みます。",
 
   "batch.empty": ".svg ファイルがありません：\n{folder}",
   "batch.file": "{name} ({k}/{n})",

@@ -4,10 +4,10 @@ SVG Multicolor, a plugin for OrcaSlicer.
 Splits a multicolor SVG into one part per color, aligned in the same frame,
 either as a new 3MF or as parts added inside an object of a saved project.
 
-Inside OrcaSlicer the `orca` module exists and the plugin registers itself.
-Anywhere else (tests, the dev server) the package imports cleanly without it.
-Heavy libraries (numpy, shapely) are only imported when first needed, so
-loading the plugin does not slow OrcaSlicer's startup.
+Inside OrcaSlicer the `orca` module exists: the plugin loads its libraries
+(see deps.py for why it must happen now) and registers itself. Anywhere else
+(tests, the dev server) the package imports cleanly without it, and the heavy
+libraries are only imported when first needed.
 """
 
 from ._version import __version__
@@ -19,6 +19,9 @@ except ImportError:  # pragma: no cover - outside OrcaSlicer
 
 if orca is not None:
     from . import capabilities as _capabilities
+    from . import deps as _deps
+
+    _deps.preload()
 
     @orca.plugin
     class SvgMulticolorPlugin(orca.base):
