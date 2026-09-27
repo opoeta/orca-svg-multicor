@@ -30,10 +30,15 @@ release publishes the new version there, with its changelog.
    | Description | below |
    | Version | the version of the file you uploaded |
    | Plugin type | Script (it also adds a page next to Prepare/Preview) |
-   | Changelog | the section of that version in `CHANGELOG.md` |
+   | Changelog | the notes of that version's GitHub release (English and Portuguese) |
    | Tags | utility, workflow, multicolor, svg |
    | Public | on, to appear in the Plugin Hub |
 
+   Screenshots go in the **description**: the editor's image button uploads
+   them (PNG, JPG, WEBP or GIF, up to 2 MB each), or paste the description
+   below, which shows the images of this repository. OrcaSlicer's Plugins
+   dialog shows only the plugin image; the screenshots appear on the plugin's
+   page on OrcaCloud (Plugin Hub).
 5. Save. Then **Edit plugin > GitHub publishing**, enter
    `opoeta/orca-svg-multicor` and **Connect**.
 6. In the GitHub repository: **Settings > Secrets and variables > Actions >
@@ -57,3 +62,7 @@ release publishes the new version there, with its changelog.
 > and Preview, in 13 languages, following OrcaSlicer's language.
 >
 > Source and issues: https://github.com/opoeta/orca-svg-multicor
+>
+> ![The page, next to Prepare and Preview](https://raw.githubusercontent.com/opoeta/orca-svg-multicor/main/docs/screenshot.png)
+>
+> ![Settings in the Config tab](https://raw.githubusercontent.com/opoeta/orca-svg-multicor/main/docs/config.png)
