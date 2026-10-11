@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.4.1
+
+### Fixed
+- 3.4.0 reached GitHub but not OrcaCloud: its notes have a semicolon, and the
+  publishing step cut the release data there. This version brings the 3.4.0
+  changes to OrcaCloud: changing the color of a part (click its color square)
+  and whole filament names in the color list.
+
 ## 3.4.0
 
 ### Added

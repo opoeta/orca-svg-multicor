@@ -2,6 +2,14 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.4.1
+
+### Corrigido
+- A 3.4.0 chegou ao GitHub mas não à OrcaCloud: as notas dela têm ponto e
+  vírgula, e a etapa de publicação cortava os dados da versão ali. Esta versão
+  leva para a OrcaCloud as mudanças da 3.4.0: mudar a cor de uma peça (clique
+  no quadrado da cor) e os nomes inteiros dos filamentos na lista de cores.
+
 ## 3.4.0
 
 ### Novo

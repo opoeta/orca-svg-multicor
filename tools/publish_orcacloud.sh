@@ -28,9 +28,11 @@ print({k: claims.get(k) for k in ("repository", "event_name", "ref", "workflow_r
 changelog="$(python3 -c 'import sys; print(open(sys.argv[1], encoding="utf-8").read().encode()[:4000].decode("utf-8", "ignore"))' "$notes")"
 metadata="$(jq -cn --arg version "$version" --arg changelog "$changelog" \
   '{version: $version} + (if $changelog == "" then {} else {changelog: $changelog} end)')"
+# --form-string: with -F, curl cuts a value at ";" (and reads "@file"/"<file"),
+# which breaks the JSON as soon as the notes have a semicolon
 status="$(curl -sS -o response.json -w '%{http_code}' \
   -H "Authorization: Bearer $oidc_token" \
-  -F "metadata=$metadata" -F "files=@$file" \
+  --form-string "metadata=$metadata" -F "files=@$file" \
   https://api.orcaslicer.com/api/v1/plugin-publish/releases)"
 echo "OrcaCloud answered $status:"
 cat response.json
