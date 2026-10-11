@@ -2,6 +2,19 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.4.0
+
+### Novo
+- **Mudar a cor de uma peça**: clique no quadrado da cor na página e escolha
+  outra. A peça sai e aparece nessa cor; o nome e o filamento sugerido
+  acompanham a cor nova, a menos que você os tenha mudado, e o ↺ volta à cor
+  original.
+
+### Corrigido
+- Os nomes dos filamentos ficavam cortados na lista de cores: agora o filamento
+  tem uma linha só para ele, os detalhes (formas, tons, fundo) vão logo abaixo,
+  e passar o mouse mostra o nome inteiro.
+
 ## 3.3.3
 
 ### Mudou

@@ -87,22 +87,33 @@ button.primary { font-weight: 600; min-width: 150px; }
 
 /* ---------- colors ---------- */
 .colors { display: grid; gap: 2px; }
-.crow { display: grid; grid-template-columns: 16px 22px minmax(0, 1fr) auto; grid-template-rows: auto auto;
+.crow { display: grid; grid-template-columns: 16px 22px minmax(0, 1fr) auto; grid-template-rows: auto auto auto;
         column-gap: 8px; row-gap: 4px; align-items: center; padding: 6px 6px; border-radius: 4px; }
 .c-pct { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
 .c-line2 { grid-column: 3 / 5; display: flex; align-items: center; gap: 8px; min-width: 0; }
 .crow:hover, .crow.hl { background: var(--hover); }
 .crow.off > :not(input) { opacity: .4; }
-.c-sw { width: 22px; height: 22px; border-radius: 4px; border: 1px solid rgba(127, 127, 127, .6); }
+.c-sw { position: relative; width: 22px; height: 22px; border-radius: 4px; border: 1px solid rgba(127, 127, 127, .6);
+        cursor: pointer; }
+.c-sw:hover { box-shadow: 0 0 0 2px var(--accent); }
+.c-sw:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+/* the native color input covers the swatch, invisible: a click opens the picker */
+.c-sw input[type=color] { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; border: 0; padding: 0;
+                          cursor: pointer; }
+/* a changed color: a corner mark, the original color shows in the tooltip */
+.c-sw.changed::after { content: ""; position: absolute; right: -3px; bottom: -3px; width: 8px; height: 8px;
+                       border-radius: 50%; background: var(--accent); border: 1.5px solid var(--bg); }
 .crow input[type=text] { width: 100%; min-width: 0; padding: 3px 6px; }
 .c-fil { display: flex; align-items: center; gap: 5px; flex: 1 1 auto; min-width: 0; }
-.c-fil select { flex: 1 1 auto; min-width: 0; max-width: 210px; padding: 3px 6px; }
+.c-fil select { flex: 1 1 auto; min-width: 0; padding: 3px 6px; text-overflow: ellipsis; }
 .fsw { width: 14px; height: 14px; border-radius: 3px; border: 1px solid rgba(127, 127, 127, .6); flex: 0 0 14px; }
 .fsw.none { background: repeating-linear-gradient(45deg, transparent 0 3px, rgba(127,127,127,.5) 3px 4px); }
-.c-meta { display: flex; gap: 6px; align-items: center; font-size: 11px; color: var(--muted);
-          font-variant-numeric: tabular-nums; flex: 0 0 auto; white-space: nowrap; }
+.c-meta { grid-column: 3 / 5; display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 11px;
+          color: var(--muted); font-variant-numeric: tabular-nums; min-width: 0; }
 .tag { border: 1px solid var(--line); border-radius: 99px; padding: 0 5px; white-space: nowrap; }
 .tag.bg { color: var(--warn); border-color: rgba(217, 154, 43, .6); }
+button.tag.reset { background: transparent; color: var(--accent); border-color: var(--accent); font-size: 11px;
+                   line-height: 1.4; min-height: 0; cursor: pointer; flex: 0 0 auto; }
 
 /* ---------- view ---------- */
 .canvas-bar { display: flex; align-items: center; gap: 12px; padding: 8px 12px; border-bottom: 1px solid var(--line); }

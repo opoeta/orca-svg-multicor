@@ -304,6 +304,7 @@
     else img.removeAttribute('src');
     res.hidden = view !== 'result';
     img.hidden = view !== 'original';
+    applyRecolors();
   }
 
   function highlight(color) {
@@ -478,7 +479,19 @@
         st.enabled = use.checked; row.classList.toggle('off', !use.checked); renderColorsNote();
       });
 
-      var sw = el('div', 'c-sw'); sw.style.background = c.color; sw.title = c.color;
+      // the swatch is a color picker: the part may print as another color
+      var sw = el('label', 'c-sw' + (st.recolor ? ' changed' : ''));
+      sw.style.background = st.recolor || c.color;
+      sw.title = st.recolor ? t('col.recolored', { from: c.color, to: st.recolor }) : t('col.recolor');
+      var pick = el('input'); pick.type = 'color'; pick.value = st.recolor || c.color;
+      pick.setAttribute('aria-label', t('col.recolor'));
+      pick.addEventListener('input', function () {      // live, while the picker is open
+        sw.style.background = pick.value;
+        st.recolor = sameColor(pick.value, c.color) ? null : pick.value.toLowerCase();
+        applyRecolors();
+      });
+      pick.addEventListener('change', function () { recolor(c, pick.value); });
+      sw.appendChild(pick);
 
       var name = el('input'); name.type = 'text'; name.value = st.name; name.spellcheck = false;
       name.setAttribute('aria-label', t('col.name'));
@@ -493,6 +506,8 @@
         fsw.className = 'fsw' + (col ? '' : ' none');
         fsw.style.background = col || '';
         fsw.title = col ? t('col.filament_color', { color: col }) : '';
+        var opt = sel.options[sel.selectedIndex];
+        sel.title = opt ? opt.textContent : '';     // the whole name, when the select cuts it
       };
       sel.addEventListener('change', function () {
         st.filament = parseInt(sel.value, 10); st.filEdited = true; paint(); renderColorsNote();
@@ -512,10 +527,19 @@
         var b = el('span', 'tag bg', t('col.background')); b.title = t('col.background_hint');
         meta.appendChild(b);
       }
+      if (st.recolor) {
+        var back = el('button', 'tag reset', '↺'); back.type = 'button';
+        back.title = t('col.reset_color', { color: c.color });
+        back.setAttribute('aria-label', back.title);
+        back.addEventListener('click', function () { recolor(c, null); });
+        meta.insertBefore(back, meta.firstChild);
+      }
+      // the filament gets its own line, for its name; the details go below
       var line2 = el('div', 'c-line2');
-      line2.appendChild(fil); line2.appendChild(meta);
+      line2.appendChild(fil);
 
-      row.appendChild(use); row.appendChild(sw); row.appendChild(name); row.appendChild(pct); row.appendChild(line2);
+      row.appendChild(use); row.appendChild(sw); row.appendChild(name); row.appendChild(pct);
+      row.appendChild(line2); row.appendChild(meta);
       row.addEventListener('mouseenter', function () { highlight(c.color); });
       row.addEventListener('mouseleave', function () { highlight(null); });
       row.addEventListener('focusin', function () { highlight(c.color); });
@@ -544,16 +568,71 @@
     var rows = {};
     colors.forEach(function (c) {
       var old = S.rows[c.color];
+      var recolor = old ? old.recolor : null;
+      var suggested = recolor ? old.suggested : c.filament;
       rows[c.color] = {
-        name: old && old.nameEdited ? old.name : c.name,
+        name: old && (old.nameEdited || recolor) ? old.name : c.name,
         nameEdited: !!(old && old.nameEdited),
-        filament: old && old.filEdited ? old.filament : c.filament,
+        filament: old && old.filEdited ? old.filament : suggested,
         filEdited: !!(old && old.filEdited),
         enabled: old ? old.enabled : true,
-        suggested: c.filament
+        suggested: suggested,
+        recolor: recolor
       };
     });
     S.rows = rows;
+  }
+
+  /* ------------------------------------------------------------ recolor */
+  function sameColor(a, b) { return String(a || '').toLowerCase() === String(b || '').toLowerCase(); }
+
+  function colorIndex(color) {
+    var list = S.analysis ? S.analysis.colors : [];
+    for (var i = 0; i < list.length; i++) if (list[i].color === color) return i + 1;
+    return 0;
+  }
+
+  // a part printed as another color: name and filament follow the new color
+  // unless the user chose them
+  function recolor(c, value) {
+    var st = S.rows[c.color];
+    st.recolor = value && !sameColor(value, c.color) ? value.toLowerCase() : null;
+    st.describing = !!st.recolor;
+    if (!st.recolor) {
+      if (!st.nameEdited) st.name = c.name;
+      st.suggested = c.filament;
+      if (!st.filEdited) st.filament = c.filament;
+    } else {
+      send({ action: 'describe_colors', colors: [st.recolor],
+             filaments: S.filaments.length ? S.filaments : null });
+    }
+    renderColors();
+    applyRecolors();
+  }
+
+  function onColorsInfo(m) {
+    var items = m.items || {};
+    Object.keys(S.rows).forEach(function (key) {
+      var st = S.rows[key], info = st.recolor && items[st.recolor];
+      if (!st.describing || !info) return;
+      st.describing = false;
+      if (!st.nameEdited && info.name) st.name = colorIndex(key) + '-' + info.name;
+      if (info.filament) {
+        st.suggested = info.filament;
+        if (!st.filEdited) st.filament = info.filament;
+      }
+    });
+    renderColors();
+  }
+
+  // the previews keep the SVG's colors in data-key; the fill shows the part's
+  function applyRecolors() {
+    ['preview_result', 'preview_place'].forEach(function (id) {
+      Array.prototype.forEach.call($(id).querySelectorAll('path[data-key]'), function (p) {
+        var st = S.rows[p.getAttribute('data-key')];
+        if (st) p.setAttribute('fill', st.recolor || p.getAttribute('data-key'));
+      });
+    });
   }
 
   function renderPlate() {
@@ -612,7 +691,8 @@
     if (!S.analysis) return [];
     return S.analysis.colors.map(function (c) {
       var st = S.rows[c.color];
-      return { color: c.color, name: st.name, filament: st.filament, enabled: st.enabled };
+      return { color: c.color, name: st.name, filament: st.filament, enabled: st.enabled,
+               recolor: st.recolor || null };
     });
   }
 
@@ -691,6 +771,7 @@
       case 'analysis': onAnalysis(m); break;
       case 'plate': onPlate(m); break;
       case 'faces': onFaces(m); break;
+      case 'colors_info': onColorsInfo(m); break;
       case 'progress':
         if (S.busy) { setBar(m.pct); if (!S.quiet && m.text) setStatus(null, null, 'busy', m.text); }
         break;

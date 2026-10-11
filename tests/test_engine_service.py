@@ -183,3 +183,25 @@ def test_project_filaments_are_read_and_checked(bbs_project, tmp_path):
     E.apply_to_project(BADGE, prj, "2", str(tmp_path / "out.3mf"), Options(), choices, rep=rep)
     warns = [p for lvl, k, p in rep.messages if k == "warn.project_filaments"]
     assert warns and warns[0]["n"] == 2
+
+
+def test_a_part_can_print_as_another_color(tmp_path):
+    """The page may recolor a part: color, default name and filament follow it."""
+    res = E.analyze(BADGE, Options())
+    first = res["colors"][0]["color"]
+    filaments = [{"n": 1, "color": "#ffffff"}, {"n": 2, "color": "#ff7f00"}]
+    _dest, report = E.generate(BADGE, str(tmp_path), Options(), {first: {"recolor": "#FF8000"}},
+                               filaments=filaments)
+    assert report[0]["color"] == "#ff8000"
+    assert report[0]["name"] == "1-orange" and report[0]["filament"] == 2
+    # an invalid color is ignored
+    _dest, report = E.generate(BADGE, str(tmp_path), Options(), {first: {"recolor": "red-ish"}})
+    assert report[0]["color"] == first
+
+
+def test_describe_colors_names_and_matches():
+    svc, out, _ = make_service("pt_BR")
+    svc.handle({"action": "describe_colors", "colors": ["#FF8000", "nope"],
+                "filaments": [{"n": 3, "color": "#ff7700"}]})
+    msg = next(m for m in out if m.get("type") == "colors_info")
+    assert msg["items"] == {"#ff8000": {"name": "laranja", "filament": 3}}

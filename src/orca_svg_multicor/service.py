@@ -27,7 +27,7 @@ from .host import Log, default_folders, denied_name, plugin_data_dir
 from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
-         "save_settings", "open_path", "reset_settings", "changelog"}
+         "save_settings", "open_path", "reset_settings", "changelog", "describe_colors"}
 HEAVY = {"analyze", "generate", "apply", "objects", "faces"}
 UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
@@ -229,6 +229,19 @@ class Service:
         self.tr = i18n.Translator(self._language_setting())
         self.send({"type": "i18n", "lang": self.tr.lang, "lang_setting": lang,
                    "catalog": self.tr.catalog()})
+
+    def do_describe_colors(self, msg):
+        """Name and suggested filament of colors the page picked for its parts."""
+        from . import colors as C
+        fil = msg.get("filaments")
+        if fil is None:
+            fil = self._filaments()["filaments"]
+        wanted = [c for c in (C.normalize_hex(x) for x in msg.get("colors") or []) if c]
+        match = C.match_filaments(wanted, fil or [])
+        self.send({"type": "colors_info", "items": {
+            c: {"name": self.tr.color_name(C.color_name_key(c)),
+                "filament": match[c][0] if c in match else None}
+            for c in wanted}})
 
     def do_filaments(self, msg):
         fil = self._filaments()

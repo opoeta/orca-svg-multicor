@@ -211,12 +211,21 @@ def analyze(svg_path, opts, filaments=None, tr=None, rep=None):
 # ----------------------------------------------------------------------------
 # parts
 # ----------------------------------------------------------------------------
-def _choice(choices, color, index, tr, fils):
+def _choice(choices, color, index, tr, fils, filaments=None):
+    """
+    (name, filament, enabled, part color) of one color of the SVG. The page
+    may give the part another color ("recolor"): the part is then named and,
+    unless a filament was chosen, matched by that color.
+    """
     ch = (choices or {}).get(color) or {}
-    name = str(ch.get("name") or "").strip() or default_name(tr, index, color)
-    fil = _i(ch.get("filament"), fils[color][0], 1, 64)
+    shown = C.normalize_hex(ch.get("recolor")) or color
+    name = str(ch.get("name") or "").strip() or default_name(tr, index, shown)
+    suggested = fils[color][0]
+    if shown != color:
+        suggested = C.match_filaments([shown], filaments or []).get(shown, (suggested,))[0]
+    fil = _i(ch.get("filament"), suggested, 1, 64)
     enabled = ch.get("enabled", True) is not False
-    return name, fil, enabled
+    return name, fil, enabled, shown
 
 
 def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
@@ -234,16 +243,16 @@ def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
 
     selected = []
     for i, c in enumerate(order, start=1):
-        name, fil, enabled = _choice(choices, c, i, tr, fils)
+        name, fil, enabled, shown = _choice(choices, c, i, tr, fils, filaments)
         if enabled:
-            selected.append((i, c, name, fil))
+            selected.append((i, c, name, fil, shown))
     if not selected:
         raise EngineError("error.nothing_selected")
 
     parts = []
     color_z = z0
     if with_base and opts.base_thickness_mm > 0:
-        polys = [p for _, c, _, _ in selected for p in regions[c]]
+        polys = [p for _, c, _, _, _ in selected for p in regions[c]]
         base = G.base_plate(polys, opts.base_margin_mm, opts.base_shape,
                             opts.base_corner_mm)
         V, F = M.extrude(base, opts.base_thickness_mm, z0)
@@ -254,7 +263,7 @@ def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
         color_z = z0 + opts.base_thickness_mm
 
     total = len(selected)
-    for k, (_index, c, name, fil) in enumerate(selected):
+    for k, (_index, c, name, fil, shown) in enumerate(selected):
         rep.progress(0.85 + 0.1 * k / max(total, 1), "progress.mesh", name=name)
         V, F = M.extrude(regions[c], opts.thickness_mm, color_z)
         if not len(F):
@@ -264,7 +273,7 @@ def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
         V[:, 1] += dy
         if transform is not None:
             V = transform(V)
-        parts.append(Part(name, V, F, c, fil))
+        parts.append(Part(name, V, F, shown, fil))
     if not parts:
         raise EngineError("error.nothing_selected")
     return parts

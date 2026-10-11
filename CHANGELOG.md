@@ -1,5 +1,18 @@
 # Changelog
 
+## 3.4.0
+
+### Added
+- **Change the color of a part**: click its color square on the page and pick
+  another color. The part prints and shows in that color; its name and
+  suggested filament follow the new color unless you changed them, and ↺
+  brings the original color back.
+
+### Fixed
+- Filament names were cut in the color list: the filament now has a line of
+  its own, the details (shapes, tones, background) go below it, and hovering
+  shows the whole name.
+
 ## 3.3.3
 
 ### Changed
