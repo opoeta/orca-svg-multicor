@@ -100,8 +100,11 @@ direita e a ação principal no canto superior direito.
      **superfície** onde o desenho vai. A lista traz todas as faces planas do
      objeto, com os nomes que você vê na mesa (*Topo*, *Frente*, *Frente
      (interna)* para o lado de dentro da parede da frente...) e o tamanho; de
-     início fica a maior face virada para cima. A visualização **No objeto**
-     mostra o desenho sobre essa face, onde você **arrasta para mover e puxa o
+     início fica a face apoiada na mesa (o desenho nas primeiras camadas). A
+     visualização **No objeto** mostra essa face como o OrcaSlicer mostra,
+     girada como o objeto está na mesa (o fundo como na vista de baixo dele,
+     com a frente da mesa para cima), e o desenho alinhado às bordas do
+     objeto. Ali você **arrasta para mover e puxa o
      canto para mudar o tamanho**; ele fica sempre dentro da superfície
      (*Centralizar* volta ao meio). Escolha a **rotação**, o encaixe
      (*embutido*: a superfície muda de cor; ou *em relevo*) e a largura (vazio =

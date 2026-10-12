@@ -49,7 +49,7 @@ def test_tray_floor_and_rim_are_different_faces(tray_project):
     tops = [f for f in listing["faces"] if f["dir"] == "top"]
     assert sorted(f["z"] for f in tops) == [2.0, 10.0]           # the floor and the rim
     default = next(f for f in listing["faces"] if f["id"] == listing["default"])
-    assert default["dir"] == "top" and default["z"] == 2.0       # the floor, not the rim
+    assert default["dir"] == "bottom" and default["z"] == 0.0    # the one lying on the bed
     assert all(f["outline"].startswith("M") for f in listing["faces"])
 
 
@@ -137,18 +137,107 @@ def test_apply_raised_on_the_front(tray_project, tmp_path):
     assert hi[2] <= 10 + 1e-6 and lo[2] >= -1e-6
 
 
-def test_bottom_reads_correctly_from_below():
-    """On the bottom, the design's right goes to -X: mirrored seen from above."""
+def _marker_at(face, x, y):
+    """Where a small mark at (x, y) of the design lands on the object (its center)."""
+    mark = {"#000000": [orient(box(x - 0.5, y - 0.5, x + 0.5, y + 0.5), 1.0)]}
+    Vp, _ = extrude(place(mark, face)["#000000"], 0.5, -0.5)
+    return to_object(Vp, face).mean(axis=0)
+
+
+def test_bottom_reads_like_orcaslicers_bottom_view():
+    """
+    OrcaSlicer's bottom view looks up with the front of the plate up
+    (Camera::select_view): the design's right is +X and its top is -Y there.
+    """
     V, F = cube(10)
     bottom = next(f for f in planar_faces(V, F) if f.direction == "bottom")
-    marker = {"#000000": [orient(box(2, -1, 4, 1), 1.0)]}     # right of center
-    Vp, _ = extrude(place(marker, bottom)["#000000"], 0.5, -0.5)
-    assert to_object(Vp, bottom)[:, 0].max() < 0
+    right, top = _marker_at(bottom, 3, 0), _marker_at(bottom, 0, 3)
+    assert right[0] > 2 and abs(right[1]) < 1
+    assert top[1] < -2 and abs(top[0]) < 1
+    assert bottom.view == 0.0
 
 
-def test_default_face_prefers_up():
+def test_the_top_and_the_walls_read_like_orcaslicers_views():
     V, F = cube(10)
-    assert default_face(planar_faces(V, F)).direction == "top"
+    faces = {f.direction: f for f in planar_faces(V, F)}
+    right, top = _marker_at(faces["top"], 3, 0), _marker_at(faces["top"], 0, 3)
+    assert right[0] > 2 and top[1] > 2                       # top view: +Y up
+    right, top = _marker_at(faces["front"], 3, 0), _marker_at(faces["front"], 0, 3)
+    assert right[0] > 2 and top[2] > 7                       # front view: +X right, +Z up
+
+
+def _turned(degrees, axis="z"):
+    a = np.radians(degrees)
+    c, s_ = np.cos(a), np.sin(a)
+    m = np.eye(4)
+    if axis == "z":
+        m[:3, :3] = [[c, -s_, 0], [s_, c, 0], [0, 0, 1]]
+    else:                                                     # around Y: turned over
+        m[:3, :3] = [[c, 0, s_], [0, 1, 0], [-s_, 0, c]]
+    return m
+
+
+@pytest.mark.parametrize("degrees, view", [(0, 0.0), (90, 0.0), (30, -30.0), (-20, 20.0), (200, -20.0)])
+def test_the_design_follows_the_object_turned_on_the_plate(degrees, view):
+    """
+    Along the object's edges, up as close as it gets to OrcaSlicer's view; the
+    rest is `view`. Turned counterclockwise seen from above is clockwise seen
+    from below.
+    """
+    V, F = cube(10)
+    world = _turned(degrees)
+    faces = planar_faces(V, F, world=world)
+    bottom = next(f for f in faces if f.direction == "bottom")
+    top = next(f for f in faces if f.direction == "top")
+    assert bottom.view == pytest.approx(view)
+    assert top.view == pytest.approx(-view)
+    # the design's up, on the plate, is OrcaSlicer's bottom-view up (-Y) turned by `view`
+    up_world = world[:3, :3] @ bottom.v
+    a = np.radians(view)
+    right_view, up_view = np.array([1.0, 0, 0]), np.array([0, -1.0, 0])
+    expected = -np.sin(a) * right_view + np.cos(a) * up_view
+    assert up_world == pytest.approx(expected, abs=1e-9)
+    # and along one of the object's own edges
+    assert sorted(np.round(np.abs(bottom.v), 9)) == [0.0, 0.0, 1.0]
+
+
+def test_a_quarter_turn_swaps_the_size_as_seen():
+    V, F = extrude([orient(box(-10, -5, 10, 5), 1.0)], 4.0, 0.0)     # 20 x 10 mm
+    top = next(f for f in planar_faces(V, F, world=_turned(90)) if f.direction == "top")
+    assert top.size == pytest.approx((10.0, 20.0))                    # 10 wide, 20 tall on screen
+    assert top.polygon.bounds == pytest.approx((-5.0, -10.0, 5.0, 10.0))
+
+
+def test_half_turn_is_never_ambiguous():
+    V, F = cube(10)
+    views = {round(next(f for f in planar_faces(V, F, world=_turned(d)) if f.direction == "bottom").view, 6)
+             for d in (45, 45 + 1e-9, 45 - 1e-9, 135, -45)}
+    assert views == {-45.0}
+
+
+def test_an_object_turned_over_reads_from_below():
+    """Turned over on the plate (the object's top on the bed): its top is the bottom face."""
+    V, F = cube(10)
+    world = _turned(180, axis="y")
+    bottom = next(f for f in planar_faces(V, F, world=world) if f.direction == "bottom")
+    assert np.round(bottom.normal).tolist() == [0, 0, 1]             # the object's own top
+    right = world[:3, :3] @ (_marker_at(bottom, 3, 0) - bottom.origin)
+    top = world[:3, :3] @ (_marker_at(bottom, 0, 3) - bottom.origin)
+    assert right[0] > 2 and top[1] < -2
+
+
+def test_a_mirrored_object_keeps_its_own_frame():
+    V, F = cube(10)
+    mirror = np.diag([-1.0, 1.0, 1.0, 1.0])
+    assert all(f.view == 0.0 for f in planar_faces(V, F, world=mirror))
+
+
+def test_default_face_is_the_one_on_the_bed():
+    V, F = cube(10)
+    faces = planar_faces(V, F)
+    assert default_face(faces).direction == "bottom"
+    # nothing on the bed (only the sides and the top offered): the largest facing up
+    assert default_face([f for f in faces if f.direction != "bottom"]).direction == "top"
     assert default_face([]) is None
 
 

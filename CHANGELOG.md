@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.10.0
+
+### Changed
+- **The face lying on the bed is chosen at first** (the design in the first
+  layers); before, the largest face looking up.
+- **The design follows the object as it sits on the plate.** "On the object"
+  shows the face as OrcaSlicer does, turned like the object on the plate, and
+  the design along the object's edges, its top on the edge closest to up in
+  OrcaSlicer's view of that face: the top as seen from above, the walls
+  upright, the bottom as in OrcaSlicer's bottom view (the front of the plate
+  up). Dragging and resizing work on the turned view.
+- On the bottom face, the design used to come upside down compared to
+  OrcaSlicer's bottom view. If you set Rotation to 180° to make up for it, set
+  it back to 0°.
+
 ## 3.9.1
 
 ### Fixed

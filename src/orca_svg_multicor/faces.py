@@ -14,14 +14,22 @@ wall) is "inner", and is named after where it is (the front wall) rather
 than where it looks (the back).
 
 Every face carries a right-handed frame (u, v, n): n is the outward normal,
-v points "up" as seen from outside the face (+Z for walls, +Y for the top and
-the bottom) and u = v x n points right. Seen from outside, the design reads
+v points "up" and u = v x n points right, as seen from outside the face.
+"Up" is the one of the object's edges closest to up in OrcaSlicer's own view
+of that face, for the object as it sits on the plate: +Y from the top, -Y
+from the bottom (its bottom view has the front of the plate up), +Z for the
+walls. What is left of the object's turn on the plate (under 45 degrees) is
+the face's `view` angle, so the page shows the face as OrcaSlicer does, with
+the design along the object's edges. Seen from outside, the design reads
 correctly on every face; on the bottom that means mirrored when seen from
 above, which is what printing it on the bed needs.
 """
 
+import math
+
 import numpy as np
 import shapely
+from shapely.affinity import affine_transform as _affine
 from shapely.affinity import rotate as _rotate
 from shapely.affinity import scale as _scale
 from shapely.affinity import translate as _translate
@@ -35,13 +43,14 @@ MAX_FACES = 24
 
 class Face:
     __slots__ = ("id", "normal", "u", "v", "origin", "polygon", "area", "size",
-                 "direction", "height", "inner")
+                 "direction", "height", "inner", "view")
 
     def as_dict(self):
         x0, y0, x1, y1 = self.polygon.bounds
         return {"id": self.id, "dir": self.direction, "inner": self.inner,
                 "w": round(self.size[0], 1), "h": round(self.size[1], 1),
                 "area": round(self.area, 1), "z": round(self.height, 1),
+                "view": round(self.view, 2),
                 "outline": outline_path(self.polygon),
                 "bounds": [round(x0, 2), round(-y1, 2), round(x1, 2), round(-y0, 2)]}
 
@@ -53,6 +62,59 @@ def _frame(n):
     u /= np.linalg.norm(u)
     v = np.cross(n, u)
     return u, v, n
+
+
+def _view_up(n_world):
+    """Up in OrcaSlicer's standard view of a face looking along n_world (Camera::select_view)."""
+    if n_world[2] > 0.9:
+        return np.array([0.0, 1.0, 0.0])               # top view
+    if n_world[2] < -0.9:
+        return np.array([0.0, -1.0, 0.0])              # bottom view: the front of the plate up
+    up = np.array([0.0, 0.0, 1.0]) - n_world * n_world[2]
+    norm = np.linalg.norm(up)
+    return up / norm if norm > 1e-9 else None
+
+
+def _view_turn(rot, u, v):
+    """
+    (k, view): turning the frame (u, v) by k quarter turns counterclockwise
+    puts its "up" on the object's edge closest to up as OrcaSlicer shows the
+    face; `view` (degrees, -45..45) is what is left, counterclockwise on screen.
+    rot: the object's 3x3 placement on the plate.
+    """
+    if np.linalg.det(rot) <= 0:            # a mirrored instance: keep the object's own frame
+        return 0, 0.0
+    u_w, v_w = rot @ u, rot @ v
+    n_w = np.cross(u_w, v_w)
+    norm = np.linalg.norm(n_w)
+    if norm < 1e-12:
+        return 0, 0.0
+    n_w /= norm
+    up = _view_up(n_w)
+    if up is None:
+        return 0, 0.0
+    right = np.cross(up, n_w)
+    v_w = v_w - n_w * float(v_w @ n_w)
+    theta = round(math.degrees(math.atan2(-float(v_w @ right), float(v_w @ up))), 4)
+    turns = math.floor(theta / 90.0 + 0.5)
+    return (-turns) % 4, theta - 90.0 * turns
+
+
+# counterclockwise quarter turns of a frame: (cos, sin) of k * 90 degrees
+_QUARTER = ((1, 0), (0, 1), (-1, 0), (0, -1))
+
+
+def _turn(face, k):
+    """Turns the face's frame by k quarter turns; its outline follows, in the new frame."""
+    if not k:
+        return
+    c, s_ = _QUARTER[k]
+    u, v = face.u, face.v
+    face.u, face.v = c * u + s_ * v, -s_ * u + c * v
+    # a point x u + y v has (x c + y s, -x s + y c) in the turned frame
+    face.polygon = orient(_affine(face.polygon, [c, s_, -s_, c, 0.0, 0.0]), 1.0)
+    if k % 2:
+        face.size = (face.size[1], face.size[0])
 
 
 def _direction(n_world):
@@ -147,6 +209,8 @@ def planar_faces(V, F, world=None, min_area=MIN_FACE_AREA, limit=MAX_FACES):
                 f.height = float((np.asarray(world, dtype=float) @ np.append(f.origin, 1.0))[2])
             else:
                 f.height = float(f.origin[2])
+            k, f.view = _view_turn(rot, u, v)
+            _turn(f, k)
             faces.append(f)
     faces.sort(key=lambda f: -f.area)
     faces = faces[:limit]
@@ -179,7 +243,14 @@ class _RayCaster:
 
 
 def default_face(faces):
-    """The face a design most likely goes on: the largest one facing up."""
+    """
+    The face a design most likely goes on: the one lying on the bed (the
+    design is then in the first layers), else the largest one facing up.
+    """
+    downs = [f for f in faces if f.direction == "bottom" and not f.inner]
+    if downs:
+        low = min(f.height for f in downs)
+        return next(f for f in downs if f.height <= low + 0.05)    # faces come largest first
     ups = [f for f in faces if f.direction == "top" and not f.inner]
     return (ups or faces or [None])[0]
 

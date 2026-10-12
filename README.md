@@ -106,8 +106,11 @@ right, the main action at the top right.
      and the **surface** the design goes on. The list has every flat face of
      the object, named as you see them on the plate (*Top*, *Front*,
      *Front (inner)* for the inside of the front wall...) with their size; the
-     largest face looking up is chosen at first. The **On the object** view
-     shows the design on that face, where you **drag it to move it and drag
+     face lying on the bed is chosen at first (the design in the first
+     layers). The **On the object** view shows that face as OrcaSlicer does,
+     turned like the object on the plate (the bottom as in its bottom view,
+     with the front of the plate up), and the design along the object's
+     edges. There you **drag it to move it and drag
      its corner to resize it**; it always stays on the surface (*Center* puts
      it back). Choose the **rotation**, *inlaid* (the surface changes color)
      or *raised*, and the width (empty = 85% of the face). On the face lying

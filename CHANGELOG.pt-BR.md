@@ -2,6 +2,21 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.10.0
+
+### Mudou
+- **De início fica a face apoiada na mesa** (o desenho nas primeiras
+  camadas); antes, a maior face virada para cima.
+- **O desenho segue o objeto como ele está na mesa.** "No objeto" mostra a
+  face como o OrcaSlicer mostra, girada como o objeto está na mesa, e o
+  desenho alinhado às bordas do objeto, com o topo na borda mais próxima do
+  "para cima" da vista do OrcaSlicer para aquela face: o topo visto de cima,
+  as paredes em pé, o fundo como na vista de baixo do OrcaSlicer (a frente da
+  mesa para cima). Arrastar e redimensionar funcionam na vista girada.
+- Na face de baixo, o desenho saía de cabeça para baixo em relação à vista de
+  baixo do OrcaSlicer. Se você usava Rotação 180° para compensar, volte para
+  0°.
+
 ## 3.9.1
 
 ### Corrigido

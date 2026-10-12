@@ -469,11 +469,19 @@
   function renderPlacement() {
     var box = $('preview_place'), face = selectedFace(), a = S.analysis;
     if (!face) { box.textContent = ''; box.removeAttribute('data-key'); return; }
-    var key = [S.faces.project, S.faces.mtime, face.id, a ? a.svg + a.preview.length : ''].join('|');
+    var key = [S.faces.project, S.faces.mtime, face.id, face.view, a ? a.svg + a.preview.length : ''].join('|');
     if (box.getAttribute('data-key') !== key) {
       box.setAttribute('data-key', key);
-      var b = face.bounds, w = b[2] - b[0], h = b[3] - b[1], pad = Math.max(w, h) * 0.06 + 1;
-      var vb = [b[0] - pad, b[1] - pad, w + 2 * pad, h + 2 * pad].map(function (n) { return n.toFixed(2); });
+      // the face turned as OrcaSlicer shows it: what is left of the object's
+      // turn on the plate (counterclockwise; SVG turns clockwise, Y down)
+      var turn = -(face.view || 0), r = turn * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+      var b = face.bounds, xs = [], ys = [];
+      [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].forEach(function (p) {
+        xs.push(p[0] * c - p[1] * sn); ys.push(p[0] * sn + p[1] * c);
+      });
+      var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
+      var w = Math.max.apply(null, xs) - x0, h = Math.max.apply(null, ys) - y0, pad = Math.max(w, h) * 0.06 + 1;
+      var vb = [x0 - pad, y0 - pad, w + 2 * pad, h + 2 * pad].map(function (n) { return n.toFixed(2); });
       var design = '';
       if (a) {
         var g = '<g class="dz">' + designPaths(a) + '</g>';
@@ -484,8 +492,9 @@
       box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb.join(' ') +
         '" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="svgm_face">' +
         '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
+        '<g class="turn" transform="rotate(' + turn.toFixed(3) + ')">' +
         '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
-        '<path class="face-edge" d="' + face.outline + '"/></svg>';
+        '<path class="face-edge" d="' + face.outline + '"/></g></svg>';
       S.handleSize = Math.max(w, h) * 0.035;
     }
     positionDesign();
@@ -538,10 +547,11 @@
 
   // drag the design to move it, its corner to resize it
   var drag = null;
+  // a pointer position in the face's own frame (inside the turned group)
   function svgPoint(svg, e) {
-    var pt = svg.createSVGPoint();
+    var pt = svg.createSVGPoint(), space = svg.querySelector('.turn') || svg;
     pt.x = e.clientX; pt.y = e.clientY;
-    return pt.matrixTransform(svg.getScreenCTM().inverse());
+    return pt.matrixTransform(space.getScreenCTM().inverse());
   }
   function startDrag(e) {
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
