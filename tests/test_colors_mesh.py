@@ -106,3 +106,15 @@ def test_reduce_keeps_a_small_distinct_color():
     out, mapping = C.reduce_colors(reg, 7)
     assert "#2c953a" in out                               # the green stays
     assert "#a6d6e4" in mapping["#54bfed"]                # the light cyan joined the sky blue
+
+
+def test_levels_match_reduce_colors_at_every_count():
+    shares = {"#ffffff": 30.6, "#050808": 28.1, "#54bfed": 15.0, "#a75a21": 12.6,
+              "#a6d6e4": 3.8, "#235ea6": 3.7, "#e7681d": 3.5, "#2c953a": 2.7}
+    reg = {c: [box(0, 2 * k, a, 2 * k + 1)] for k, (c, a) in enumerate(shares.items())}
+    levels = C.color_levels(reg, upto=12)
+    assert sorted(levels) == [2, 3, 4, 5, 6, 7, 8]
+    for k, mapping in levels.items():
+        _out, reduced = C.reduce_colors(reg, k, pre_tolerance=0)
+        assert set(mapping.values()) == set(reduced)
+        assert all(c in reduced[mapping[c]] for c in reg)

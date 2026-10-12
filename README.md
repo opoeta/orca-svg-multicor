@@ -65,11 +65,17 @@ Requires an OrcaSlicer build with Python plugin support.
 The page works like the Prepare tab: settings on the left, the view on the
 right, the main action at the top right.
 
-1. **SVG file**: *Browse…* and choose the SVG. The colors appear on their own.
+1. **SVG file**: *Browse…* and choose the SVG. **How many colors?** shows the
+   drawing with 2, 3 ... 12 colors (the count of your filaments is marked);
+   click one. The button next to *Max. colors* brings it back, and the Config
+   tab can turn it off.
 2. **Colors**: hover a row to highlight it in the view. Rename parts, untick
    what you do not want (a plain background, for example; colors that span the
    whole drawing are tagged *background?*), and pick each color's filament, or
-   let the wand match them to the filaments loaded in OrcaSlicer.
+   let the wand match them to the filaments loaded in OrcaSlicer. Or **click a
+   color in the drawing** (Ctrl+click to add more) and choose its filament: the
+   drawing shows the filament's color. The color square of a row changes the
+   color of that part; ↺ brings the original back.
 3. **Apply to**:
    - **An object on the plate**: save the project (Ctrl+S), pick the object
      and the **surface** the design goes on. The list has every flat face of

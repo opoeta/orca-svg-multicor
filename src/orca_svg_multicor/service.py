@@ -36,7 +36,8 @@ ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 def settings_defaults():
     inp, out = default_folders()
     d = {"language": "auto", "input_folder": inp, "output_folder": out,
-         "target": "plate", "open_after": False, "icon_mode": "path"}
+         "target": "plate", "open_after": False, "icon_mode": "path",
+         "ask_colors": True}
     d.update(Options.DEFAULTS)
     return d
 
@@ -402,7 +403,8 @@ class Service:
         if fil is None:
             fil = self._filaments()["filaments"]
         rep.progress(0.0, "progress.reading")
-        res = engine.analyze(svg, opts, filaments=fil, tr=self.tr, rep=rep)
+        res = engine.analyze(svg, opts, filaments=fil, tr=self.tr, rep=rep,
+                             levels=bool(msg.get("levels")))
         warnings = [self.tr(k, **p) for k, p in res.pop("warnings")]
         for w in warnings:
             self.warn(w)

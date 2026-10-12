@@ -70,6 +70,7 @@
     each('[data-i18n-ph]', function (e) { e.placeholder = t(e.getAttribute('data-i18n-ph')); });
     each('[data-i18n-title]', function (e) { e.title = t(e.getAttribute('data-i18n-title')); });
     each('[data-i18n-aria]', function (e) { e.setAttribute('aria-label', t(e.getAttribute('data-i18n-aria'))); });
+    $('preview_result').title = $('preview_place').title = t('pop.hint');
     renderSvgLine();
     renderStatus();
     renderBaseFilament();
@@ -305,6 +306,7 @@
     res.hidden = view !== 'result';
     img.hidden = view !== 'original';
     applyRecolors();
+    markPicked();
   }
 
   function highlight(color) {
@@ -592,22 +594,130 @@
     return 0;
   }
 
+  function analysisColor(key) {
+    var list = S.analysis ? S.analysis.colors : [];
+    for (var i = 0; i < list.length; i++) if (list[i].color === key) return list[i];
+    return null;
+  }
+
   // a part printed as another color: name and filament follow the new color
-  // unless the user chose them
-  function recolor(c, value) {
-    var st = S.rows[c.color];
-    st.recolor = value && !sameColor(value, c.color) ? value.toLowerCase() : null;
+  // unless the user chose them. Returns the color to describe, if any.
+  function setRecolor(key, value) {
+    var st = S.rows[key], c = analysisColor(key);
+    if (!st || !c) return null;
+    st.recolor = value && !sameColor(value, key) ? value.toLowerCase() : null;
     st.describing = !!st.recolor;
     if (!st.recolor) {
       if (!st.nameEdited) st.name = c.name;
       st.suggested = c.filament;
       if (!st.filEdited) st.filament = c.filament;
-    } else {
-      send({ action: 'describe_colors', colors: [st.recolor],
-             filaments: S.filaments.length ? S.filaments : null });
     }
+    return st.recolor;
+  }
+
+  function describeColors(list) {
+    var wanted = list.filter(function (c, i) { return c && list.indexOf(c) === i; });
+    if (wanted.length) {
+      send({ action: 'describe_colors', colors: wanted, filaments: S.filaments.length ? S.filaments : null });
+    }
+  }
+
+  function recolor(c, value) {
+    describeColors([setRecolor(c.color, value)]);
     renderColors();
     applyRecolors();
+  }
+
+  /* ------------------------------------------------------------ pick colors in the drawing */
+  // a click on a color of the drawing opens its filaments; Ctrl (or Shift)
+  // + click adds colors, and the choice goes to every selected one
+  var picked = [];
+
+  function markPicked() {
+    ['preview_result', 'preview_place'].forEach(function (id) {
+      var stage = $(id);
+      stage.classList.toggle('picking', picked.length > 0);
+      Array.prototype.forEach.call(stage.querySelectorAll('path[data-key]'), function (p) {
+        p.classList.toggle('sel', picked.indexOf(p.getAttribute('data-key')) >= 0);
+      });
+    });
+    each('.crow', function (r) { r.classList.toggle('sel', picked.indexOf(r.getAttribute('data-color')) >= 0); });
+  }
+
+  function openPicker(key, add, x, y) {
+    if (!S.rows[key]) return;
+    if (add) {
+      var at = picked.indexOf(key);
+      if (at >= 0) picked.splice(at, 1); else picked.push(key);
+      if (!picked.length) { closePicker(); return; }
+    } else {
+      picked = [key];
+    }
+    markPicked();
+    renderPicker();
+    placePicker(x, y);
+  }
+
+  function renderPicker() {
+    var rows = picked.map(function (k) { return S.rows[k]; });
+    var shown = picked.map(function (k) { return S.rows[k].recolor || k; });
+    var one = rows.length === 1;
+    $('fp_sw').style.background = one ? shown[0] : 'linear-gradient(90deg, ' + shown.map(function (c, i) {
+      return c + ' ' + (100 * i / shown.length) + '% ' + (100 * (i + 1) / shown.length) + '%';
+    }).join(', ') + ')';
+    $('fp_name').textContent = one ? rows[0].name : t('pop.many', { n: rows.length });
+    var common = rows.every(function (r) { return r.filament === rows[0].filament; }) ? rows[0].filament : null;
+    var list = $('fp_list');
+    list.textContent = '';
+    filamentList().forEach(function (f) {
+      var b = el('button', 'fp-item' + (f.n === common ? ' on' : ''));
+      b.type = 'button';
+      b.setAttribute('role', 'listitem');
+      var chip = el('i');
+      if (f.color) chip.style.background = f.color; else chip.className = 'fsw none';
+      b.appendChild(chip);
+      b.appendChild(el('span', null, f.name ? f.n + ' · ' + f.name : String(f.n)));
+      b.title = b.textContent;
+      b.addEventListener('click', function () { applyFilament(f); });
+      list.appendChild(b);
+    });
+    $('fp_color').value = shown[0];
+    $('fp_off').textContent = t(rows.every(function (r) { return !r.enabled; }) ? 'pop.on' : 'pop.off');
+    $('fil_pop').hidden = false;
+  }
+
+  function placePicker(x, y) {
+    var pop = $('fil_pop'), box = $('preview').getBoundingClientRect();
+    var left = Math.min(x - box.left + 12, box.width - pop.offsetWidth - 8);
+    var top = Math.min(y - box.top + 12, box.height - pop.offsetHeight - 8);
+    pop.style.left = Math.max(8, left) + 'px';
+    pop.style.top = Math.max(8, top) + 'px';
+  }
+
+  function closePicker() {
+    $('fil_pop').hidden = true;
+    picked = [];
+    markPicked();
+  }
+
+  function finishPick(toDescribe) {
+    describeColors(toDescribe || []);
+    closePicker();
+    renderColors();
+    applyRecolors();
+  }
+
+  // the chosen filament, and its color in the drawing, as it will print
+  function applyFilament(f) {
+    var names = picked.map(function (key) {
+      var st = S.rows[key];
+      st.enabled = true;
+      var c = f.color ? setRecolor(key, f.color) : null;
+      st.filament = f.n;
+      st.filEdited = true;
+      return c;
+    });
+    finishPick(names);
   }
 
   function onColorsInfo(m) {
@@ -677,7 +787,7 @@
     if (S.busy) { S.pendingAnalyze = opt; return; }
     S.quiet = !!opt.quiet;
     begin('analyze', opt.quiet ? null : 'status.analyzing', { name: basename(S.svg) });
-    send({ action: 'analyze', svg: S.svg, options: options(),
+    send({ action: 'analyze', svg: S.svg, options: options(), levels: !!S.askColors,
            filaments: S.filaments.length ? S.filaments : null });
   }
   var reTimer = null;
@@ -753,8 +863,83 @@
 
   function useSvg(path) {
     S.svg = path;
+    S.askColors = S.settings.ask_colors !== false;   // a new drawing: how many colors?
     $('pick_fallback').hidden = true;
     renderSvgLine();
+    analyze();
+  }
+
+  /* ------------------------------------------------------------ how many colors? */
+  // levels.preview has one path per color; every count recolors that one
+  // drawing through CSS variables (--k0, --k1 ...), drawn with <use>.
+  function openWizard(levels) {
+    var counts = Object.keys(levels.counts).map(Number).sort(function (a, b) { return a - b; });
+    if (!counts.length) return;
+    var src = new DOMParser().parseFromString(levels.preview, 'image/svg+xml').documentElement;
+    var vb = src.getAttribute('viewBox') || '0 0 1 1';
+    var NS = 'http://www.w3.org/2000/svg';
+    // a plain group (not a <symbol>): the thumbnails share its coordinates
+    var defs = $('wiz_defs'), box = document.createElementNS(NS, 'defs'), sym = document.createElementNS(NS, 'g');
+    var keys = [], idx = {};
+    defs.textContent = '';
+    sym.setAttribute('id', 'svgm_levels');
+    Array.prototype.forEach.call(src.querySelectorAll('path[data-key]'), function (p) {
+      var key = p.getAttribute('data-key');
+      if (!(key in idx)) { idx[key] = keys.length; keys.push(key); }
+      var q = document.createElementNS(NS, 'path');
+      q.setAttribute('d', p.getAttribute('d'));
+      q.setAttribute('fill-rule', 'evenodd');
+      q.setAttribute('style', 'fill:var(--k' + idx[key] + ')');
+      sym.appendChild(q);
+    });
+    box.appendChild(sym);
+    defs.appendChild(box);
+
+    var grid = $('wiz_grid'), current = num($('max_colors').value, 0);
+    var suggested = counts.indexOf(S.filaments.length) >= 0 ? S.filaments.length : null;
+    grid.textContent = '';
+    counts.forEach(function (k) {
+      var lv = levels.counts[String(k)];
+      var card = el('button', 'wiz-card' + (k === suggested ? ' suggested' : '') + (k === current ? ' current' : ''));
+      card.type = 'button';
+      card.setAttribute('role', 'listitem');
+      var svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
+      svg.setAttribute('class', 'wiz-thumb');
+      svg.setAttribute('viewBox', vb);
+      svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      use.setAttribute('href', '#svgm_levels');
+      use.setAttribute('style', keys.map(function (key, i) {
+        return '--k' + i + ':' + (lv.map[key] || key);
+      }).join(';'));
+      svg.appendChild(use);
+      card.appendChild(svg);
+      var sw = el('div', 'wiz-sw');
+      lv.colors.forEach(function (c) {
+        var chip = el('i'); chip.style.background = c[0]; chip.title = c[0] + ' · ' + fmt(c[1]) + '%';
+        sw.appendChild(chip);
+      });
+      card.appendChild(sw);
+      card.appendChild(el('span', 'wiz-n', t('wiz.count', { n: k })));
+      if (k === suggested) card.appendChild(el('span', 'wiz-badge', t('wiz.filaments')));
+      card.addEventListener('click', function () { chooseColorCount(k); });
+      grid.appendChild(card);
+    });
+    $('wizard').hidden = false;
+    grid.scrollTop = 0;
+    var first = grid.querySelector('.suggested') || grid.querySelector('.current') || grid.firstChild;
+    if (first) first.focus({ preventScroll: true });
+  }
+
+  function closeWizard() {
+    $('wizard').hidden = true;
+    $('wiz_defs').textContent = '';
+    $('wiz_grid').textContent = '';
+  }
+
+  function chooseColorCount(k) {
+    closeWizard();
+    $('max_colors').value = k;
+    rememberSoon();
     analyze();
   }
 
@@ -830,6 +1015,8 @@
 
   function onAnalysis(m) {
     var quiet = S.quiet;
+    var ask = S.askColors && m.levels;
+    S.askColors = false;
     var sameFile = S.analysis && S.analysis.svg_input === S.svg;
     m.svg_input = S.svg;
     if (!sameFile) S.rows = {};
@@ -845,6 +1032,7 @@
     } else if (S.status.cls !== 'err') {
       setStatus('status.updated', null, 'ok');
     }
+    if (ask) openWizard(m.levels);
   }
 
   function plateProblem(m) {
@@ -957,6 +1145,34 @@
     });
 
     $('btn_plate_read').addEventListener('click', function () { readPlate(false); });
+    $('btn_wizard').addEventListener('click', function (e) {
+      e.preventDefault();                       // inside a <label>: do not focus the input
+      if (!S.svg) { setStatus('error.no_svg', null, 'err'); return; }
+      if (S.analysis && S.analysis.levels && S.analysis.svg_input === S.svg) openWizard(S.analysis.levels);
+      else { S.askColors = true; analyze(); }
+    });
+    $('wiz_keep').addEventListener('click', closeWizard);
+
+    // a color of the drawing: its filament (Ctrl/Shift + click: several)
+    $('preview').addEventListener('click', function (e) {
+      if (e.target.closest('#fil_pop') || e.target.closest('#wizard')) return;
+      var p = e.target.closest('path[data-key]');
+      var key = p && p.getAttribute('data-key');
+      if (!key || !S.rows[key]) { closePicker(); return; }
+      openPicker(key, e.ctrlKey || e.metaKey || e.shiftKey, e.clientX, e.clientY);
+    });
+    document.addEventListener('mousedown', function (e) {
+      if (!$('fil_pop').hidden && !e.target.closest('#preview')) closePicker();
+    });
+    $('fp_color').addEventListener('change', function () {
+      var value = $('fp_color').value;
+      finishPick(picked.map(function (key) { return setRecolor(key, value); }));
+    });
+    $('fp_off').addEventListener('click', function () {
+      var on = picked.every(function (key) { return !S.rows[key].enabled; });
+      picked.forEach(function (key) { S.rows[key].enabled = on; });
+      finishPick([]);
+    });
     $('btn_run').addEventListener('click', run);
     $('btn_open_folder').addEventListener('click', function (e) {
       e.preventDefault();
@@ -964,6 +1180,8 @@
     });
 
     document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !$('wizard').hidden) { e.preventDefault(); closeWizard(); return; }
+      if (e.key === 'Escape' && !$('fil_pop').hidden) { e.preventDefault(); closePicker(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
     });
 

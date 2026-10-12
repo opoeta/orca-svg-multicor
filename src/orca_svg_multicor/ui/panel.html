@@ -9,6 +9,7 @@
   <symbol id="i-plate" viewBox="0 0 24 24"><path d="M3 15l9 5 9-5-9-5zM12 10V4"/></symbol>
   <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20 16 8M14 4v2M20 10h-2M18 4l-1.5 1.5M10 4l.8 1.6"/></symbol>
   <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5zM3 13l9 5 9-5"/></symbol>
+  <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4"/></symbol>
 </svg>
 
@@ -43,7 +44,9 @@
         <span class="ctl"><span class="unit" data-unit="mm"><input id="thickness_mm" type="number" min="0.04" step="0.04" data-opt="thickness_mm"></span></span></label>
       <label class="row"><span data-i18n="opt.max_colors">Max. colors</span>
         <span class="ctl"><input id="max_colors" type="number" min="0" max="64" step="1" data-opt="max_colors"
-              data-i18n-title="opt.max_colors_hint"></span></label>
+              data-i18n-title="opt.max_colors_hint">
+          <button type="button" class="flat icon" id="btn_wizard" data-i18n-title="wiz.open" title="Choose the number of colors"
+                  aria-label="Choose the number of colors"><svg class="ic"><use href="#i-grid"/></svg></button></span></label>
     </section>
 
     <!-- COLORS ------------------------------------------------------------->
@@ -158,6 +161,25 @@
       <img class="stage" id="preview_original" alt="" hidden>
       <div class="stage" id="preview_place" hidden></div>
       <div class="spinner" id="preview_spin" hidden></div>
+      <!-- how many colors? one drawing, recolored for each count -->
+      <section class="wizard" id="wizard" hidden aria-labelledby="wiz_title">
+        <div class="wiz-head">
+          <h3 id="wiz_title" data-i18n="wiz.title">How many colors?</h3>
+          <p class="note" data-i18n="wiz.hint">Each color becomes a part with its own filament. Pick how many the design will have; you can change it later.</p>
+        </div>
+        <div class="wiz-grid" id="wiz_grid" role="list"></div>
+        <div class="wiz-foot"><button type="button" class="flat" id="wiz_keep" data-i18n="wiz.keep">Keep as it is</button></div>
+      </section>
+      <svg id="wiz_defs" width="0" height="0" aria-hidden="true" style="position:absolute"></svg>
+      <!-- a click on a color of the drawing: its filament -->
+      <div class="fil-pop" id="fil_pop" hidden role="dialog" aria-labelledby="fp_name">
+        <div class="fp-head"><i class="fp-sw" id="fp_sw"></i><span class="fp-name" id="fp_name"></span></div>
+        <div class="fp-list" id="fp_list" role="list"></div>
+        <div class="fp-foot">
+          <label class="flat fp-other"><span data-i18n="pop.other">Other color…</span><input type="color" id="fp_color"></label>
+          <button type="button" class="flat" id="fp_off" data-i18n="pop.off">Do not print</button>
+        </div>
+      </div>
     </div>
 
     <ul class="warnings" id="warnings" hidden></ul>

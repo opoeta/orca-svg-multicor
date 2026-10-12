@@ -205,3 +205,12 @@ def test_describe_colors_names_and_matches():
                 "filaments": [{"n": 3, "color": "#ff7700"}]})
     msg = next(m for m in out if m.get("type") == "colors_info")
     assert msg["items"] == {"#ff8000": {"name": "laranja", "filament": 3}}
+
+
+def test_analyze_offers_every_color_count_when_asked():
+    assert E.analyze(BADGE, Options())["levels"] is None
+    levels = E.analyze(BADGE, Options(max_colors=2), levels=True)["levels"]
+    assert sorted(int(k) for k in levels["counts"]) == [2, 3, 4]      # 4 tones after merging
+    four = levels["counts"]["4"]
+    assert len(four["colors"]) == 4 and sum(p for _, p in four["colors"]) == pytest.approx(100, abs=0.5)
+    assert levels["preview"].startswith("<svg") and 'data-key="' in levels["preview"]

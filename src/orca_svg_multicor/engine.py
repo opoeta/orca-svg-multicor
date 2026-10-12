@@ -94,12 +94,8 @@ def scale_for(doc, opts):
     return opts.size_mm / w
 
 
-def process(doc, scale, opts, rep=None):
-    """
-    Runs the geometry for `doc` at `scale` and merges/reduces the colors.
-    Returns (regions, mapping, raw_count) with regions in mm centered on 0.
-    """
-    rep = rep or Reporter()
+def _raw_regions(doc, scale, opts, rep):
+    """Every color of the drawing as visible regions, in mm centered on 0 (cached)."""
     key = (getattr(doc, "cache_key", None) or ("doc", id(doc)), round(scale, 9),
            opts.include_strokes, opts.step_mm, opts.precision_mm, opts.min_area_mm2)
     with _cache_lock:
@@ -120,6 +116,16 @@ def process(doc, scale, opts, rep=None):
     regions = dict(cached)
     if not regions:
         raise EngineError("error.no_regions")
+    return regions
+
+
+def process(doc, scale, opts, rep=None):
+    """
+    Runs the geometry for `doc` at `scale` and merges/reduces the colors.
+    Returns (regions, mapping, raw_count) with regions in mm centered on 0.
+    """
+    rep = rep or Reporter()
+    regions = _raw_regions(doc, scale, opts, rep)
     raw = len(regions)
     rep.progress(0.82, "progress.colors")
     regions, map1 = C.merge_similar(regions, opts.merge_tolerance)
@@ -156,8 +162,41 @@ def _default_filaments(order, filaments):
     return out
 
 
-def analyze(svg_path, opts, filaments=None, tr=None, rep=None):
-    """Everything the page needs to show the colors and the preview."""
+LEVELS_UPTO = 12
+
+
+def color_choices(doc, scale, opts, rep=None, upto=LEVELS_UPTO):
+    """
+    The drawing with 2, 3 ... `upto` colors, for choosing how many: one
+    preview with a path per color, and for each count the color each one
+    becomes and the share of every part. None when there is nothing to choose.
+    """
+    rep = rep or Reporter()
+    regions = _raw_regions(doc, scale, opts, rep)
+    regions, _ = C.merge_similar(regions, opts.merge_tolerance)
+    regions, _ = C.merge_similar(regions, 4.0)     # identical tones, as reduce_colors() does
+    levels = C.color_levels(regions, upto)
+    if not levels:
+        return None
+    areas = {c: G.total_area(regions[c]) for c in regions}
+    total = sum(areas.values()) or 1.0
+    counts = {}
+    for k, mapping in sorted(levels.items()):
+        share = {}
+        for c, r in mapping.items():
+            share[r] = share.get(r, 0.0) + areas[c]
+        counts[str(k)] = {"map": mapping,
+                          "colors": [[r, round(100.0 * a / total, 1)]
+                                     for r, a in sorted(share.items(), key=lambda x: -x[1])]}
+    preview = G.preview_svg([(c, c, regions[c]) for c in reversed(ordered(regions))])
+    return {"preview": preview, "counts": counts}
+
+
+def analyze(svg_path, opts, filaments=None, tr=None, rep=None, levels=False):
+    """
+    Everything the page needs to show the colors and the preview; with
+    `levels`, also color_choices() for the "how many colors?" step.
+    """
     tr = tr or Translator()
     rep = rep or Reporter()
     doc = load_document(svg_path, opts.include_strokes)
@@ -205,6 +244,7 @@ def analyze(svg_path, opts, filaments=None, tr=None, rep=None):
         "physical": doc.physical,
         "preview": G.preview_svg(layers),
         "warnings": [(k, p) for k, p in doc.warnings],
+        "levels": color_choices(doc, scale, opts, rep) if levels else None,
     }
 
 

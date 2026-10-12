@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.5.0
+
+### Added
+- **How many colors?** Opening an SVG shows the drawing with 2, 3 ... 12
+  colors side by side, the count of your filaments marked; a click sets
+  "Max. colors". The button next to "Max. colors" brings it back; the Config
+  tab can turn it off ("Ask how many colors when opening an SVG").
+- **Click a color in the drawing** to choose its filament; Ctrl+click (or
+  Shift+click) selects several, and the choice goes to all of them. The
+  drawing then shows the filament's color. The same menu has "Other color…"
+  and "Do not print".
+
 ## 3.4.2
 
 ### Fixed

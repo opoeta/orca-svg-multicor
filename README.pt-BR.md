@@ -61,11 +61,17 @@ atribuídas aos seus filamentos.
 A página funciona como a aba Preparar: ajustes à esquerda, visualização à
 direita e a ação principal no canto superior direito.
 
-1. **Arquivo SVG**: *Procurar…* e escolha o SVG. As cores aparecem sozinhas.
+1. **Arquivo SVG**: *Procurar…* e escolha o SVG. **Quantas cores?** mostra o
+   desenho com 2, 3 ... 12 cores (o número dos seus filamentos vem marcado);
+   clique numa. O botão ao lado de *Máx. de cores* traz a escolha de volta, e a
+   aba Config pode desligá-la.
 2. **Cores**: passe o mouse numa linha para destacá-la na visualização.
    Renomeie as peças, desmarque o que não quer (um fundo, por exemplo; cores que
    ocupam o desenho inteiro recebem a etiqueta *fundo?*) e escolha o filamento
    de cada cor, ou deixe a varinha casar com os filamentos carregados no Orca.
+   Ou **clique numa cor do desenho** (Ctrl+clique para juntar mais) e escolha o
+   filamento: o desenho mostra a cor do filamento. O quadrado de cor de uma
+   linha muda a cor daquela peça; o ↺ volta à original.
 3. **Aplicar em**:
    - **Um objeto da mesa**: salve o projeto (Ctrl+S), escolha o objeto e a
      **superfície** onde o desenho vai. A lista traz todas as faces planas do

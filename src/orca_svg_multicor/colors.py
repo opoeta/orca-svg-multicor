@@ -260,6 +260,23 @@ def reduce_colors(regions, maximum, pre_tolerance=4.0):
         if len(regions) <= maximum:
             return regions, map1
 
+    work = {c: [c] for c in regions}
+    for keep, drop in merge_sequence(regions)[:len(regions) - maximum]:
+        work[keep].extend(work.pop(drop))
+    merged = _fuse(regions, work)
+    mapping = {rep: [o for m in group for o in map1.get(m, [m])]
+               for rep, group in work.items()}
+    return merged, mapping
+
+
+def merge_sequence(regions):
+    """
+    Every merge from len(regions) parts down to one, in the order
+    reduce_colors() makes them: [(kept color, merged color), ...]. The pair
+    merged each time costs the least, the smaller area times their Delta E;
+    the smaller part takes the color of the larger. The order does not depend
+    on how many colors are wanted, so one pass gives every level.
+    """
     import numpy as np  # only when there is something to reduce
 
     names = list(regions)
@@ -271,22 +288,42 @@ def reduce_colors(regions, maximum, pre_tolerance=4.0):
         for j in range(i + 1, n):
             dist[i, j] = dist[j, i] = delta_e(labs[i], labs[j])
     alive = np.ones(n, dtype=bool)
-    members = {i: [names[i]] for i in range(n)}
-    while alive.sum() > maximum:
+    out = []
+    while alive.sum() > 1:
         cost = np.minimum.outer(area, area) * dist
         cost[~(alive[:, None] & alive[None, :])] = np.inf
         np.fill_diagonal(cost, np.inf)
         i, j = np.unravel_index(int(np.argmin(cost)), cost.shape)
         keep, drop = (i, j) if area[i] >= area[j] else (j, i)
-        members[keep].extend(members.pop(drop))
+        out.append((names[keep], names[drop]))
         area[keep] += area[drop]
         alive[drop] = False
+    return out
 
-    work = {names[k]: v for k, v in members.items()}
-    merged = _fuse(regions, work)
-    mapping = {rep: [o for m in group for o in map1.get(m, [m])]
-               for rep, group in work.items()}
-    return merged, mapping
+
+def color_levels(regions, upto=12):
+    """
+    What the drawing looks like with 2, 3 ... `upto` colors, for choosing how
+    many: {k: {color: representative}} over the colors of `regions` (already
+    merged with merge_similar()), from one merge_sequence().
+    """
+    n = len(regions)
+    rep = {c: c for c in regions}
+    levels = {}
+    if n <= 1:
+        return levels
+    if n <= upto:
+        levels[n] = dict(rep)
+    for done, (keep, drop) in enumerate(merge_sequence(regions), start=1):
+        for c, r in rep.items():
+            if r == drop:
+                rep[c] = keep
+        k = n - done
+        if k < 2:
+            break
+        if k <= upto:
+            levels[k] = dict(rep)
+    return levels
 
 
 def chain_mappings(first, second):

@@ -2,6 +2,18 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.5.0
+
+### Novo
+- **Quantas cores?** Ao abrir um SVG, o desenho aparece com 2, 3 ... 12 cores
+  lado a lado, com o número dos seus filamentos marcado; um clique define o
+  "Máx. de cores". O botão ao lado de "Máx. de cores" traz a escolha de volta;
+  a aba Config pode desligá-la ("Perguntar quantas cores ao abrir um SVG").
+- **Clique numa cor do desenho** para escolher o filamento dela; Ctrl+clique
+  (ou Shift+clique) seleciona várias, e a escolha vale para todas. O desenho
+  passa a mostrar a cor do filamento. O mesmo menu tem "Outra cor…" e "Não
+  imprimir".
+
 ## 3.4.2
 
 ### Corrigido
