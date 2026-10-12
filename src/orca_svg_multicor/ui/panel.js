@@ -361,6 +361,7 @@
     $('preview_empty').hidden = !!a || view === 'placement';
     $('preview_place').hidden = view !== 'placement';
     $('btn_turn_view').hidden = view !== 'placement';
+    if (view !== 'placement') $('paint_bar').hidden = true;
     if (view === 'placement') renderPlacement();
     renderAnalysisInfo();
     if (!a) { res.hidden = true; img.hidden = true; return; }
@@ -538,6 +539,142 @@
     return [x * c + y * s, -x * s + y * c];
   }
 
+  /* ------------------------------------------------------------ painting */
+  // Brush strokes and filled areas on the chosen surface, in its own frame
+  // (mm, y up): they stay on the surface when the design moves, and become
+  // part of their colors, in the same layers, when applied.
+  S.tool = 'move';
+  S.paint = { key: null, ops: [] };
+  S.brushColor = null;
+  var stroke = null;
+
+  function paintKey() {
+    var face = selectedFace();
+    return face ? [S.faces.project, S.faces.mtime, S.faces.object_id, face.id].join('|') : null;
+  }
+  function paintOps() {
+    var key = paintKey();
+    if (S.paint.key !== key) S.paint = { key: key, ops: [] };
+    return S.paint.ops;
+  }
+  function paintSize() { return Math.min(40, Math.max(0.4, num($('paint_size').value, 2))); }
+
+  // the color a key is drawn with on the page (its filament's or its own)
+  function colorFill(key) {
+    var p = $('preview_place').querySelector('.dz path[data-key="' + key + '"]');
+    return p ? getComputedStyle(p).fill : key;
+  }
+
+  function opPath(op) {
+    var fill = esc(colorFill(op.color));
+    if (op.kind === 'brush') {
+      var d = op.points.map(function (q, i) { return (i ? 'L' : 'M') + q[0].toFixed(3) + ',' + (-q[1]).toFixed(3); }).join('');
+      if (op.points.length === 1) d += 'L' + op.points[0][0].toFixed(3) + ',' + (-op.points[0][1]).toFixed(3);
+      return '<path d="' + d + '" fill="none" stroke="' + fill + '" stroke-width="' + op.width.toFixed(3) +
+             '" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+    var rings = op.rings.map(function (r) {
+      return 'M' + r.map(function (q) { return q[0].toFixed(3) + ',' + (-q[1]).toFixed(3); }).join(' ') + 'Z';
+    }).join('');
+    return '<path d="' + rings + '" fill="' + fill + '" fill-rule="evenodd"/>';
+  }
+
+  function renderPaint() {
+    var g = $('preview_place').querySelector('.paint');
+    if (g) g.innerHTML = paintOps().map(opPath).join('');       // numbers and colors only
+    renderPaintBar();
+  }
+
+  function renderPaintBar() {
+    var bar = $('paint_bar'), on = currentView() === 'placement' && !!selectedFace();
+    bar.hidden = !on;
+    var place = $('preview_place');
+    place.classList.toggle('tool-brush', on && S.tool === 'brush');
+    place.classList.toggle('tool-bucket', on && S.tool === 'bucket');
+    if (!on) return;
+    each('#paint_tools button', function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === S.tool)); });
+    $('paint_size_box').hidden = S.tool !== 'brush';
+    var sw = $('paint_color');
+    sw.hidden = S.tool !== 'brush' || !S.brushColor;
+    if (S.brushColor) sw.style.background = colorFill(S.brushColor);
+    var n = paintOps().length;
+    $('paint_undo').disabled = $('paint_clear').disabled = !n;
+    $('paint_hint').textContent = S.tool === 'brush' ? t('paint.hint_brush')
+      : S.tool === 'bucket' ? t('paint.hint_bucket') : n ? t('paint.count', { n: n }) : '';
+  }
+
+  function setTool(tool) {
+    S.tool = tool;
+    closePicker();
+    renderPaintBar();
+  }
+
+  function facePoint(svg, e) {
+    var p = svgPoint(svg, e);
+    return [p.x, -p.y];                          // the face's frame has y up
+  }
+
+  function startStroke(e, svg) {
+    var hit = e.target.closest && e.target.closest('.dz path[data-key]');
+    var key = hit ? hit.getAttribute('data-key') : S.brushColor;
+    stroke = { svg: svg, key: key, picked: !!hit, points: [facePoint(svg, e)], moved: false, el: null };
+    $('preview_place').setPointerCapture(e.pointerId);
+  }
+  function moveStroke(e) {
+    var q = facePoint(stroke.svg, e), last = stroke.points[stroke.points.length - 1], first = stroke.points[0];
+    var step = Math.max(0.15, paintSize() / 5);
+    if (Math.hypot(q[0] - last[0], q[1] - last[1]) < step) return;
+    stroke.points.push(q);
+    if (!stroke.moved && Math.hypot(q[0] - first[0], q[1] - first[1]) >= paintSize() / 4) stroke.moved = true;
+    if (!stroke.moved || !stroke.key) return;
+    var g = $('preview_place').querySelector('.paint');
+    if (!g) return;
+    var op = { kind: 'brush', color: stroke.key, width: paintSize(), points: stroke.points };
+    var tmp = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    tmp.innerHTML = opPath(op);
+    if (stroke.el) g.removeChild(stroke.el);
+    stroke.el = tmp.firstChild;
+    g.appendChild(stroke.el);
+  }
+  function endStroke() {
+    var s = stroke;
+    stroke = null;
+    S.dragEnd = Date.now();
+    if (s.moved && s.key) {
+      paintOps().push({ kind: 'brush', color: s.key, width: paintSize(), points: s.points });
+      S.brushColor = s.key;
+    } else if (s.picked) {
+      S.brushColor = s.key;                      // a click on a color: the brush takes it
+    } else if (!s.key) {
+      setStatus('paint.no_color', null, 'warn');
+    }
+    renderPaint();
+  }
+
+  function bucketAt(e, svg) {
+    var face = selectedFace(), item = plateItem();
+    if (!face || !item || !S.svg) return;
+    var msg = jobMessage('paint_fill');
+    msg.project = S.faces.project;
+    msg.object_id = S.faces.object_id;
+    msg.face_id = face.id;
+    msg.point = facePoint(svg, e);
+    msg.paint = paintOps();
+    setStatus('paint.filling', null, 'busy');
+    send(msg);
+  }
+
+  function onPaintFill(m) {
+    var f = S.faces, face = selectedFace();
+    if (!f || !face || f.project !== m.project || f.object_id !== m.object_id || f.mtime !== m.mtime ||
+        String(face.id) !== String(m.face_id)) return;
+    if (!m.ok) { setStatus(null, null, 'warn', m.text); return; }
+    paintOps().push(m.op);
+    S.brushColor = m.op.color;
+    setStatus('paint.filled');
+    renderPaint();
+  }
+
   function onFaceContext(m) {
     var f = S.faces;
     if (!f || f.project !== m.project || f.object_id !== m.object_id || f.mtime !== m.mtime || !m.context) return;
@@ -602,10 +739,13 @@
         '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
         '<g class="turn" transform="rotate(' + turn.toFixed(3) + ')">' + context +
         '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
+        '<g class="paint" clip-path="url(#svgm_face)"></g>' +
         '<path class="face-edge" d="' + face.outline + '"/></g>' + sides + '</svg>' + seen;
       S.handleSize = Math.max(w, h) * 0.035;
+      renderPaint();
     }
     positionDesign();
+    renderPaintBar();
   }
 
   // where the design is on the face: its transform, its frame and handle
@@ -665,6 +805,11 @@
   }
   function startDrag(e) {
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
+    if (S.tool !== 'move') {
+      if (!face || !svg || e.button !== 0) return;
+      if (S.tool === 'brush') startStroke(e, svg); else bucketAt(e, svg);
+      return;
+    }
     var t0 = e.target, onHandle = !!(t0.classList && t0.classList.contains('handle'));
     if (!face || !S.analysis || !svg || e.button !== 0 || e.ctrlKey || e.metaKey || (e.shiftKey && !onHandle)) return;
     if (!onHandle && !t0.closest('.dz') && !(t0.classList && t0.classList.contains('frame'))) return;
@@ -674,6 +819,7 @@
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveDrag(e) {
+    if (stroke) { moveStroke(e); return; }
     if (!drag) return;
     var p = svgPoint(drag.svg, e), dx = p.x - drag.x, dy = p.y - drag.y;
     if (!drag.moved && Math.sqrt(dx * dx + dy * dy) < (S.handleSize || 2) / 4) return;
@@ -699,6 +845,7 @@
     renderAnalysisInfo();
   }
   function endDrag() {
+    if (stroke) { endStroke(); return; }
     if (!drag) return;
     if (drag.moved) {
       S.dragEnd = Date.now();
@@ -740,6 +887,7 @@
     msg.project = S.plate.project;
     msg.object_id = item.object_id;
     msg.face_id = face ? face.id : null;
+    msg.paint = paintOps();
     begin('apply', 'status.applying');
     send(msg);
   }
@@ -1449,6 +1597,7 @@
       case 'plate': onPlate(m); break;
       case 'faces': onFaces(m); break;
       case 'face_context': onFaceContext(m); break;
+      case 'paint_fill': onPaintFill(m); break;
       case 'colors_info': onColorsInfo(m); break;
       case 'progress':
         if (S.busy) { setBar(m.pct); if (!S.quiet && m.text) setStatus(null, null, 'busy', m.text); }
@@ -1459,6 +1608,7 @@
       case 'saved': if (!m.ok) setStatus(null, null, 'err', m.text); break;
       case 'error':
         if (m.action === 'face_context') break;      // the drawing around the face is a bonus
+        if (m.action === 'paint_fill') { setStatus(null, null, 'err', m.text); break; }
         S.plateApply = false;
         S.facesApply = false;
         if (S.busy) end();
@@ -1669,6 +1819,12 @@
       resetFrame(); positionDesign(); renderAnalysisInfo();
     });
     $('btn_fill').addEventListener('click', fillFace);
+    each('#paint_tools button', function (b) {
+      b.addEventListener('click', function () { setTool(b.getAttribute('data-tool')); });
+    });
+    $('paint_size').addEventListener('change', renderPaintBar);
+    $('paint_undo').addEventListener('click', function () { paintOps().pop(); renderPaint(); });
+    $('paint_clear').addEventListener('click', function () { S.paint.ops = []; renderPaint(); });
     $('wiz_fill').addEventListener('click', function () { S.view = 'placement'; renderPreview(); fillFace(); });
     ['thickness_mode', 'thickness_layers', 'layer_height_mm', 'first_layer', 'base_thickness_mm'].forEach(function (id) {
       $(id).addEventListener('input', updateLayers);
@@ -1677,7 +1833,8 @@
 
     // a color of the drawing: its filament (Ctrl/Shift + click: several)
     $('preview').addEventListener('click', function (e) {
-      if (e.target.closest('#fil_pop') || e.target.closest('#wizard')) return;
+      if (e.target.closest('#fil_pop') || e.target.closest('#wizard') || e.target.closest('#paint_bar')) return;
+      if (S.tool !== 'move' && e.target.closest('#preview_place')) return;      // painting, not picking
       if (S.dragEnd && Date.now() - S.dragEnd < 300) return;      // the end of a drag, not a click
       var p = e.target.closest('path[data-key]');
       var key = p && p.getAttribute('data-key');

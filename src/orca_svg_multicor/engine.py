@@ -27,7 +27,8 @@ from .errors import Cancelled, EngineError, ProjectError, SvgError
 from .geometry import Frame
 from .i18n import Translator
 from .options import Options, _i
-from .faces import context_dict, default_face, place, planar_faces, silhouettes, to_object
+from .faces import (context_dict, default_face, free_area, paint, place, planar_faces, silhouettes,
+                    to_object)
 from .project3mf import Project
 from .svgread import read_svg
 from .threemf import Part, write_3mf
@@ -570,8 +571,43 @@ def _rotated_size(w, h, degrees):
     return w * c + h * s_, w * s_ + h * c
 
 
+def place_design(doc, face, opts, rep=None):
+    """
+    The design on `face` as the apply makes it: sized (design_size), cut at
+    the face's edge and moved (offset). Returns (placed, colors, size):
+    {color: [Polygon]} in the face's frame, every color of the design, and
+    design_size()'s result.
+    """
+    rep = rep or Reporter()
+    w_px, h_px = doc.size_px
+    face_w, face_h = face.size
+    size = design_size(w_px, h_px, face_w, face_h, opts.rotation, opts.apply_width_mm,
+                       opts.apply_height_mm, opts.apply_fraction)
+    scale, scale_y, _rw, _rh, room_x, room_y, _clamped = size
+    offset = (max(-room_x, min(room_x, opts.offset_x_mm)), max(-room_y, min(room_y, opts.offset_y_mm)))
+    regions, _mapping, _raw = process(doc, scale, opts, rep)
+    if abs(scale_y - scale) > 1e-9 * scale:
+        # a height of its own: stretched along the design's height
+        from shapely.affinity import scale as _scale
+        from shapely.geometry.polygon import orient
+        regions = {c: [orient(_scale(p, xfact=1.0, yfact=scale_y / scale, origin=(0, 0)), 1.0) for p in ps]
+                   for c, ps in regions.items()}
+    return place(regions, face, opts.rotation, offset=offset), set(regions), size
+
+
+def paint_fill(svg_path, face, opts, ops, point, rep=None):
+    """
+    The bucket: (rings, color) of the bare part of `face` at `point` once the
+    design is placed and painted with `ops`, and the color next to it; None
+    when the point is on the design.
+    """
+    doc = load_document(svg_path, opts.include_strokes, opts.hidden_layers)
+    placed, colors, _size = place_design(doc, face, opts, rep)
+    return free_area(paint(placed, face, ops, colors), face, point)
+
+
 def apply_to_project(svg_path, project_path, object_id, out_path, opts,
-                     choices=None, filaments=None, tr=None, rep=None, face_id=None):
+                     choices=None, filaments=None, tr=None, rep=None, face_id=None, paint_ops=None):
     """
     Adds the colors as new parts of object `object_id`, on one of its flat
     faces (`face_id` from list_faces(); the largest face looking up when
@@ -597,19 +633,9 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
     if face is None:
         raise EngineError("error.no_faces")
 
-    rotation = opts.rotation
-    w_px, h_px = doc.size_px
     face_w, face_h = face.size
     rep.log("log.face", name=obj.name, face=face_name(tr, face),
             w=f"{face_w:.2f}", h=f"{face_h:.2f}")
-    # the design never leaves the face: it is cut at the face's edge, may
-    # cover it and go a little past, and moves only as far as it still fits
-    # (or still covers it); the page does the same while you drag it
-    scale, scale_y, rw_mm, rh_mm, room_x, room_y, clamped = design_size(
-        w_px, h_px, face_w, face_h, rotation, opts.apply_width_mm, opts.apply_height_mm, opts.apply_fraction)
-    if clamped:
-        rep.warn("warn.exceeds_face", w=f"{face_w:.2f}", h=f"{face_h:.2f}")
-    offset = (max(-room_x, min(room_x, opts.offset_x_mm)), max(-room_y, min(room_y, opts.offset_y_mm)))
     # a face lying on the bed is printed first: its first layer is the first layer
     world = np.c_[V_obj, np.ones(len(V_obj))] @ np.asarray(obj.item_matrix, dtype=float).T
     on_bed = (face.direction == "bottom" and not face.inner
@@ -621,14 +647,16 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
     if opts.fit == "inlay" and thickness + start > depth:
         rep.warn("warn.too_thick")
 
-    regions, _mapping, _raw = process(doc, scale, opts, rep)
-    if abs(scale_y - scale) > 1e-9 * scale:
-        # a height of its own: stretched along the design's height
-        from shapely.affinity import scale as _scale
-        from shapely.geometry.polygon import orient
-        regions = {c: [orient(_scale(p, xfact=1.0, yfact=scale_y / scale, origin=(0, 0)), 1.0) for p in ps]
-                   for c, ps in regions.items()}
-    placed = place(regions, face, rotation, offset=offset)
+    # the design never leaves the face: it is cut at the face's edge, may
+    # cover it and go a little past, and moves only as far as it still fits
+    # (or still covers it); the page does the same while you drag it
+    placed, colors, (_sx, _sy, rw_mm, rh_mm, _rx, _ry, clamped) = place_design(doc, face, opts, rep)
+    if clamped:
+        rep.warn("warn.exceeds_face", w=f"{face_w:.2f}", h=f"{face_h:.2f}")
+    if paint_ops:
+        # painted on the page: part of their colors, in the same layers
+        placed = paint(placed, face, paint_ops, colors)
+        rep.log("log.paint", n=len(paint_ops))
     if not placed:
         raise EngineError("error.nothing_on_face")
     z0 = -(thickness + start) if opts.fit == "inlay" else 0.0

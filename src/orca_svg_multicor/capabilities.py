@@ -184,7 +184,7 @@ if _PagesBase is not None:
                 svc.handle(msg)
                 return None
             svc.preflight(msg)
-            big = msg.get("action") in ("generate", "apply") or _is_big(msg.get("svg"))
+            big = msg.get("action") in ("generate", "apply", "paint_fill") or _is_big(msg.get("svg"))
             if big:
                 with svc.host.progress(NAME_PAGE, svc.tr("progress.starting")) as dlg:
                     svc.handle(msg, progress_dialog=dlg)

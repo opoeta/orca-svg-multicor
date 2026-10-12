@@ -2,6 +2,20 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.13.0
+
+### Novo
+- **Pintar na superfície** ("No objeto", barra embaixo da vista):
+  - **Pincel**: arraste para pintar; o traço usa a cor de onde começa,
+    copiando a cor do lado (clicar numa cor a escolhe). Tamanho do pincel em
+    mm.
+  - **Balde**: clique numa área da superfície sem desenho (faixa da borda,
+    canto, fresta): ela é preenchida com a cor que mais encosta nela.
+  - O que for pintado vira parte daquelas cores e sai nas mesmas camadas do
+    resto (espessura, primeira camada). Fica na superfície quando o desenho
+    se move. Desfazer e limpar; uma superfície ou um objeto novo começa
+    limpo.
+
 ## 3.12.0
 
 ### Novo

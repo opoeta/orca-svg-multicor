@@ -29,7 +29,7 @@ from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
          "save_settings", "open_path", "reset_settings", "changelog", "describe_colors"}
-HEAVY = {"analyze", "generate", "apply", "objects", "faces", "face_context"}
+HEAVY = {"analyze", "generate", "apply", "objects", "faces", "face_context", "paint_fill"}
 UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 
@@ -61,6 +61,14 @@ def copy_file(src, dst, chunk=1 << 20):
             if not block:
                 break
             fo.write(block)
+
+
+def _paint_ops(msg):
+    """The page's paint operations (brush strokes, filled areas), as a list of dicts."""
+    ops = msg.get("paint")
+    if not isinstance(ops, list):
+        return []
+    return [op for op in ops[:2000] if isinstance(op, dict)]
 
 
 def _safe_name(name):
@@ -542,6 +550,31 @@ class Service:
             self._faces_cache = {key: cached}
         return (key,) + cached
 
+    def do_paint_fill(self, msg, rep):
+        """The bucket: the bare part of the face where the page was clicked, and the color next to it."""
+        engine = load_engine()
+        svg = self._svg(msg)
+        project = self._allowed((msg.get("project") or "").strip())
+        oid = str(msg.get("object_id") or "").strip()
+        if not project or not os.path.isfile(project):
+            raise EngineError("error.no_project")
+        key, (faces, _silhouette), _listing = self._faces(engine, project, oid)
+        face = next((f for f in faces if str(f.id) == str(msg.get("face_id"))), None)
+        if face is None:
+            raise EngineError("error.no_faces")
+        point = msg.get("point") or []
+        if len(point) != 2:
+            return
+        found = engine.paint_fill(svg, face, self._options(msg), _paint_ops(msg), point, rep)
+        d = {"type": "paint_fill", "project": project, "object_id": oid, "mtime": key[1],
+             "face_id": msg.get("face_id")}
+        if found is None:
+            d.update(ok=False, text=self.tr("paint.nothing"))
+        else:
+            rings, color = found
+            d.update(ok=True, op={"kind": "area", "color": color, "rings": rings})
+        self.send(d)
+
     def do_face_context(self, msg, rep):
         """The whole object seen from outside one face, for the page to draw around it."""
         engine = load_engine()
@@ -593,7 +626,7 @@ class Service:
         def apply(dest):
             return engine.apply_to_project(svg, project, obj, dest, opts, self._choices(msg),
                                            filaments=msg.get("filaments"), tr=self.tr, rep=rep,
-                                           face_id=msg.get("face_id"))
+                                           face_id=msg.get("face_id"), paint_ops=_paint_ops(msg))
 
         if mode == "copy":
             dest, report = apply(engine.project_output_path(project, self._out_dir(msg)))

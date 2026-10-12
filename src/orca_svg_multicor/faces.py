@@ -362,6 +362,93 @@ def place(regions, face, rotation=0.0, clip=True, offset=(0.0, 0.0)):
     return out
 
 
+# ----------------------------------------------------------------------------
+# painting on the face: brush strokes and filled areas, in the face's frame
+# ----------------------------------------------------------------------------
+MAX_PAINT_OPS = 2000
+MAX_STROKE_POINTS = 20000
+
+
+def _paint_shape(op):
+    """The area of one paint operation in the face's frame, or None."""
+    try:
+        kind = op.get("kind")
+        if kind == "brush":
+            pts = [(float(x), float(y)) for x, y in (op.get("points") or [])[:MAX_STROKE_POINTS]]
+            if not pts:
+                return None
+            r = min(50.0, max(0.05, float(op.get("width") or 1.0) / 2.0))
+            line = shapely.Point(pts[0]) if len(pts) == 1 else shapely.LineString(pts)
+            return line.buffer(r, quad_segs=8)
+        if kind == "area":
+            rings = [[(float(x), float(y)) for x, y in ring] for ring in (op.get("rings") or [])]
+            if not rings or len(rings[0]) < 3:
+                return None
+            poly = shapely.Polygon(rings[0], [r for r in rings[1:] if len(r) >= 3])
+            return poly if poly.is_valid else poly.buffer(0)
+    except (AttributeError, TypeError, ValueError, shapely.errors.GEOSException):
+        return None
+    return None
+
+
+def paint(placed, face, ops, colors=None):
+    """
+    The design on the face with the painted areas: each brush stroke or
+    filled area (in the face's frame, in order) becomes part of its color,
+    is taken from the other colors and never leaves the face. `colors`: the
+    design's colors a paint may use (default: those on the face).
+    """
+    if not ops:
+        return placed
+    allowed = set(colors) if colors is not None else set(placed)
+    shapes = {c: shapely.union_all(ps, grid_size=GRID) for c, ps in placed.items()}
+    for op in list(ops)[:MAX_PAINT_OPS]:
+        color = op.get("color") if isinstance(op, dict) else None
+        if color not in allowed:
+            continue
+        shape = _paint_shape(op)
+        if shape is None or shape.is_empty:
+            continue
+        shape = shape.intersection(face.polygon, grid_size=GRID)
+        if shape.is_empty:
+            continue
+        for c in shapes:
+            if c != color:
+                shapes[c] = shapes[c].difference(shape, grid_size=GRID)
+        shapes[color] = shapes[color].union(shape, grid_size=GRID) if color in shapes else shape
+    out = {}
+    for c, g in shapes.items():
+        polys = [orient(p, 1.0) for p in polygons_of(g) if p.area > 1e-6]
+        if polys:
+            out[c] = polys
+    return out
+
+
+def free_area(placed, face, point, reach=0.3):
+    """
+    (rings, color) of the part of the face the design leaves bare around
+    `point` (within `reach` mm), and the color touching it the most (else
+    the closest): what the bucket fills. None when there is none there.
+    """
+    shapes = {c: shapely.union_all(ps, grid_size=GRID) for c, ps in placed.items() if ps}
+    if not shapes:
+        return None
+    covered = shapely.union_all(list(shapes.values()), grid_size=GRID)
+    free = face.polygon.difference(covered, grid_size=GRID)
+    pt = shapely.Point(float(point[0]), float(point[1]))
+    near = [(g.distance(pt), g) for g in polygons_of(free)]
+    near = [x for x in near if x[0] <= reach]
+    if not near:
+        return None
+    piece = min(near, key=lambda x: x[0])[1]
+    edge = piece.boundary
+    color = max(shapes, key=lambda c: (edge.intersection(shapes[c].buffer(0.05)).length,
+                                       -shapes[c].distance(piece)))
+    rings = [[[round(x, 4), round(y, 4)] for x, y in piece.exterior.coords]]
+    rings += [[[round(x, 4), round(y, 4)] for x, y in r.coords] for r in piece.interiors]
+    return rings, color
+
+
 def to_object(V, face):
     """Maps extruded vertices from the face frame (x, y, height) to the object."""
     basis = np.stack([face.u, face.v, face.normal])          # rows

@@ -112,7 +112,11 @@ direita e a ação principal no canto superior direito.
      superfície, até cobri-la e mais 25%: o que passa da borda é cortado, e
      mover escolhe o que aparece. **Preencher** cobre a superfície inteira,
      proporcional e centralizado, sem sobrar borda (*Centralizar* volta ao
-     meio). Escolha a **rotação**, o encaixe (*embutido*: a superfície muda de
+     meio). A barra embaixo da vista pinta na superfície: o **pincel** pinta
+     com a cor de onde o traço começa (clicar numa cor a escolhe), o
+     **balde** preenche uma área da superfície sem desenho com a cor vizinha;
+     o que for pintado sai com aquelas cores, nas mesmas camadas (desfazer,
+     limpar). Escolha a **rotação**, o encaixe (*embutido*: a superfície muda de
      cor; ou *em relevo*), a largura (vazio = 85% da face) e a altura (vazio =
      proporcional). Na face apoiada na mesa, **Primeira camada** escolhe se o
      desenho começa na 1ª camada ou logo acima dela (a 1ª fica da cor do

@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.13.0
+
+### New
+- **Paint on the surface** ("On the object", toolbar under the view):
+  - **Brush**: drag to paint; the stroke takes the color where it starts,
+    copying the color next to it (a click on a color picks it). Brush size
+    in mm.
+  - **Bucket**: click an area of the surface the design leaves bare (an
+    edge strip, a corner, a gap): it is filled with the color touching it
+    the most.
+  - Painted areas become part of their colors and are printed in the same
+    layers as the rest (thickness, first layer). They stay on the surface
+    when the design moves. Undo and clear; a new surface or object starts
+    clean.
+
 ## 3.12.0
 
 ### New

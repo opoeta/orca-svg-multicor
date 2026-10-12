@@ -147,6 +147,18 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .stage .side { fill: var(--muted); }
 #preview_place { user-select: none; -webkit-user-select: none; }
 #preview_place svg { overflow: visible; }          /* a design past the face, and its handle */
+.paint-bar { position: absolute; left: 16px; bottom: 12px; z-index: 4; display: flex; flex-wrap: wrap; align-items: center;
+             gap: 6px; max-width: calc(100% - 32px); padding: 4px 6px; background: var(--bg); border: 1px solid var(--line);
+             border-radius: 6px; }
+.preview.with-wizard .paint-bar { left: calc(min(440px, 55%) + 16px); max-width: calc(100% - min(440px, 55%) - 32px); }
+.paint-tools { display: inline-flex; gap: 2px; }
+.paint-tools button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.paint-size { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.paint-size input { width: 56px; }
+.paint-color { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--line); flex: 0 0 auto; }
+.paint-bar .note { font-size: 12px; margin: 0; }
+#preview_place.tool-brush, #preview_place.tool-brush * { cursor: crosshair; }
+#preview_place.tool-bucket, #preview_place.tool-bucket * { cursor: cell; }
 #preview_place .seen { position: absolute; left: 0; top: 0; font-size: 12px; color: var(--muted); pointer-events: none; }
 .dims.warn { color: var(--warn); }
 .spinner { position: absolute; right: 14px; top: 14px; width: 18px; height: 18px; border-radius: 50%;
