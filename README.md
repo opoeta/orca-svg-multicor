@@ -112,10 +112,15 @@ right, the main action at the top right.
      with the front of the plate up), and the design along the object's
      edges; around it, the whole object seen from that side (tabs, notches),
      the sides of the plate and the OrcaSlicer view that shows it the same
-     way (Ctrl+1 to Ctrl+6). There you **drag it to move it and drag
-     its corner to resize it**; it always stays on the surface (*Center* puts
-     it back). Choose the **rotation**, *inlaid* (the surface changes color)
-     or *raised*, and the width (empty = 85% of the face). On the face lying
+     way (Ctrl+1 to Ctrl+6); the ↻ button turns that view by quarter turns
+     (only the view). There you **drag it to move it and drag its corner to
+     resize it** (Shift + corner: width and height on their own). The design
+     may go past the surface, up to covering it and 25% more: what goes past
+     its edge is cut off, and moving it chooses what shows. **Fill** covers
+     the whole surface in proportion, centered, with no edge left over
+     (*Center* puts it back in the middle). Choose the **rotation**, *inlaid*
+     (the surface changes color) or *raised*, the width (empty = 85% of the
+     face) and the height (empty = in proportion). On the face lying
      on the bed, **First layer** chooses whether the design starts on the first
      layer or just above it (the first layer stays the object's color). Then
      **Apply to the plate**. OrcaSlicer's plugin API cannot change the

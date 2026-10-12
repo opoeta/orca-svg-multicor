@@ -106,11 +106,15 @@ direita e a ação principal no canto superior direito.
      com a frente da mesa para cima), e o desenho alinhado às bordas do
      objeto; em volta, o objeto inteiro visto daquele lado (abas, encaixes),
      os lados da mesa e a vista do OrcaSlicer que mostra igual (Ctrl+1 a
-     Ctrl+6). Ali você **arrasta para mover e puxa o
-     canto para mudar o tamanho**; ele fica sempre dentro da superfície
-     (*Centralizar* volta ao meio). Escolha a **rotação**, o encaixe
-     (*embutido*: a superfície muda de cor; ou *em relevo*) e a largura (vazio =
-     85% da face). Na face apoiada na mesa, **Primeira camada** escolhe se o
+     Ctrl+6); o botão ↻ gira essa vista de 90 em 90° (só a vista). Ali você
+     **arrasta para mover e puxa o canto para mudar o tamanho** (Shift +
+     canto: largura e altura independentes). O desenho pode passar da
+     superfície, até cobri-la e mais 25%: o que passa da borda é cortado, e
+     mover escolhe o que aparece. **Preencher** cobre a superfície inteira,
+     proporcional e centralizado, sem sobrar borda (*Centralizar* volta ao
+     meio). Escolha a **rotação**, o encaixe (*embutido*: a superfície muda de
+     cor; ou *em relevo*), a largura (vazio = 85% da face) e a altura (vazio =
+     proporcional). Na face apoiada na mesa, **Primeira camada** escolhe se o
      desenho começa na 1ª camada ou logo acima dela (a 1ª fica da cor do
      objeto). Depois clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
      altera a mesa diretamente, então o desenho vai para o projeto salvo, que

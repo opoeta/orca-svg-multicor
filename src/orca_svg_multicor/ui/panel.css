@@ -145,6 +145,8 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .stage .context { fill: var(--line); fill-opacity: .16; stroke: var(--muted); stroke-opacity: .55; stroke-width: 1;
                   stroke-dasharray: 4 3; vector-effect: non-scaling-stroke; }
 .stage .side { fill: var(--muted); }
+#preview_place { user-select: none; -webkit-user-select: none; }
+#preview_place svg { overflow: visible; }          /* a design past the face, and its handle */
 #preview_place .seen { position: absolute; left: 0; top: 0; font-size: 12px; color: var(--muted); pointer-events: none; }
 .dims.warn { color: var(--warn); }
 .spinner { position: absolute; right: 14px; top: 14px; width: 18px; height: 18px; border-radius: 50%;

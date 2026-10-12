@@ -2,6 +2,26 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.12.0
+
+### Novo
+- **Preencher**: o desenho cobre a superfície inteira, proporcional e
+  centralizado, sem sobrar borda (ao lado de *Centralizar*, e no último passo
+  do assistente).
+- **O desenho pode passar da superfície**, até cobri-la e mais 25%; o que
+  passa da borda é cortado, como antes, e mover escolhe o que aparece. A
+  linha de tamanho avisa ("passa da superfície").
+- **Tamanho livre**: uma **Altura** própria ao lado da largura (vazio:
+  proporcional), e **Shift + arrastar o canto** muda largura e altura
+  independentes.
+- **Girar a vista** (↻ acima do desenho): "No objeto" gira de 90 em 90°, com
+  os lados da mesa em volta, a posição e a grade 3×3 do assistente seguindo a
+  tela. Só a vista gira; o resultado não muda.
+
+### Corrigido
+- Os nomes em volta da superfície podiam ficar selecionados (marcados) ao
+  arrastar fora do desenho.
+
 ## 3.11.1
 
 ### Corrigido

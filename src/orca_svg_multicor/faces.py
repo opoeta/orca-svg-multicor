@@ -54,7 +54,7 @@ class Face:
     def as_dict(self):
         x0, y0, x1, y1 = self.polygon.bounds
         d = {"id": self.id, "dir": self.direction, "inner": self.inner,
-             "w": round(self.size[0], 1), "h": round(self.size[1], 1),
+             "w": round(self.size[0], 3), "h": round(self.size[1], 3),      # shown with 1 decimal
              "area": round(self.area, 1), "z": round(self.height, 1),
              "view": round(self.view, 2), "seen": self.seen, "sides": self.sides,
              "outline": outline_path(self.polygon),

@@ -10,6 +10,7 @@
   <symbol id="i-wand" viewBox="0 0 24 24"><path d="M4 20 16 8M14 4v2M20 10h-2M18 4l-1.5 1.5M10 4l.8 1.6"/></symbol>
   <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5zM3 13l9 5 9-5"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
+  <symbol id="i-turn" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v4h-4"/></symbol>
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h10M18 7h2M4 17h4M12 17h8M14 5v4M8 15v4"/></symbol>
 </svg>
 
@@ -113,7 +114,8 @@
         <div class="row" id="frame_row">
           <span data-i18n="frame.position">Position</span>
           <span class="ctl"><span class="note" id="frame_pos"></span>
-            <button type="button" class="flat" id="btn_center" data-i18n="frame.center">Center</button></span>
+            <button type="button" class="flat" id="btn_center" data-i18n="frame.center">Center</button>
+            <button type="button" class="flat" id="btn_fill" data-i18n="frame.fill" data-i18n-title="frame.fill_hint">Fill</button></span>
         </div>
         <p class="note" data-i18n="frame.hint">In "On the object", drag the design to move it and its corner to resize it; it stays on the surface.</p>
         <label class="row" id="first_layer_row" hidden><span data-i18n="layer.first">First layer</span>
@@ -129,6 +131,10 @@
         <label class="row"><span data-i18n="apply.width">Width</span>
           <span class="ctl"><span class="unit" data-unit="mm"><input id="apply_width_mm" type="number" min="0" step="1"
                 data-opt="apply_width_mm" data-i18n-ph="apply.auto" placeholder="auto"></span></span></label>
+        <label class="row"><span data-i18n="apply.height">Height</span>
+          <span class="ctl"><span class="unit" data-unit="mm"><input id="apply_height_mm" type="number" min="0" step="1"
+                data-opt="apply_height_mm" data-i18n-ph="apply.proportional" placeholder="proportional"
+                data-i18n-title="apply.height_hint"></span></span></label>
       </div>
 
       <label class="radio"><input type="radio" name="target" value="new">
@@ -183,6 +189,8 @@
         <button type="button" role="tab" data-view="original" aria-selected="false" data-i18n="prev.original">Original</button>
         <button type="button" role="tab" data-view="placement" aria-selected="false" id="view_place" data-i18n="prev.placement">On the object</button>
       </div>
+      <button type="button" class="flat icon" id="btn_turn_view" hidden data-i18n-title="place.turn" title="Turn the view"
+              data-i18n-aria="place.turn"><svg class="ic"><use href="#i-turn"/></svg></button>
       <span class="dims" id="dims"></span>
       <span class="spacer"></span>
       <button type="button" class="primary" id="btn_run"><span id="btn_run_label" data-i18n="out.apply_plate">Apply to the plate</span></button>
@@ -261,7 +269,9 @@
                   <button type="button" data-ax="-1" data-ay="-1"></button><button type="button" data-ax="0" data-ay="-1"></button><button type="button" data-ax="1" data-ay="-1"></button>
                 </div>
                 <span class="wiz-col"><span data-i18n="plate.rotation">Rotation</span>
-                  <select id="wiz_rotation" data-i18n-aria="plate.rotation"></select></span>
+                  <select id="wiz_rotation" data-i18n-aria="plate.rotation"></select>
+                  <button type="button" class="flat" id="wiz_fill" data-i18n="frame.fill"
+                          data-i18n-title="frame.fill_hint">Fill</button></span>
               </div>
             </div>
           </div>

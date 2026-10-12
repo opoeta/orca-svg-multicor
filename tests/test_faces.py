@@ -403,3 +403,47 @@ def test_the_page_gets_the_object_around_a_face(tray_project):
     ctx = out[-1]
     assert ctx["type"] == "face_context" and ctx["face_id"] == other["id"] and ctx["context"].startswith("M")
     assert ctx["mtime"] == faces["mtime"]
+
+
+def test_the_size_on_a_face():
+    """design_size: what the page shows and the apply makes (panel.js, placement())."""
+    size = E.design_size
+    # automatic: 85% of the face, in proportion
+    sx, sy, rw, rh, room_x, room_y, clamped = size(100, 50, 40, 30, 0)
+    assert (rw, rh) == pytest.approx((34.0, 17.0)) and sx == sy and not clamped
+    assert (room_x, room_y) == pytest.approx((3.0, 6.5))
+    # past the face, up to covering it and 25% more
+    sx, sy, rw, rh, room_x, room_y, clamped = size(100, 50, 40, 30, 0, width_mm=60)
+    assert (rw, rh) == pytest.approx((60.0, 30.0)) and not clamped
+    assert (room_x, room_y) == pytest.approx((10.0, 0.0))        # it moves while it still covers
+    sx, sy, rw, rh, *_rest, clamped = size(100, 50, 40, 30, 0, width_mm=200)
+    assert clamped and rh == pytest.approx(30 * 1.25) and rw == pytest.approx(75.0)
+    # a height of its own, turned a quarter
+    sx, sy, rw, rh, *_rest, clamped = size(100, 50, 40, 30, 90, width_mm=30, height_mm=40)
+    assert (sx, sy) == pytest.approx((0.3, 0.8)) and (rw, rh) == pytest.approx((40.0, 30.0)) and not clamped
+
+
+def _square_svg(svg):
+    return svg('<rect x="0" y="0" width="100" height="100" fill="#ff0000"/>')
+
+
+def test_a_design_covering_the_face_leaves_no_edge(svg, tray_project, tmp_path):
+    floor = next(f for f in E.list_faces(tray_project, "3")["faces"] if f["dir"] == "top" and f["z"] == 2.0)
+    n0 = len(Project(tray_project).object_mesh("3")[1])
+    out = str(tmp_path / "cover.3mf")
+    # the floor is 36 x 26: a square of 36 covers it (and is cut at its edge)
+    E.apply_to_project(_square_svg(svg), tray_project, "3", out, Options(apply_width_mm=36), face_id=floor["id"])
+    V, F = Project(out).object_mesh("3")
+    top = V[F[n0:]].reshape(-1, 3)
+    assert (np.ptp(top[:, 0]), np.ptp(top[:, 1])) == pytest.approx((36.0, 26.0), abs=0.01)
+
+
+def test_a_design_stretched_to_the_face(svg, tray_project, tmp_path):
+    floor = next(f for f in E.list_faces(tray_project, "3")["faces"] if f["dir"] == "top" and f["z"] == 2.0)
+    n0 = len(Project(tray_project).object_mesh("3")[1])
+    out = str(tmp_path / "stretch.3mf")
+    E.apply_to_project(_square_svg(svg), tray_project, "3", out,
+                       Options(apply_width_mm=30, apply_height_mm=20), face_id=floor["id"])
+    V, F = Project(out).object_mesh("3")
+    part = V[F[n0:]].reshape(-1, 3)
+    assert (np.ptp(part[:, 0]), np.ptp(part[:, 1])) == pytest.approx((30.0, 20.0), abs=0.01)

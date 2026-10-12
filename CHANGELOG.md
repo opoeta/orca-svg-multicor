@@ -1,5 +1,26 @@
 # Changelog
 
+## 3.12.0
+
+### New
+- **Fill**: the design covers the whole surface, in proportion and centered,
+  with no edge of the surface left over (next to *Center*, and in the
+  assistant's last step).
+- **The design may go past the surface**, up to covering it and 25% more;
+  what goes past its edge is cut off, as before, and moving it chooses what
+  shows. The size line says so ("goes past the surface").
+- **Free size**: a **Height** of its own next to the width (empty: in
+  proportion), and **Shift + drag the corner** to change width and height on
+  their own.
+- **Turn the view** (↻ above the drawing): "On the object" turns by quarter
+  turns, with the sides of the plate around it, the position and the
+  assistant's 3×3 grid following the screen. Only the view turns; the
+  result does not change.
+
+### Fixed
+- The names around the surface could be selected (highlighted) when
+  dragging outside the design.
+
 ## 3.11.1
 
 ### Fixed

@@ -534,6 +534,36 @@ def face_context(loaded, face_id):
     return context_dict(silhouette(face))
 
 
+# How far past the face a design may go: covering it, and this much more.
+# What goes past the face's edge is cut off; moving it chooses what shows.
+OVERSIZE = 1.25
+
+
+def design_size(w, h, face_w, face_h, rotation, width_mm=0.0, height_mm=0.0, fraction=0.85):
+    """
+    (sx, sy, rw, rh, room_x, room_y, clamped) of a design w x h (any unit) on
+    a face_w x face_h mm face: its scale along its width and height (mm per
+    unit), its size on the face once turned, how far its center may move
+    from the face's center, and whether it had to be reduced. The page does
+    the same (panel.js, placement()).
+
+    width_mm 0: `fraction` of the face, in proportion; height_mm 0: in
+    proportion to the width. It may cover the face and go OVERSIZE past
+    that; smaller, it moves within the face, larger, it moves while it still
+    covers it.
+    """
+    rw1, rh1 = _rotated_size(w, h, rotation)
+    sx = width_mm / w if width_mm > 0 else fraction * min(face_w / rw1, face_h / rh1)
+    sy = height_mm / h if height_mm > 0 else sx
+    rw, rh = _rotated_size(w * sx, h * sy, rotation)
+    cover = max(face_w / rw, face_h / rh)
+    clamped = cover * OVERSIZE < 1.0 - 1e-9
+    if clamped:
+        f = cover * OVERSIZE
+        sx, sy, rw, rh = sx * f, sy * f, rw * f, rh * f
+    return sx, sy, rw, rh, abs(face_w - rw) / 2.0, abs(face_h - rh) / 2.0, clamped
+
+
 def _rotated_size(w, h, degrees):
     a = math.radians(degrees)
     c, s_ = abs(math.cos(a)), abs(math.sin(a))
@@ -569,21 +599,16 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
 
     rotation = opts.rotation
     w_px, h_px = doc.size_px
-    rw, rh = _rotated_size(w_px, h_px, rotation)
     face_w, face_h = face.size
-    if opts.apply_width_mm > 0:
-        scale = opts.apply_width_mm / w_px
-    else:
-        scale = opts.apply_fraction * min(face_w / rw, face_h / rh)
     rep.log("log.face", name=obj.name, face=face_name(tr, face),
             w=f"{face_w:.2f}", h=f"{face_h:.2f}")
-    # the design never leaves the face: at most its size, and moved only as
-    # far as it still fits (the page does the same while you drag it)
-    fit_scale = min(face_w / rw, face_h / rh)
-    if scale > fit_scale + 1e-12:
-        scale = fit_scale
+    # the design never leaves the face: it is cut at the face's edge, may
+    # cover it and go a little past, and moves only as far as it still fits
+    # (or still covers it); the page does the same while you drag it
+    scale, scale_y, rw_mm, rh_mm, room_x, room_y, clamped = design_size(
+        w_px, h_px, face_w, face_h, rotation, opts.apply_width_mm, opts.apply_height_mm, opts.apply_fraction)
+    if clamped:
         rep.warn("warn.exceeds_face", w=f"{face_w:.2f}", h=f"{face_h:.2f}")
-    room_x, room_y = max(0.0, (face_w - rw * scale) / 2), max(0.0, (face_h - rh * scale) / 2)
     offset = (max(-room_x, min(room_x, opts.offset_x_mm)), max(-room_y, min(room_y, opts.offset_y_mm)))
     # a face lying on the bed is printed first: its first layer is the first layer
     world = np.c_[V_obj, np.ones(len(V_obj))] @ np.asarray(obj.item_matrix, dtype=float).T
@@ -597,6 +622,12 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
         rep.warn("warn.too_thick")
 
     regions, _mapping, _raw = process(doc, scale, opts, rep)
+    if abs(scale_y - scale) > 1e-9 * scale:
+        # a height of its own: stretched along the design's height
+        from shapely.affinity import scale as _scale
+        from shapely.geometry.polygon import orient
+        regions = {c: [orient(_scale(p, xfact=1.0, yfact=scale_y / scale, origin=(0, 0)), 1.0) for p in ps]
+                   for c, ps in regions.items()}
     placed = place(regions, face, rotation, offset=offset)
     if not placed:
         raise EngineError("error.nothing_on_face")
@@ -618,7 +649,7 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
                     chosen.setdefault(p.extruder, p.color)
             if project.set_filament_colors(chosen):
                 rep.log("log.project_colors", n=len(chosen))
-    rep.log("log.placed_face", w=f"{rw * scale:.2f}", h=f"{rh * scale:.2f}",
+    rep.log("log.placed_face", w=f"{rw_mm:.2f}", h=f"{rh_mm:.2f}",
             t=f"{thickness:.2f}")
     rep.progress(0.96, "progress.writing")
     project.add_parts(obj.id, parts)

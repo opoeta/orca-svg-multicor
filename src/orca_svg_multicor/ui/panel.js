@@ -40,7 +40,9 @@
   var REANALYZE = ['size_mode', 'size_mm', 'max_colors', 'merge_tolerance', 'include_strokes', 'mirror',
                    'precision_mm', 'min_area_mm2', 'min_detail_mm', 'base_thickness_mm',
                    'base_margin_mm', 'base_shape'];
-  var PLACEMENT = ['rotation', 'apply_width_mm', 'fit'];
+  var PLACEMENT = ['rotation', 'apply_width_mm', 'apply_height_mm', 'fit'];
+  // how far past the face a design may go: covering it and this much more (engine.OVERSIZE)
+  var OVERSIZE = 1.25;
 
   function $(id) { return document.getElementById(id); }
   function each(sel, fn) { Array.prototype.forEach.call(document.querySelectorAll(sel), fn); }
@@ -181,7 +183,7 @@
       if (!(k in s)) return;
       var v = s[k];
       if (e.type === 'checkbox') e.checked = !!v;
-      else if (k === 'apply_width_mm' || k === 'layer_height_mm') e.value = v ? v : '';
+      else if (k === 'apply_width_mm' || k === 'apply_height_mm' || k === 'layer_height_mm') e.value = v ? v : '';
       else e.value = v;
     });
     S.target = s.target === 'new' ? 'new' : 'plate';
@@ -318,9 +320,9 @@
         ? t('prev.on_face', { design: t('prev.dims', { w: fmt(fit.w), h: fmt(fit.h) }), face: where })
         : where;
       dims.title = dims.textContent;
-      if (fit && (fit.w > face.w + 0.05 || fit.h > face.h + 0.05)) {
-        dims.className = 'dims warn';
-        dims.title += '\n' + t('warn.exceeds_face', { w: fmt(face.w), h: fmt(face.h) });
+      if (fit && fit.past) {                    // allowed: the face's edge cuts it
+        dims.textContent += ' \u00b7 ' + t('prev.past_edge');
+        dims.title = dims.textContent;
       }
     }
     if (!a) {
@@ -358,6 +360,7 @@
     });
     $('preview_empty').hidden = !!a || view === 'placement';
     $('preview_place').hidden = view !== 'placement';
+    $('btn_turn_view').hidden = view !== 'placement';
     if (view === 'placement') renderPlacement();
     renderAnalysisInfo();
     if (!a) { res.hidden = true; img.hidden = true; return; }
@@ -437,23 +440,46 @@
     sel.title = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].textContent : '';
   }
 
-  // the same scale the plugin will use (engine.apply_to_project)
-  // the same scale and position the plugin will use (engine.apply_to_project):
-  // never larger than the face, and moved only as far as it still fits
+  // the same size and position the plugin will use (engine.design_size):
+  // a width (automatic: 85% of the face) and a height (in proportion unless
+  // given); it may cover the face and go OVERSIZE past that, cut at the
+  // face's edge; smaller, it moves within the face, larger, it moves while it
+  // still covers it
+  function turned(w, h, rot) {
+    var r = rot * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
+    return [w * c + h * s, w * s + h * c];
+  }
   function placement(a, face, rot) {
     if (!a || !a.box_mm || !(a.box_mm[0] > 0 && a.box_mm[1] > 0)) return null;
-    var W = a.box_mm[0], H = a.box_mm[1];
-    var r = rot * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
-    var rw = W * c + H * s, rh = W * s + H * c;
-    var width = num($('apply_width_mm').value, 0);
-    var kmax = Math.min(face.w / rw, face.h / rh);
-    var k = width > 0 ? width / W : num(S.settings.apply_fraction, 0.85) * kmax;
-    k = Math.min(k, kmax);
-    var fit = { k: k, kmax: kmax, W: W, w: rw * k, h: rh * k };
-    var roomX = Math.max(0, (face.w - fit.w) / 2), roomY = Math.max(0, (face.h - fit.h) / 2);
-    S.frame.ox = Math.max(-roomX, Math.min(roomX, S.frame.ox));
-    S.frame.oy = Math.max(-roomY, Math.min(roomY, S.frame.oy));
+    var W = a.box_mm[0], H = a.box_mm[1], one = turned(W, H, rot);
+    var width = num($('apply_width_mm').value, 0), height = num($('apply_height_mm').value, 0);
+    var kx = width > 0 ? width / W : num(S.settings.apply_fraction, 0.85) * Math.min(face.w / one[0], face.h / one[1]);
+    var ky = height > 0 ? height / H : kx;
+    var size = turned(W * kx, H * ky, rot), cover = Math.max(face.w / size[0], face.h / size[1]);
+    if (cover * OVERSIZE < 1 - 1e-9) {
+      var f0 = cover * OVERSIZE;
+      kx *= f0; ky *= f0; size = [size[0] * f0, size[1] * f0]; cover = 1 / OVERSIZE;
+    }
+    var fit = { k: kx, kx: kx, ky: ky, kmax: kx * cover * OVERSIZE, W: W, H: H, w: size[0], h: size[1],
+                roomX: Math.abs(face.w - size[0]) / 2, roomY: Math.abs(face.h - size[1]) / 2,
+                past: size[0] > face.w + 0.05 || size[1] > face.h + 0.05 };
+    S.frame.ox = Math.max(-fit.roomX, Math.min(fit.roomX, S.frame.ox));
+    S.frame.oy = Math.max(-fit.roomY, Math.min(fit.roomY, S.frame.oy));
     return fit;
+  }
+
+  // the design covers the whole face, in proportion and centered: no edge of
+  // the face is left over (what goes past it is cut off)
+  function fillFace() {
+    var face = selectedFace(), a = S.analysis;
+    if (!face || !a || !a.box_mm) return;
+    var W = a.box_mm[0], one = turned(W, a.box_mm[1], rotation());
+    var k = Math.max(face.w / one[0], face.h / one[1]);
+    $('apply_width_mm').value = (Math.ceil(W * k * 10) / 10).toFixed(1);   // rounded up: no hairline left
+    $('apply_height_mm').value = '';
+    resetFrame();
+    $('apply_width_mm').dispatchEvent(new Event('input', { bubbles: true }));
+    $('apply_width_mm').dispatchEvent(new Event('change', { bubbles: true }));
   }
 
   var designCache = { src: null, html: '' };
@@ -492,6 +518,26 @@
     send({ action: 'face_context', project: S.faces.project, object_id: S.faces.object_id, face_id: face.id });
   }
 
+  // the view turned by quarter turns (only how the page shows it): the
+  // sides around the face follow, and the 3x3 grid means the screen
+  function viewTurn() { return ((S.viewTurn || 0) % 360 + 360) % 360; }
+
+  function turnedSides(sides) {
+    var s = sides;
+    for (var k = 0; k < viewTurn() / 90; k++) s = { up: s.left, right: s.up, down: s.right, left: s.down };
+    return s;
+  }
+
+  // a point of the screen (x right, y up) in the face's own frame, and back
+  function screenToFace(x, y) {
+    var r = viewTurn() * Math.PI / 180, c = Math.round(Math.cos(r)), s = Math.round(Math.sin(r));
+    return [x * c - y * s, x * s + y * c];
+  }
+  function faceToScreen(x, y) {
+    var r = viewTurn() * Math.PI / 180, c = Math.round(Math.cos(r)), s = Math.round(Math.sin(r));
+    return [x * c + y * s, -x * s + y * c];
+  }
+
   function onFaceContext(m) {
     var f = S.faces;
     if (!f || f.project !== m.project || f.object_id !== m.object_id || f.mtime !== m.mtime || !m.context) return;
@@ -506,13 +552,14 @@
     var box = $('preview_place'), face = selectedFace(), a = S.analysis;
     if (!face) { box.textContent = ''; box.removeAttribute('data-key'); return; }
     askContext(face);
-    var key = [S.faces.project, S.faces.mtime, face.id, face.view, face.context ? 1 : 0, S.lang,
+    var key = [S.faces.project, S.faces.mtime, face.id, face.view, face.context ? 1 : 0, S.lang, viewTurn(),
                a ? a.svg + a.preview.length : ''].join('|');
     if (box.getAttribute('data-key') !== key) {
       box.setAttribute('data-key', key);
       // the face turned as OrcaSlicer shows it: what is left of the object's
-      // turn on the plate (counterclockwise; SVG turns clockwise, Y down)
-      var turn = -(face.view || 0), r = turn * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
+      // turn on the plate (counterclockwise; SVG turns clockwise, Y down),
+      // then by the quarter turns asked for with the turn button
+      var turn = -(face.view || 0) + viewTurn(), r = turn * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
       var xs = [], ys = [];
       [face.bounds, face.context_bounds].forEach(function (b) {
         if (!b) return;
@@ -527,18 +574,21 @@
       // the sides of the plate around the face, as in that view of OrcaSlicer
       var sides = '';
       if (face.sides) {
+        var shown = turnedSides(face.sides);
         var cx = (x0 + w / 2).toFixed(2), cy = (y0 + h / 2).toFixed(2), gap = pad * 0.5;
         var label = function (side, attrs) {
           return '<text class="side" font-size="' + fs.toFixed(2) + '" text-anchor="middle" ' + attrs + '>' +
                  esc(t('face.' + side)) + '</text>';
         };
-        sides = label(face.sides.up, 'x="' + cx + '" y="' + (y0 - gap).toFixed(2) + '"') +
-                label(face.sides.down, 'x="' + cx + '" y="' + (y0 + h + gap + fs).toFixed(2) + '"') +
-                label(face.sides.left, 'transform="translate(' + (x0 - gap).toFixed(2) + ' ' + cy + ') rotate(-90)"') +
-                label(face.sides.right, 'transform="translate(' + (x0 + w + gap).toFixed(2) + ' ' + cy + ') rotate(90)"');
+        sides = label(shown.up, 'x="' + cx + '" y="' + (y0 - gap).toFixed(2) + '"') +
+                label(shown.down, 'x="' + cx + '" y="' + (y0 + h + gap + fs).toFixed(2) + '"') +
+                label(shown.left, 'transform="translate(' + (x0 - gap).toFixed(2) + ' ' + cy + ') rotate(-90)"') +
+                label(shown.right, 'transform="translate(' + (x0 + w + gap).toFixed(2) + ' ' + cy + ') rotate(90)"');
       }
-      var seen = face.seen && viewKeys(face.seen)
-        ? '<div class="seen">' + esc(t(SEEN[face.seen], { keys: viewKeys(face.seen) })) + '</div>' : '';
+      var caption = [];
+      if (face.seen && viewKeys(face.seen)) caption.push(t(SEEN[face.seen], { keys: viewKeys(face.seen) }));
+      if (viewTurn()) caption.push(t('place.turned', { deg: viewTurn() }));
+      var seen = caption.length ? '<div class="seen">' + esc(caption.join(' \u00b7 ')) + '</div>' : '';
       var context = face.context ? '<path class="context" d="' + face.context + '"/>' : '';
       var design = '';
       if (a) {
@@ -566,7 +616,7 @@
     if (!fit) return;
     var ox = S.frame.ox, oy = -S.frame.oy;          // this SVG has Y down
     var tf = 'translate(' + ox.toFixed(3) + ' ' + oy.toFixed(3) + ') rotate(' + (-rotation()) + ') scale(' +
-             fit.k.toFixed(6) + ')';
+             fit.kx.toFixed(6) + ' ' + fit.ky.toFixed(6) + ')';
     Array.prototype.forEach.call(box.querySelectorAll('.dz'), function (g) { g.setAttribute('transform', tf); });
     var frame = box.querySelector('.frame'), handle = box.querySelector('.handle'), hs = S.handleSize || 2;
     if (frame) {
@@ -582,7 +632,8 @@
 
   function renderFramePos() {
     var f = S.frame, centered = Math.abs(f.ox) < 0.05 && Math.abs(f.oy) < 0.05;
-    $('frame_pos').textContent = centered ? t('frame.centered') : t('frame.pos', { x: fmt(f.ox), y: fmt(f.oy) });
+    var p = faceToScreen(f.ox, f.oy);             // as the (maybe turned) view shows it
+    $('frame_pos').textContent = centered ? t('frame.centered') : t('frame.pos', { x: fmt(p[0]), y: fmt(p[1]) });
     $('btn_center').disabled = centered;
     markAlign();
   }
@@ -593,8 +644,9 @@
     each('#wiz_align button', function (b) {
       var on = false;
       if (fit) {
-        var ox = Number(b.getAttribute('data-ax')) * Math.max(0, (face.w - fit.w) / 2);
-        var oy = Number(b.getAttribute('data-ay')) * Math.max(0, (face.h - fit.h) / 2);
+        var f = screenToFace(Number(b.getAttribute('data-ax')), Number(b.getAttribute('data-ay')));
+        var ox = f[0] * fit.roomX;
+        var oy = f[1] * fit.roomY;
         on = Math.abs(S.frame.ox - ox) < 0.05 && Math.abs(S.frame.oy - oy) < 0.05;
       }
       b.setAttribute('aria-pressed', String(on));
@@ -613,11 +665,12 @@
   }
   function startDrag(e) {
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
-    if (!face || !S.analysis || !svg || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
-    var t0 = e.target, onHandle = t0.classList && t0.classList.contains('handle');
+    var t0 = e.target, onHandle = !!(t0.classList && t0.classList.contains('handle'));
+    if (!face || !S.analysis || !svg || e.button !== 0 || e.ctrlKey || e.metaKey || (e.shiftKey && !onHandle)) return;
     if (!onHandle && !t0.closest('.dz') && !(t0.classList && t0.classList.contains('frame'))) return;
     var p = svgPoint(svg, e), fit = placement(S.analysis, face, rotation());
-    drag = { svg: svg, handle: onHandle, x: p.x, y: p.y, ox: S.frame.ox, oy: S.frame.oy, fit: fit, moved: false };
+    drag = { svg: svg, handle: onHandle, free: onHandle && e.shiftKey, x: p.x, y: p.y, ox: S.frame.ox, oy: S.frame.oy,
+             fit: fit, height: num($('apply_height_mm').value, 0) > 0, moved: false };
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveDrag(e) {
@@ -625,11 +678,19 @@
     var p = svgPoint(drag.svg, e), dx = p.x - drag.x, dy = p.y - drag.y;
     if (!drag.moved && Math.sqrt(dx * dx + dy * dy) < (S.handleSize || 2) / 4) return;
     drag.moved = true;
-    if (drag.handle) {            // uniform scale about the center
+    if (drag.handle) {            // scale about the center (Shift: width and height on their own)
       var cx = drag.ox, cy = -drag.oy, f = drag.fit;
-      var s = Math.max((p.x - cx) / (f.w / 2), (p.y - cy) / (f.h / 2));
-      var k = Math.max(1 / f.W, Math.min(f.kmax, f.k * s));
-      $('apply_width_mm').value = (k * f.W).toFixed(1);
+      var su = (p.x - cx) / (f.w / 2), sv = (p.y - cy) / (f.h / 2);
+      if (drag.free) {
+        var quarter = Math.round(rotation() / 90) % 2 === 1;      // the design's width along the face's height
+        var kx = Math.max(1 / f.W, f.kx * (quarter ? sv : su)), ky = Math.max(1 / f.H, f.ky * (quarter ? su : sv));
+        $('apply_width_mm').value = (kx * f.W).toFixed(1);
+        $('apply_height_mm').value = (ky * f.H).toFixed(1);
+      } else {
+        var k = Math.max(1 / f.W, Math.min(f.kmax, f.kx * Math.max(su, sv)));
+        $('apply_width_mm').value = (k * f.W).toFixed(1);
+        if (drag.height) $('apply_height_mm').value = (f.ky * (k / f.kx) * f.H).toFixed(1);
+      }
     } else {
       S.frame.ox = drag.ox + dx;
       S.frame.oy = drag.oy - dy;
@@ -1335,8 +1396,9 @@
   function alignOnFace(ax, ay) {
     var face = selectedFace(), fit = face && placement(S.analysis, face, rotation());
     if (!fit) return;
-    S.frame.ox = ax * Math.max(0, (face.w - fit.w) / 2);
-    S.frame.oy = ay * Math.max(0, (face.h - fit.h) / 2);
+    var f = screenToFace(ax, ay);
+    S.frame.ox = f[0] * fit.roomX;
+    S.frame.oy = f[1] * fit.roomY;
     S.view = 'placement';
     renderPreview();
     positionDesign();
@@ -1594,6 +1656,11 @@
     wireWizard();
 
     // the design on the face: drag to move, its corner to resize
+    $('btn_turn_view').addEventListener('click', function () {
+      S.viewTurn = (viewTurn() + 90) % 360;
+      renderPlacement();
+      renderFramePos();
+    });
     $('preview_place').addEventListener('pointerdown', startDrag);
     $('preview_place').addEventListener('pointermove', moveDrag);
     $('preview_place').addEventListener('pointerup', endDrag);
@@ -1601,6 +1668,8 @@
     $('btn_center').addEventListener('click', function () {
       resetFrame(); positionDesign(); renderAnalysisInfo();
     });
+    $('btn_fill').addEventListener('click', fillFace);
+    $('wiz_fill').addEventListener('click', function () { S.view = 'placement'; renderPreview(); fillFace(); });
     ['thickness_mode', 'thickness_layers', 'layer_height_mm', 'first_layer', 'base_thickness_mm'].forEach(function (id) {
       $(id).addEventListener('input', updateLayers);
       $(id).addEventListener('change', updateLayers);

@@ -48,6 +48,7 @@ class Options:
         "export_stl": False,
         "fit": "inlay",              # inlay | raised
         "apply_width_mm": 0.0,       # 0 = automatic
+        "apply_height_mm": 0.0,      # 0 = in proportion to the width
         "apply_fraction": 0.85,
         "rotation": 0.0,             # degrees, counterclockwise as seen on the face
         "project_colors": False,     # apply: the filaments used take the parts' colors
@@ -84,6 +85,7 @@ class Options:
         self.export_stl = _bool(d["export_stl"])
         self.fit = "raised" if d["fit"] == "raised" else "inlay"
         self.apply_width_mm = _f(d["apply_width_mm"], 0.0, 0.0, 5000.0)
+        self.apply_height_mm = _f(d["apply_height_mm"], 0.0, 0.0, 5000.0)
         self.apply_fraction = _f(d["apply_fraction"], 0.85, 0.05, 1.0)
         self.rotation = _f(d["rotation"], 0.0, -3600.0, 3600.0) % 360.0
         self.offset_x_mm = _f(d["offset_x_mm"], 0.0, -5000.0, 5000.0)
