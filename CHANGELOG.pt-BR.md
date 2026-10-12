@@ -2,6 +2,26 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.9.0
+
+### Novo
+- **Um assistente passo a passo** ao lado do desenho (abre quando você
+  escolhe um SVG; a varinha ao lado de *Procurar…* o traz de volta):
+  1. **Desenho**: escolha quais **camadas do arquivo** usar (camadas do
+     Illustrator e do Inkscape; uma camada escondida não muda o tamanho nem o
+     lugar do desenho), o tamanho e **Espelhar** (esquerda ↔ direita).
+  2. **Cores**: quantas cores, como antes.
+  3. **Filamentos**: um filamento para cada cor e **Cores do desenho nos
+     filamentos do projeto**: ao aplicar na mesa, cada filamento usado fica
+     com a cor da sua peça (a maior, se dividirem o filamento), no próprio
+     projeto. Também fica na barra lateral, em *Aplicar em*.
+  4. **Acabamento**: arestas *Detalhado*, *Normal* ou *Simplificado* (ajustes
+     prontos de precisão e de limpeza de pontas e lascas), a espessura das
+     cores e, num objeto, a superfície, a primeira camada, a **posição** na
+     face (grade 3×3: cantos, lados, centro) e a rotação.
+- A barra lateral mostra quantas camadas do arquivo estão em uso, com
+  *Escolher*, e uma caixa **Espelhar** abaixo do tamanho.
+
 ## 3.8.1
 
 ### Corrigido

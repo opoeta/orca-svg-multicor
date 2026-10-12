@@ -27,6 +27,8 @@
     plateReadAt: 0,
     faces: null,         // {project, object_id, mtime, list, chosen}
     frame: { ox: 0, oy: 0 },   // the design's center on the face, mm (not saved)
+    wiz: { open: false, page: 0 }, // the assistant
+    hiddenLayers: [],          // keys of the file's layers left out (not saved)
     presetLayers: null,        // {lh, h1} of the printer profile in use
     faceWant: null,      // the surface the user picked, found again after a new save
     facesApply: false,
@@ -35,7 +37,7 @@
     status: { key: 'status.ready', params: null, cls: '', raw: null }
   };
   var LIMIT = 64 * 1024 * 1024;
-  var REANALYZE = ['size_mode', 'size_mm', 'max_colors', 'merge_tolerance', 'include_strokes',
+  var REANALYZE = ['size_mode', 'size_mm', 'max_colors', 'merge_tolerance', 'include_strokes', 'mirror',
                    'precision_mm', 'min_area_mm2', 'min_detail_mm', 'base_thickness_mm',
                    'base_margin_mm', 'base_shape'];
   var PLACEMENT = ['rotation', 'apply_width_mm', 'fit'];
@@ -249,6 +251,7 @@
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       var s = options();
+      delete s.mirror;
       s.target = S.target;
       send({ action: 'save_settings', settings: s, quiet: true });
     }, 800);
@@ -514,6 +517,21 @@
     var f = S.frame, centered = Math.abs(f.ox) < 0.05 && Math.abs(f.oy) < 0.05;
     $('frame_pos').textContent = centered ? t('frame.centered') : t('frame.pos', { x: fmt(f.ox), y: fmt(f.oy) });
     $('btn_center').disabled = centered;
+    markAlign();
+  }
+
+  // the assistant's 3×3 grid shows where the design sits now
+  function markAlign() {
+    var face = selectedFace(), fit = face && S.analysis && placement(S.analysis, face, rotation());
+    each('#wiz_align button', function (b) {
+      var on = false;
+      if (fit) {
+        var ox = Number(b.getAttribute('data-ax')) * Math.max(0, (face.w - fit.w) / 2);
+        var oy = Number(b.getAttribute('data-ay')) * Math.max(0, (face.h - fit.h) / 2);
+        on = Math.abs(S.frame.ox - ox) < 0.05 && Math.abs(S.frame.oy - oy) < 0.05;
+      }
+      b.setAttribute('aria-pressed', String(on));
+    });
   }
 
   function resetFrame() { S.frame.ox = 0; S.frame.oy = 0; }
@@ -925,7 +943,9 @@
     if (S.busy) { S.pendingAnalyze = opt; return; }
     S.quiet = !!opt.quiet;
     begin('analyze', opt.quiet ? null : 'status.analyzing', { name: basename(S.svg) });
-    send({ action: 'analyze', svg: S.svg, options: options(), levels: !!S.askColors,
+    var opts = options();
+    opts.hidden_layers = S.hiddenLayers;
+    send({ action: 'analyze', svg: S.svg, options: opts, levels: !!(S.askColors || S.wiz.open),
            filaments: S.filaments.length ? S.filaments : null });
   }
   var reTimer = null;
@@ -946,6 +966,7 @@
 
   function jobMessage(action) {
     var opts = options();
+    opts.hidden_layers = S.hiddenLayers;
     if (S.target === 'plate') { opts.offset_x_mm = S.frame.ox; opts.offset_y_mm = S.frame.oy; }
     return { action: action, svg: S.svg, options: opts, colors: colorsPayload(), reopen: true,
              filaments: S.filaments.length ? S.filaments : null };
@@ -1004,18 +1025,157 @@
   function useSvg(path) {
     S.svg = path;
     resetFrame();
-    S.askColors = S.settings.ask_colors !== false;   // a new drawing: how many colors?
+    S.askColors = S.settings.ask_colors !== false;   // a new drawing: the assistant
+    S.hiddenLayers = [];
+    $('mirror').checked = false;
     $('pick_fallback').hidden = true;
     renderSvgLine();
     analyze();
   }
 
-  /* ------------------------------------------------------------ how many colors? */
-  // levels.preview has one path per color; every count recolors that one
-  // drawing through CSS variables (--k0, --k1 ...), drawn with <use>.
-  function openWizard(levels) {
+  /* ------------------------------------------------------------ the assistant */
+  // Four steps beside the drawing: the file (layers, size, mirror), how many
+  // colors, the filaments, the finish (edges, thickness, place on the face).
+  // Its controls mirror the sidebar's: a change goes to the sidebar control,
+  // which analyzes, remembers and redraws as usual.
+  var WIZ_PAGES = 4;
+  var WIZ_TITLES = ['wiz.title_drawing', 'wiz.title', 'wiz.title_filaments', 'wiz.title_finish'];
+  var WIZ_HINTS = ['wiz.hint_drawing', 'wiz.hint', 'wiz.hint_filaments', 'wiz.hint_finish'];
+  var WIZ_MIRRORS = [['wiz_size_mode', 'size_mode'], ['wiz_size_mm', 'size_mm'], ['wiz_mirror', 'mirror'],
+                     ['wiz_project_colors', 'project_colors'], ['wiz_thickness_mode', 'thickness_mode'],
+                     ['wiz_thickness_mm', 'thickness_mm'], ['wiz_thickness_layers', 'thickness_layers'],
+                     ['wiz_face', 'face_select'], ['wiz_first_layer', 'first_layer'], ['wiz_rotation', 'rotation']];
+  var SIMPLIFY = { detailed: { precision_mm: 0.01, min_detail_mm: 0.3 },
+                   normal: { precision_mm: 0.02, min_detail_mm: 0.4 },
+                   simple: { precision_mm: 0.05, min_detail_mm: 0.6 } };
+
+  function openWizard(page) {
+    S.wiz.open = true;
+    $('wizard').hidden = false;
+    $('preview').classList.add('with-wizard');
+    showWizardPage(page || 0);
+    if (!S.analysis || !S.analysis.levels) analyze({ quiet: true });   // the colors step needs them
+  }
+
+  function closeWizard() {
+    S.wiz.open = false;
+    $('wizard').hidden = true;
+    $('preview').classList.remove('with-wizard');
+    $('wiz_defs').textContent = '';
+    $('wiz_grid').textContent = '';
+    S.levelsKey = null;
+    renderPreview();
+  }
+
+  function showWizardPage(page) {
+    S.wiz.page = Math.max(0, Math.min(WIZ_PAGES - 1, page));
+    each('#wizard .wiz-page', function (p) { p.hidden = Number(p.getAttribute('data-page')) !== S.wiz.page; });
+    each('#wiz_steps li', function (li) {
+      var k = Number(li.getAttribute('data-step'));
+      li.className = k === S.wiz.page ? 'current' : k < S.wiz.page ? 'done' : '';
+    });
+    $('wiz_title').textContent = t(WIZ_TITLES[S.wiz.page]);
+    $('wiz_hint').textContent = t(WIZ_HINTS[S.wiz.page]);
+    $('wiz_back').hidden = S.wiz.page === 0;
+    $('wiz_next').textContent = t(S.wiz.page === WIZ_PAGES - 1 ? 'wiz.done' : 'wiz.next');
+    // the finish happens on the object; the rest on the drawing
+    S.view = S.wiz.page === 3 && S.target === 'plate' && selectedFace() ? 'placement' : 'result';
+    syncWizard();
+    renderPreview();
+  }
+
+  // the assistant's copies of the sidebar controls take their values (and options)
+  function syncWizard() {
+    if (!S.wiz.open) return;
+    WIZ_MIRRORS.forEach(function (pair) {
+      var w = $(pair[0]), src = $(pair[1]);
+      if (w.tagName === 'SELECT') {
+        w.textContent = '';
+        Array.prototype.forEach.call(src.options, function (o) {
+          var c = el('option', null, o.textContent); c.value = o.value; c.disabled = o.disabled; w.appendChild(c);
+        });
+        w.disabled = src.disabled;
+      }
+      if (w.type === 'checkbox') w.checked = src.checked; else w.value = src.value;
+    });
+    $('wiz_size_mm').parentNode.hidden = $('size_mode').value === 'original';
+    $('wiz_size_note').textContent = $('size_note').hidden ? '' : $('size_note').textContent;
+    var layers = $('thickness_mode').value === 'layers';
+    $('wiz_thickness_mm_box').hidden = layers;
+    $('wiz_thickness_layers').hidden = !layers;
+    $('wiz_layers_note').textContent = $('layers_note').hidden ? '' : $('layers_note').textContent;
+    var plate = S.target === 'plate';
+    $('wiz_project_box').hidden = !plate;
+    $('wiz_plate_box').hidden = !(plate && selectedFace());
+    $('wiz_first_layer_row').hidden = $('first_layer_row').hidden;
+    var p = num($('precision_mm').value, 0), d = num($('min_detail_mm').value, 0);
+    each('#wiz_simplify button', function (b) {
+      var preset = SIMPLIFY[b.getAttribute('data-preset')];
+      b.setAttribute('aria-pressed', String(Math.abs(preset.precision_mm - p) < 1e-9 && Math.abs(preset.min_detail_mm - d) < 1e-9));
+    });
+    renderWizardLayers();
+    markAlign();
+    if (S.wiz.page === 1) renderWizardColors();
+    if (S.wiz.page === 2) renderWizardFilaments();
+  }
+
+  // a change in the assistant goes to the sidebar control
+  function forwardToSidebar(wid, sid) {
+    var w = $(wid);
+    var push = function () {
+      var src = $(sid);
+      if (src.type === 'checkbox') src.checked = w.checked; else src.value = w.value;
+      src.dispatchEvent(new Event('input', { bubbles: true }));
+      src.dispatchEvent(new Event('change', { bubbles: true }));
+      setTimeout(syncWizard, 0);
+    };
+    w.addEventListener(w.tagName === 'INPUT' && w.type !== 'checkbox' ? 'change' : 'change', push);
+  }
+
+  // the file's layers: which ones are printed
+  function renderWizardLayers() {
+    var box = $('wiz_layers'), list = (S.analysis && S.analysis.layers) || [];
+    box.textContent = '';
+    if (list.length < 2) {
+      box.appendChild(el('p', 'note', t('wiz.one_layer')));
+      return;
+    }
+    list.forEach(function (lay) {
+      var row = el('label', 'wiz-check');
+      var cb = el('input'); cb.type = 'checkbox'; cb.checked = S.hiddenLayers.indexOf(lay.key) < 0;
+      cb.addEventListener('change', function () {
+        var at = S.hiddenLayers.indexOf(lay.key);
+        if (cb.checked && at >= 0) S.hiddenLayers.splice(at, 1);
+        if (!cb.checked && at < 0) S.hiddenLayers.push(lay.key);
+        if (S.hiddenLayers.length >= list.length) {           // at least one layer
+          S.hiddenLayers.splice(S.hiddenLayers.indexOf(lay.key), 1); cb.checked = true; return;
+        }
+        renderLayersLine();
+        analyze({ quiet: true });
+      });
+      row.appendChild(cb);
+      row.appendChild(el('span', null, (lay.key === 'loose' ? t('wiz.loose') : lay.name || t('wiz.layer_n', { n: Number(lay.key) + 1 }))));
+      row.appendChild(el('span', 'wiz-meta', t('col.shapes', { n: lay.shapes })));
+      box.appendChild(row);
+    });
+  }
+
+  function renderLayersLine() {
+    var list = (S.analysis && S.analysis.layers) || [];
+    $('layers_line').hidden = list.length < 2;
+    $('layers_text').textContent = t('wiz.layers_used', { n: list.length - S.hiddenLayers.length, total: list.length }) + ' · ';
+  }
+
+  // how many colors: one drawing, recolored for each count through CSS
+  // variables (--k0, --k1 ...) and drawn with <use>
+  function renderWizardColors() {
+    var levels = S.analysis && S.analysis.levels, grid = $('wiz_grid');
+    if (!levels) { grid.textContent = ''; grid.appendChild(el('p', 'note', t('status.analyzing', { name: '' }))); return; }
+    var current = num($('max_colors').value, 0);
+    var key = S.analysis.svg + levels.preview.length + '|' + current + '|' + S.filaments.length;
+    if (S.levelsKey === key) return;
+    S.levelsKey = key;
     var counts = Object.keys(levels.counts).map(Number).sort(function (a, b) { return a - b; });
-    if (!counts.length) return;
     var src = new DOMParser().parseFromString(levels.preview, 'image/svg+xml').documentElement;
     var vb = src.getAttribute('viewBox') || '0 0 1 1';
     var NS = 'http://www.w3.org/2000/svg';
@@ -1025,18 +1185,16 @@
     defs.textContent = '';
     sym.setAttribute('id', 'svgm_levels');
     Array.prototype.forEach.call(src.querySelectorAll('path[data-key]'), function (p) {
-      var key = p.getAttribute('data-key');
-      if (!(key in idx)) { idx[key] = keys.length; keys.push(key); }
+      var k = p.getAttribute('data-key');
+      if (!(k in idx)) { idx[k] = keys.length; keys.push(k); }
       var q = document.createElementNS(NS, 'path');
       q.setAttribute('d', p.getAttribute('d'));
       q.setAttribute('fill-rule', 'evenodd');
-      q.setAttribute('style', 'fill:var(--k' + idx[key] + ')');
+      q.setAttribute('style', 'fill:var(--k' + idx[k] + ')');
       sym.appendChild(q);
     });
     box.appendChild(sym);
     defs.appendChild(box);
-
-    var grid = $('wiz_grid'), current = num($('max_colors').value, 0);
     var suggested = counts.indexOf(S.filaments.length) >= 0 ? S.filaments.length : null;
     grid.textContent = '';
     counts.forEach(function (k) {
@@ -1044,14 +1202,13 @@
       var card = el('button', 'wiz-card' + (k === suggested ? ' suggested' : '') + (k === current ? ' current' : ''));
       card.type = 'button';
       card.setAttribute('role', 'listitem');
+      card.setAttribute('aria-pressed', String(k === current));
       var svg = document.createElementNS(NS, 'svg'), use = document.createElementNS(NS, 'use');
       svg.setAttribute('class', 'wiz-thumb');
       svg.setAttribute('viewBox', vb);
       svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
       use.setAttribute('href', '#svgm_levels');
-      use.setAttribute('style', keys.map(function (key, i) {
-        return '--k' + i + ':' + (lv.map[key] || key);
-      }).join(';'));
+      use.setAttribute('style', keys.map(function (kk, i) { return '--k' + i + ':' + (lv.map[kk] || kk); }).join(';'));
       svg.appendChild(use);
       card.appendChild(svg);
       var sw = el('div', 'wiz-sw');
@@ -1065,23 +1222,86 @@
       card.addEventListener('click', function () { chooseColorCount(k); });
       grid.appendChild(card);
     });
-    $('wizard').hidden = false;
-    grid.scrollTop = 0;
-    var first = grid.querySelector('.suggested') || grid.querySelector('.current') || grid.firstChild;
-    if (first) first.focus({ preventScroll: true });
-  }
-
-  function closeWizard() {
-    $('wizard').hidden = true;
-    $('wiz_defs').textContent = '';
-    $('wiz_grid').textContent = '';
   }
 
   function chooseColorCount(k) {
-    closeWizard();
     $('max_colors').value = k;
+    $('max_colors').dispatchEvent(new Event('change', { bubbles: true }));
+    S.levelsKey = null;
+    renderWizardColors();
+  }
+
+  // each color and its filament, as in the sidebar
+  function renderWizardFilaments() {
+    var box = $('wiz_colors'), a = S.analysis;
+    box.textContent = '';
+    if (!a) return;
+    a.colors.forEach(function (c) {
+      var st = S.rows[c.color];
+      if (!st) return;
+      var row = el('div', 'wiz-fil' + (st.enabled ? '' : ' off'));
+      var sw = el('i'); sw.style.background = st.recolor || c.color;
+      var name = el('span', null, st.name);
+      var sel = el('select'); sel.setAttribute('aria-label', t('col.filament'));
+      filamentOptions(sel, st.filament);
+      sel.addEventListener('change', function () {
+        st.filament = parseInt(sel.value, 10); st.filEdited = true; renderColors(); renderColorsNote();
+      });
+      row.appendChild(sw); row.appendChild(name); row.appendChild(sel);
+      box.appendChild(row);
+    });
+  }
+
+  // edges: precision and cleanup together
+  function applySimplify(name) {
+    var preset = SIMPLIFY[name];
+    $('precision_mm').value = preset.precision_mm;
+    $('min_detail_mm').value = preset.min_detail_mm;
+    $('min_detail_mm').dispatchEvent(new Event('change', { bubbles: true }));
     rememberSoon();
-    analyze();
+    syncWizard();
+  }
+
+  // the design against an edge or a corner of the face
+  function alignOnFace(ax, ay) {
+    var face = selectedFace(), fit = face && placement(S.analysis, face, rotation());
+    if (!fit) return;
+    S.frame.ox = ax * Math.max(0, (face.w - fit.w) / 2);
+    S.frame.oy = ay * Math.max(0, (face.h - fit.h) / 2);
+    S.view = 'placement';
+    renderPreview();
+    positionDesign();
+    renderAnalysisInfo();
+  }
+
+  function wireWizard() {
+    WIZ_MIRRORS.forEach(function (pair) { forwardToSidebar(pair[0], pair[1]); });
+    $('wiz_close').addEventListener('click', closeWizard);
+    $('wiz_back').addEventListener('click', function () { showWizardPage(S.wiz.page - 1); });
+    $('wiz_next').addEventListener('click', function () {
+      if (S.wiz.page === WIZ_PAGES - 1) closeWizard(); else showWizardPage(S.wiz.page + 1);
+    });
+    each('#wiz_steps li', function (li) {
+      li.addEventListener('click', function () { showWizardPage(Number(li.getAttribute('data-step'))); });
+    });
+    $('wiz_match').addEventListener('click', function () { $('btn_auto_fil').click(); renderWizardFilaments(); });
+    each('#wiz_simplify button', function (b) {
+      b.addEventListener('click', function () { applySimplify(b.getAttribute('data-preset')); });
+    });
+    each('#wiz_align button', function (b) {
+      b.addEventListener('click', function () {
+        alignOnFace(Number(b.getAttribute('data-ax')), Number(b.getAttribute('data-ay')));
+      });
+    });
+    $('btn_wizard').addEventListener('click', function () {
+      if (!S.svg) { setStatus('error.no_svg', null, 'err'); return; }
+      openWizard(0);
+    });
+    $('btn_wizard_colors').addEventListener('click', function () {
+      if (!S.svg) { setStatus('error.no_svg', null, 'err'); return; }
+      openWizard(1);
+    });
+    $('btn_layers').addEventListener('click', function (e) { e.preventDefault(); openWizard(0); });
   }
 
   /* ------------------------------------------------------------ messages */
@@ -1157,7 +1377,7 @@
 
   function onAnalysis(m) {
     var quiet = S.quiet;
-    var ask = S.askColors && m.levels;
+    var ask = S.askColors;
     S.askColors = false;
     var sameFile = S.analysis && S.analysis.svg_input === S.svg;
     m.svg_input = S.svg;
@@ -1174,7 +1394,9 @@
     } else if (S.status.cls !== 'err') {
       setStatus('status.updated', null, 'ok');
     }
-    if (ask) openWizard(m.levels);
+    renderLayersLine();
+    if (ask) openWizard(0);
+    else if (S.wiz.open) syncWizard();
   }
 
   function plateProblem(m) {
@@ -1291,13 +1513,7 @@
     });
 
     $('btn_plate_read').addEventListener('click', function () { readPlate(false); });
-    $('btn_wizard').addEventListener('click', function (e) {
-      e.preventDefault();                       // inside a <label>: do not focus the input
-      if (!S.svg) { setStatus('error.no_svg', null, 'err'); return; }
-      if (S.analysis && S.analysis.levels && S.analysis.svg_input === S.svg) openWizard(S.analysis.levels);
-      else { S.askColors = true; analyze(); }
-    });
-    $('wiz_keep').addEventListener('click', closeWizard);
+    wireWizard();
 
     // the design on the face: drag to move, its corner to resize
     $('preview_place').addEventListener('pointerdown', startDrag);

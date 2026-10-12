@@ -66,10 +66,21 @@ Requires an OrcaSlicer build with Python plugin support.
 The page works like the Prepare tab: settings on the left, the view on the
 right, the main action at the top right.
 
-1. **SVG file**: *Browse…* and choose the SVG. **How many colors?** shows the
-   drawing with 2, 3 ... 12 colors (the count of your filaments is marked);
-   click one. The button next to *Max. colors* brings it back, and the Config
-   tab can turn it off.
+1. **SVG file**: *Browse…* and choose the SVG. The **assistant** opens beside
+   the drawing and goes one step at a time (the wand next to *Browse…* brings
+   it back; the Config tab can turn it off):
+   - **Drawing**: which layers of the file to use (Illustrator and Inkscape
+     layers; the design keeps its size and place), the size, and **Mirror**.
+   - **Colors**: the drawing with 2, 3 ... 12 colors (the count of your
+     filaments is marked); click one.
+   - **Filaments**: a filament for each color, the wand that matches them to
+     the loaded filaments, and **Drawing colors in the project's filaments**:
+     when applying to the plate, each filament used takes the color of its part.
+   - **Finish**: edges *Detailed*, *Normal* or *Simplified*, the color
+     thickness and, on an object, the surface, first layer, position (a 3×3
+     grid: corners, sides, center) and rotation.
+
+   Every step is also in the sidebar.
 2. **Colors**: hover a row to highlight it in the view. Rename parts, untick
    what you do not want (a plain background, for example; colors that span the
    whole drawing are tagged *background?*), and pick each color's filament, or

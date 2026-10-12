@@ -34,6 +34,8 @@ class Options:
         "max_colors": 4,             # 0 = no limit
         "merge_tolerance": 0.0,      # Delta E; 0 = off
         "include_strokes": True,
+        "hidden_layers": (),         # keys of the file's layers left out (per drawing, not saved)
+        "mirror": False,             # mirror the drawing left to right (not saved)
         "precision_mm": 0.02,        # simplification tolerance
         "min_area_mm2": 0.02,        # specks smaller than this are dropped
         "min_detail_mm": 0.4,        # thinner details and sharp tips go to the neighbor color; 0 = off
@@ -48,6 +50,7 @@ class Options:
         "apply_width_mm": 0.0,       # 0 = automatic
         "apply_fraction": 0.85,
         "rotation": 0.0,             # degrees, counterclockwise as seen on the face
+        "project_colors": False,     # apply: the filaments used take the parts' colors
         "offset_x_mm": 0.0,          # the design's center on the face (face frame)
         "offset_y_mm": 0.0,
     }
@@ -65,6 +68,10 @@ class Options:
         self.max_colors = _i(d["max_colors"], 4, 0, 64)
         self.merge_tolerance = _f(d["merge_tolerance"], 0.0, 0.0, 100.0)
         self.include_strokes = _bool(d["include_strokes"])
+        hidden = d["hidden_layers"] or ()
+        self.hidden_layers = tuple(str(x) for x in hidden)[:500] if isinstance(hidden, (list, tuple)) else ()
+        self.mirror = _bool(d["mirror"])
+        self.project_colors = _bool(d["project_colors"])
         self.precision_mm = _f(d["precision_mm"], 0.02, 0.0, 2.0)
         self.min_area_mm2 = _f(d["min_area_mm2"], 0.02, 0.0, 100.0)
         self.min_detail_mm = _f(d["min_detail_mm"], 0.4, 0.0, 10.0)

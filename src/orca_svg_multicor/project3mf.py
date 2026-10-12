@@ -272,6 +272,35 @@ class Project:
                  "color": (normalize_hex(str(colors[i])) or "") if i < len(colors) else ""}
                 for i in range(count)]
 
+    def set_filament_colors(self, colors):
+        """
+        Filament n of the project takes colors[n] ("#rrggbb"), in
+        Metadata/project_settings.config. True when something changed.
+        """
+        data = self.files.get(PROJECT_SETTINGS)
+        if not data or not colors:
+            return False
+        try:
+            cfg = json.loads(data.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return False
+        changed = False
+        for key in ("filament_colour", "filament_multi_colour"):
+            value = cfg.get(key)
+            if value is None:
+                continue
+            as_text = isinstance(value, str)
+            items = value.split(";") if as_text else list(value)
+            for n, color in colors.items():
+                hexa = normalize_hex(color)
+                if hexa and 1 <= int(n) <= len(items) and str(items[int(n) - 1]).lower() != hexa:
+                    items[int(n) - 1] = hexa.upper()
+                    changed = True
+            cfg[key] = ";".join(items) if as_text else items
+        if changed:
+            self.files[PROJECT_SETTINGS] = json.dumps(cfg, indent=4, ensure_ascii=False).encode("utf-8")
+        return changed
+
     def layer_heights(self, object_id=None):
         """
         {"lh": layer height, "h1": first layer height} of the project (the

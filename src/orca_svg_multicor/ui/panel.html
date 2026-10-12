@@ -20,6 +20,8 @@
       <div class="sec-head">
         <svg class="ic" aria-hidden="true"><use href="#i-file"/></svg>
         <h3 data-i18n="src.title">SVG file</h3>
+        <button type="button" class="flat icon" id="btn_wizard" data-i18n-title="wiz.open" title="Assistant"
+                data-i18n-aria="wiz.open"><svg class="ic"><use href="#i-wand"/></svg></button>
         <button type="button" class="flat" id="btn_svg_pick" data-i18n="src.browse">Browse…</button>
       </div>
       <div class="file-line" id="svg_line" title="">
@@ -30,6 +32,8 @@
         <a href="#" id="btn_svg_upload" data-i18n="src.upload">Upload a copy…</a>
       </p>
       <input type="file" id="svg_file" accept=".svg,image/svg+xml" hidden>
+      <p class="note" id="layers_line" hidden><span id="layers_text"></span>
+        <a href="#" id="btn_layers" data-i18n="wiz.choose">Choose</a></p>
 
       <label class="row"><span data-i18n="opt.size">Size</span>
         <span class="ctl two">
@@ -41,6 +45,8 @@
           <span class="unit" data-unit="mm"><input id="size_mm" type="number" min="1" step="1" data-opt="size_mm"></span>
         </span></label>
       <p class="note" id="size_note" hidden></p>
+      <label class="row"><span data-i18n="wiz.mirror">Mirror (left ↔ right)</span>
+        <span class="ctl"><input type="checkbox" id="mirror" data-opt="mirror"></span></label>
       <label class="row"><span data-i18n="opt.thickness">Color thickness</span>
         <span class="ctl">
           <span class="unit" data-unit="mm" id="thickness_mm_box"><input id="thickness_mm" type="number" min="0.04" step="0.04" data-opt="thickness_mm"></span>
@@ -53,8 +59,8 @@
       <label class="row"><span data-i18n="opt.max_colors">Max. colors</span>
         <span class="ctl"><input id="max_colors" type="number" min="0" max="64" step="1" data-opt="max_colors"
               data-i18n-title="opt.max_colors_hint">
-          <button type="button" class="flat icon" id="btn_wizard" data-i18n-title="wiz.open" title="Choose the number of colors"
-                  aria-label="Choose the number of colors"><svg class="ic"><use href="#i-grid"/></svg></button></span></label>
+          <button type="button" class="flat icon" id="btn_wizard_colors" data-i18n-title="wiz.title" title="How many colors?"
+                  data-i18n-aria="wiz.title"><svg class="ic"><use href="#i-grid"/></svg></button></span></label>
     </section>
 
     <!-- COLORS ------------------------------------------------------------->
@@ -87,6 +93,9 @@
         </div>
         <p class="note" id="plate_state"></p>
         <p class="note" data-i18n="plate.hint">The design goes into the saved project, which reopens here with the new parts. Save the project (Ctrl+S) first.</p>
+        <label class="row"><span data-i18n="wiz.project_colors">Drawing colors in the project's filaments</span>
+          <span class="ctl"><input type="checkbox" id="project_colors" data-opt="project_colors"
+                data-i18n-title="wiz.project_colors_note"></span></label>
         <label class="row"><span data-i18n="plate.output">Save to</span>
           <span class="ctl"><select id="apply_output" data-opt="apply_output">
             <option value="project" data-i18n="plate.output_project">The project itself (with a backup)</option>
@@ -188,14 +197,81 @@
       <img class="stage" id="preview_original" alt="" hidden>
       <div class="stage" id="preview_place" hidden></div>
       <div class="spinner" id="preview_spin" hidden></div>
-      <!-- how many colors? one drawing, recolored for each count -->
+      <!-- the assistant: one step at a time, the drawing visible beside it -->
       <section class="wizard" id="wizard" hidden aria-labelledby="wiz_title">
         <div class="wiz-head">
-          <h3 id="wiz_title" data-i18n="wiz.title">How many colors?</h3>
-          <p class="note" data-i18n="wiz.hint">Each color becomes a part with its own filament. Pick how many the design will have; you can change it later.</p>
+          <ol class="wiz-steps" id="wiz_steps">
+            <li data-step="0" data-i18n="wiz.step_drawing">Drawing</li>
+            <li data-step="1" data-i18n="wiz.step_colors">Colors</li>
+            <li data-step="2" data-i18n="wiz.step_filaments">Filaments</li>
+            <li data-step="3" data-i18n="wiz.step_finish">Finish</li>
+          </ol>
+          <h3 id="wiz_title"></h3>
+          <p class="note" id="wiz_hint"></p>
         </div>
-        <div class="wiz-grid" id="wiz_grid" role="list"></div>
-        <div class="wiz-foot"><button type="button" class="flat" id="wiz_keep" data-i18n="wiz.keep">Keep as it is</button></div>
+        <div class="wiz-body">
+          <div class="wiz-page" data-page="0">
+            <h4 data-i18n="wiz.layers">Layers of the file</h4>
+            <div class="wiz-list" id="wiz_layers"></div>
+            <h4 data-i18n="opt.size">Size</h4>
+            <div class="wiz-row">
+              <select id="wiz_size_mode" data-i18n-aria="opt.size"></select>
+              <span class="unit" data-unit="mm"><input id="wiz_size_mm" type="number" min="1" step="1"></span>
+            </div>
+            <p class="note" id="wiz_size_note"></p>
+            <label class="wiz-check"><input type="checkbox" id="wiz_mirror"> <span data-i18n="wiz.mirror">Mirror (left ↔ right)</span></label>
+          </div>
+          <div class="wiz-page" data-page="1">
+            <div class="wiz-grid" id="wiz_grid" role="list"></div>
+          </div>
+          <div class="wiz-page" data-page="2">
+            <button type="button" class="flat" id="wiz_match" data-i18n="wiz.match">Match each color to the closest filament</button>
+            <div id="wiz_project_box">
+              <label class="wiz-check"><input type="checkbox" id="wiz_project_colors">
+                <span data-i18n="wiz.project_colors">Drawing colors in the project's filaments</span></label>
+              <p class="note" data-i18n="wiz.project_colors_note">When applying to the plate, each filament used takes the color of its part.</p>
+            </div>
+            <div class="wiz-list" id="wiz_colors"></div>
+          </div>
+          <div class="wiz-page" data-page="3">
+            <h4 data-i18n="wiz.simplify">Edges</h4>
+            <div class="wiz-choice" id="wiz_simplify">
+              <button type="button" class="flat" data-preset="detailed" data-i18n="wiz.simplify_detailed">Detailed</button>
+              <button type="button" class="flat" data-preset="normal" data-i18n="wiz.simplify_normal">Normal</button>
+              <button type="button" class="flat" data-preset="simple" data-i18n="wiz.simplify_simple">Simplified</button>
+            </div>
+            <p class="note" data-i18n="wiz.simplify_hint">Detailed keeps more of the drawing; Simplified cleans tips and slivers up to 0.6 mm.</p>
+            <h4 data-i18n="opt.thickness">Color thickness</h4>
+            <div class="wiz-row">
+              <span class="unit" data-unit="mm" id="wiz_thickness_mm_box"><input id="wiz_thickness_mm" type="number" min="0.04" step="0.04"></span>
+              <input id="wiz_thickness_layers" type="number" min="1" max="500" step="1">
+              <select id="wiz_thickness_mode" data-i18n-aria="opt.thickness"></select>
+            </div>
+            <p class="note" id="wiz_layers_note"></p>
+            <div id="wiz_plate_box">
+              <h4 data-i18n="plate.surface">Surface</h4>
+              <div class="wiz-row"><select id="wiz_face" data-i18n-aria="plate.surface"></select></div>
+              <div class="wiz-row" id="wiz_first_layer_row"><span data-i18n="layer.first">First layer</span>
+                <select id="wiz_first_layer" data-i18n-aria="layer.first"></select></div>
+              <h4 data-i18n="wiz.position">Position on the surface</h4>
+              <div class="wiz-row">
+                <div class="wiz-align" id="wiz_align" role="group" data-i18n-aria="wiz.position">
+                  <button type="button" data-ax="-1" data-ay="1"></button><button type="button" data-ax="0" data-ay="1"></button><button type="button" data-ax="1" data-ay="1"></button>
+                  <button type="button" data-ax="-1" data-ay="0"></button><button type="button" data-ax="0" data-ay="0"></button><button type="button" data-ax="1" data-ay="0"></button>
+                  <button type="button" data-ax="-1" data-ay="-1"></button><button type="button" data-ax="0" data-ay="-1"></button><button type="button" data-ax="1" data-ay="-1"></button>
+                </div>
+                <span class="wiz-col"><span data-i18n="plate.rotation">Rotation</span>
+                  <select id="wiz_rotation" data-i18n-aria="plate.rotation"></select></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="wiz-foot">
+          <button type="button" class="flat" id="wiz_close" data-i18n="wiz.close">Close</button>
+          <span class="spacer"></span>
+          <button type="button" class="flat" id="wiz_back" data-i18n="wiz.back">Back</button>
+          <button type="button" class="primary" id="wiz_next" data-i18n="wiz.next">Next</button>
+        </div>
       </section>
       <svg id="wiz_defs" width="0" height="0" aria-hidden="true" style="position:absolute"></svg>
       <!-- a click on a color of the drawing: its filament -->

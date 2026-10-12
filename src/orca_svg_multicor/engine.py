@@ -74,7 +74,8 @@ def _remember(store, key, value):
             store.pop(next(iter(store)))
 
 
-def load_document(path, include_strokes=True):
+def load_document(path, include_strokes=True, hidden_layers=()):
+    """The SVG at `path`, read once; without the paint of `hidden_layers`."""
     if not path or not os.path.isfile(path):
         raise EngineError("error.no_svg")
     key = (_file_key(path), bool(include_strokes))
@@ -84,7 +85,7 @@ def load_document(path, include_strokes=True):
         doc = read_svg(path, include_strokes=include_strokes)
         doc.cache_key = key
         _remember(_doc_cache, key, doc)
-    return doc
+    return doc.without_layers(hidden_layers)
 
 
 def scale_for(doc, opts):
@@ -140,7 +141,7 @@ def process(doc, scale, opts, rep=None):
     with _cache_lock:
         done = _result_cache.get(key)
     if done is not None:
-        return dict(done[0]), done[1], raw
+        return _mirrored(done[0], opts), done[1], raw
     regions, map1 = C.merge_similar(regions, opts.merge_tolerance)
     regions, map2 = C.reduce_colors(regions, opts.max_colors)
     mapping = C.chain_mappings(map1, map2)
@@ -150,7 +151,17 @@ def process(doc, scale, opts, rep=None):
         if not regions:
             raise EngineError("error.no_regions")
     _remember(_result_cache, key, (regions, mapping))
-    return dict(regions), mapping, raw
+    return _mirrored(regions, opts), mapping, raw
+
+
+def _mirrored(regions, opts):
+    """The regions, mirrored left to right when the page asks for it."""
+    if not opts.mirror:
+        return dict(regions)
+    from shapely.affinity import scale as _scale
+    from shapely.geometry.polygon import orient
+    return {c: [orient(_scale(p, -1.0, 1.0, origin=(0, 0)), 1.0) for p in polys]
+            for c, polys in regions.items()}
 
 
 def ordered(regions):
@@ -202,7 +213,8 @@ def color_choices(doc, scale, opts, rep=None, upto=LEVELS_UPTO):
         counts[str(k)] = {"map": mapping,
                           "colors": [[r, round(100.0 * a / total, 1)]
                                      for r, a in sorted(share.items(), key=lambda x: -x[1])]}
-    preview = G.preview_svg([(c, c, regions[c]) for c in reversed(ordered(regions))])
+    shown = _mirrored(regions, opts)
+    preview = G.preview_svg([(c, c, shown[c]) for c in reversed(ordered(regions))])
     return {"preview": preview, "counts": counts}
 
 
@@ -213,7 +225,7 @@ def analyze(svg_path, opts, filaments=None, tr=None, rep=None, levels=False):
     """
     tr = tr or Translator()
     rep = rep or Reporter()
-    doc = load_document(svg_path, opts.include_strokes)
+    doc = load_document(svg_path, opts.include_strokes, opts.hidden_layers)
     scale = scale_for(doc, opts)
     regions, mapping, raw = process(doc, scale, opts, rep)
     order = ordered(regions)
@@ -259,6 +271,7 @@ def analyze(svg_path, opts, filaments=None, tr=None, rep=None, levels=False):
         "preview": G.preview_svg(layers),
         "warnings": [(k, p) for k, p in doc.warnings],
         "levels": color_choices(doc, scale, opts, rep) if levels else None,
+        "layers": doc.layers,
     }
 
 
@@ -387,7 +400,7 @@ def generate(svg_path, out_dir, opts, choices=None, filaments=None, tr=None, rep
     """
     tr = tr or Translator()
     rep = rep or Reporter()
-    doc = load_document(svg_path, opts.include_strokes)
+    doc = load_document(svg_path, opts.include_strokes, opts.hidden_layers)
     scale = scale_for(doc, opts)
     regions, _mapping, _raw = process(doc, scale, opts, rep)
     # without a base plate the colors are the first layers of the new object
@@ -489,7 +502,7 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
         raise EngineError("error.no_project")
     if os.path.abspath(project_path) == os.path.abspath(out_path):
         raise EngineError("error.same_output")
-    doc = load_document(svg_path, opts.include_strokes)
+    doc = load_document(svg_path, opts.include_strokes, opts.hidden_layers)
     project = Project(project_path)
     obj = project.object(object_id)
     V_obj, F_obj = project.object_mesh(obj.id)
@@ -543,6 +556,15 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
         beyond = [p.name for p in parts if p.extruder > len(project_fils)]
         if beyond:
             rep.warn("warn.project_filaments", n=len(project_fils), names=", ".join(beyond))
+        if opts.project_colors:
+            # the project's filaments take the colors of the parts printed with
+            # them (the largest part decides when several share one)
+            chosen = {}
+            for p in parts:
+                if p.extruder <= len(project_fils):
+                    chosen.setdefault(p.extruder, p.color)
+            if project.set_filament_colors(chosen):
+                rep.log("log.project_colors", n=len(chosen))
     rep.log("log.placed_face", w=f"{rw * scale:.2f}", h=f"{rh * scale:.2f}",
             t=f"{thickness:.2f}")
     rep.progress(0.96, "progress.writing")

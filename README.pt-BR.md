@@ -61,10 +61,21 @@ atribuídas aos seus filamentos.
 A página funciona como a aba Preparar: ajustes à esquerda, visualização à
 direita e a ação principal no canto superior direito.
 
-1. **Arquivo SVG**: *Procurar…* e escolha o SVG. **Quantas cores?** mostra o
-   desenho com 2, 3 ... 12 cores (o número dos seus filamentos vem marcado);
-   clique numa. O botão ao lado de *Máx. de cores* traz a escolha de volta, e a
-   aba Config pode desligá-la.
+1. **Arquivo SVG**: *Procurar…* e escolha o SVG. O **assistente** abre ao
+   lado do desenho e vai um passo de cada vez (a varinha ao lado de
+   *Procurar…* o traz de volta; a aba Config pode desligá-lo):
+   - **Desenho**: quais camadas do arquivo usar (camadas do Illustrator e do
+     Inkscape; o desenho mantém tamanho e lugar), o tamanho e **Espelhar**.
+   - **Cores**: o desenho com 2, 3 ... 12 cores (o número dos seus filamentos
+     vem marcado); clique numa.
+   - **Filamentos**: um filamento para cada cor, a varinha que casa com os
+     filamentos carregados e **Cores do desenho nos filamentos do projeto**: ao
+     aplicar na mesa, cada filamento usado fica com a cor da sua peça.
+   - **Acabamento**: arestas *Detalhado*, *Normal* ou *Simplificado*, a
+     espessura das cores e, num objeto, a superfície, a primeira camada, a
+     posição (grade 3×3: cantos, lados, centro) e a rotação.
+
+   Tudo isso também fica na barra lateral.
 2. **Cores**: passe o mouse numa linha para destacá-la na visualização.
    Renomeie as peças, desmarque o que não quer (um fundo, por exemplo; cores que
    ocupam o desenho inteiro recebem a etiqueta *fundo?*) e escolha o filamento

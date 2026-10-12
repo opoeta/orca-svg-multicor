@@ -16,7 +16,7 @@ import re
 import xml.etree.ElementTree as ET
 
 import numpy as np
-from svgelements import (SVG, Close, Color, Line, Move, Path, Shape, Text,
+from svgelements import (SVG, Close, Color, Group, Line, Move, Path, Shape, Text,
                          Use, SVGImage)
 
 from .colors import average_color, normalize_hex
@@ -33,10 +33,10 @@ class PaintOp:
     """One fill or one stroke of one SVG element, in paint order."""
 
     __slots__ = ("order", "color", "kind", "path", "rule", "width", "cap",
-                 "join", "miter", "element_id")
+                 "join", "miter", "element_id", "layer")
 
     def __init__(self, order, color, kind, path, rule="nonzero", width=0.0,
-                 cap=2, join=2, miter=4.0, element_id=None):
+                 cap=2, join=2, miter=4.0, element_id=None, layer=None):
         self.order = order
         self.color = color
         self.kind = kind          # "fill" or "stroke"
@@ -47,18 +47,34 @@ class PaintOp:
         self.join = join          # shapely join_style
         self.miter = miter
         self.element_id = element_id
+        self.layer = layer        # key of the file's layer (top-level group), or "loose"
 
 
 class SvgDocument:
     """Result of reading an SVG: paint operations plus what the user must know."""
 
-    def __init__(self, path, ops, bbox, warnings, physical, unit_mm=PX_TO_MM):
+    def __init__(self, path, ops, bbox, warnings, physical, unit_mm=PX_TO_MM, layers=()):
         self.path = path
         self.ops = ops
         self.bbox = bbox          # (x0, y0, x1, y1) in px, strokes included
         self.warnings = warnings  # [(i18n_key, params), ...] without repeats
         self.physical = physical  # True when the file's real size is known
         self.unit_mm = unit_mm    # millimeters per px, for the real size
+        self.layers = list(layers)  # [{"key", "name", "shapes"}], the file's layers
+
+    def without_layers(self, hidden):
+        """The same document without the paint of `hidden` layers; same frame."""
+        hidden = set(hidden or ())
+        if not hidden:
+            return self
+        ops = [op for op in self.ops if op.layer not in hidden]
+        if not ops:
+            from .errors import SvgError as _E
+            raise _E("error.svg_no_shapes")
+        doc = SvgDocument(self.path, ops, self.bbox, self.warnings, self.physical,
+                          self.unit_mm, self.layers)
+        doc.cache_key = (getattr(self, "cache_key", None), tuple(sorted(hidden)))
+        return doc
 
     @property
     def size_px(self):
@@ -240,6 +256,18 @@ def read_svg(path, include_strokes=True):
     if re.search(rb"stroke-dasharray\s*[=:]\s*['\"]?\s*[0-9.]", raw) and include_strokes:
         warn("warn.dashes")
 
+    # the file's layers: its top-level groups (Illustrator and Inkscape layers)
+    layer_of, layers = {}, []
+    for top in list(svg):
+        if not isinstance(top, Group):
+            continue
+        key = str(len(layers))
+        name = (top.values.get("data-name") or top.values.get(
+            "{http://www.inkscape.org/namespaces/inkscape}label") or top.id or "").strip()
+        layers.append({"key": key, "name": name, "shapes": 0})
+        for el in top.select():
+            layer_of[id(el)] = key
+
     ops = []
     order = 0
     for el in svg.elements():
@@ -278,7 +306,7 @@ def read_svg(path, include_strokes=True):
             rule = str(vals.get("fill-rule", "nonzero")).strip().lower()
             ops.append(PaintOp(order, fill, "fill", path_el,
                                rule="evenodd" if rule == "evenodd" else "nonzero",
-                               element_id=el.id))
+                               element_id=el.id, layer=layer_of.get(id(el), "loose")))
             order += 1
 
         if not include_strokes:
@@ -296,7 +324,7 @@ def read_svg(path, include_strokes=True):
                     cap=_CAP.get(str(vals.get("stroke-linecap", "butt")).lower(), 2),
                     join=_JOIN.get(str(vals.get("stroke-linejoin", "miter")).lower(), 2),
                     miter=max(1.0, _number(vals.get("stroke-miterlimit"), 4.0)),
-                    element_id=el.id))
+                    element_id=el.id, layer=layer_of.get(id(el), "loose")))
                 order += 1
 
     if not ops:
@@ -311,7 +339,13 @@ def read_svg(path, include_strokes=True):
         # Illustrator writes no width/height but keeps its 72-per-inch units:
         # a 201 mm artboard is a 569.76 viewBox, not 150.75 mm at 96 per inch
         physical, unit_mm = True, PT_TO_MM
-    return SvgDocument(path, ops, bbox, warnings, physical, unit_mm)
+    counts = {}
+    for op in ops:
+        counts[op.layer] = counts.get(op.layer, 0) + 1
+    found = [dict(lay, shapes=counts[lay["key"]]) for lay in layers if counts.get(lay["key"])]
+    if counts.get("loose"):
+        found.append({"key": "loose", "name": "", "shapes": counts["loose"]})
+    return SvgDocument(path, ops, bbox, warnings, physical, unit_mm, found)
 
 
 def _bbox(ops):

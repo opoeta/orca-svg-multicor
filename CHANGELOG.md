@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.9.0
+
+### New
+- **A step-by-step assistant** beside the drawing (it opens when you choose
+  an SVG; the wand next to *Browse…* brings it back):
+  1. **Drawing**: choose which **layers of the file** to use (Illustrator and
+     Inkscape layers; a hidden layer leaves the design's size and place as
+     they were), the size, and **Mirror** (left ↔ right).
+  2. **Colors**: how many colors, as before.
+  3. **Filaments**: a filament for each color, and **Drawing colors in the
+     project's filaments**: when applying to the plate, each filament used
+     takes the color of its part (the largest when parts share one), in the
+     project itself. It is also in the sidebar, under *Apply to*.
+  4. **Finish**: edges *Detailed*, *Normal* or *Simplified* (presets for
+     precision and the cleanup of tips and slivers), the color thickness and,
+     on an object, the surface, the first layer, the **position** on the face
+     (a 3×3 grid: corners, sides, center) and the rotation.
+- The sidebar shows how many layers of the file are in use, with *Choose*,
+  and a **Mirror** box under the size.
+
 ## 3.8.1
 
 ### Fixed
