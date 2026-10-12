@@ -29,6 +29,9 @@ def extrude(polys, height, z0=0.0):
     """
     Extrudes Polygons (exterior CCW, holes CW) between z0 and z0 + height.
     Returns (vertices Nx3 float64, faces Mx3 int64), outward normals.
+    Each polygon is its own closed shell: polygons of one color that touch at
+    a single point would otherwise share a vertical edge, which makes the mesh
+    non-manifold.
     """
     V, F = [], []
     base = 0
@@ -37,11 +40,9 @@ def extrude(polys, height, z0=0.0):
         if pts is None or len(tris) == 0:
             continue
         n = len(pts)
-        V.append(np.column_stack([pts, np.full(n, z0)]))
-        V.append(np.column_stack([pts, np.full(n, z0 + height)]))
-        F.append(tris[:, ::-1] + base)          # bottom cap, normal -Z
-        F.append(tris + base + n)               # top cap, normal +Z
-
+        Vp = np.concatenate([np.column_stack([pts, np.full(n, z0)]),
+                             np.column_stack([pts, np.full(n, z0 + height)])])
+        Fp = [tris[:, ::-1], tris + n]          # bottom cap (normal -Z), top cap (+Z)
         offset = 0
         for ring in [poly.exterior] + list(poly.interiors):
             m = len(ring.coords) - 1
@@ -49,28 +50,25 @@ def extrude(polys, height, z0=0.0):
                 continue
             idx = np.arange(m)
             nxt = (idx + 1) % m
-            a0 = base + offset + idx
-            b0 = base + offset + nxt
+            a0 = offset + idx
+            b0 = offset + nxt
             a1, b1 = a0 + n, b0 + n
-            F.append(np.column_stack([a0, b0, b1]))
-            F.append(np.column_stack([a0, b1, a1]))
+            Fp.append(np.column_stack([a0, b0, b1]))
+            Fp.append(np.column_stack([a0, b1, a1]))
             offset += m
-        base += 2 * n
+        Fp = np.concatenate(Fp).astype(np.int64)
+        # weld coincident vertices inside this polygon (touching rings share points)
+        _, first, inverse = np.unique(np.round(Vp, 6), axis=0, return_index=True,
+                                      return_inverse=True)
+        Fp = inverse.reshape(-1)[Fp]
+        ok = (Fp[:, 0] != Fp[:, 1]) & (Fp[:, 1] != Fp[:, 2]) & (Fp[:, 0] != Fp[:, 2])
+        V.append(Vp[first])
+        F.append(Fp[ok] + base)
+        base += len(first)
 
     if not V:
         return np.zeros((0, 3)), np.zeros((0, 3), dtype=np.int64)
-
-    V = np.concatenate(V)
-    F = np.concatenate(F).astype(np.int64)
-
-    # weld coincident vertices (touching rings share points)
-    key = np.round(V, 6)
-    _, first, inverse = np.unique(key, axis=0, return_index=True,
-                                  return_inverse=True)
-    V2 = V[first]
-    F2 = inverse.reshape(-1)[F]
-    ok = (F2[:, 0] != F2[:, 1]) & (F2[:, 1] != F2[:, 2]) & (F2[:, 0] != F2[:, 2])
-    return V2, F2[ok]
+    return np.concatenate(V), np.concatenate(F).astype(np.int64)
 
 
 def is_watertight(F):

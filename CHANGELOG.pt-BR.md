@@ -2,6 +2,25 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.8.0
+
+### Mudou
+- **Detalhes finos e pontas agudas são limpos por padrão** (Avançado,
+  "Limpar detalhes e pontas abaixo de", 0,4 mm): linhas e pontas de agulha
+  que um bico de 0,4 mm não imprime passam para a cor vizinha, sem frestas, e
+  os cantos arredondam com 0,2 mm. São os pontinhos e lascas que o fatiador
+  imprimia mal entre as cores. A limpeza agora usa uma ferramenta redonda: a
+  anterior engrossava as cores de volta com cantos em ponta e recriava as
+  pontas que tinha tirado (num desenho real, o que um bico de 0,4 mm não
+  alcança ia de 46 mm² para 34 mm² antes, e para 11 mm² agora), e leva cerca
+  de um segundo. Configurações que ainda tinham o padrão antigo, desligado,
+  passam para 0,4 mm uma vez.
+
+### Corrigido
+- Uma cor cujas peças se tocavam num único ponto era exportada com malha não
+  manifold (as peças dividiam uma aresta vertical); agora cada peça é uma
+  casca fechada própria.
+
 ## 3.7.1
 
 ### Corrigido

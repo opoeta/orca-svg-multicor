@@ -118,3 +118,27 @@ def test_levels_match_reduce_colors_at_every_count():
         _out, reduced = C.reduce_colors(reg, k, pre_tolerance=0)
         assert set(mapping.values()) == set(reduced)
         assert all(c in reduced[mapping[c]] for c in reg)
+
+
+def test_pieces_touching_at_a_point_stay_closed():
+    """Two squares of one color meeting at a corner: two shells, not a shared edge."""
+    from orca_svg_multicor.mesh import extrude, is_watertight
+    a, b = orient(box(0, 0, 5, 5), 1.0), orient(box(5, 5, 10, 10), 1.0)
+    V, F = extrude([a, b], 1.0)
+    assert is_watertight(F)
+
+
+def test_sharp_tips_go_to_the_neighbor():
+    """A 0.2 mm wide spike of black into white is cleaned; 90 degree corners stay."""
+    from shapely.geometry import Polygon
+    import shapely
+    from orca_svg_multicor import geometry as G
+    spike = Polygon([(10, 4.9), (16, 5.0), (10, 5.1)])            # needle into the white
+    black = [orient(box(0, 0, 10, 10).union(spike), 1.0)]
+    white = [orient(box(0, 0, 20, 10).difference(black[0]), 1.0)]
+    out = G.absorb_thin({"#000000": black, "#ffffff": white}, 0.4)
+    total = sum(p.area for ps in out.values() for p in ps)
+    assert total == pytest.approx(200, abs=1e-3)                   # still tiling, no gap
+    bx0, by0, bx1, by1 = shapely.union_all(out["#000000"]).bounds
+    assert bx1 < 10.1                                              # the 6 mm needle is gone
+    assert (bx0, by0, by1) == pytest.approx((0, 0, 10), abs=1e-3)  # the square kept its corners

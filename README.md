@@ -119,7 +119,7 @@ in Portuguese).
 | Base plate | Thickness (0 = none), margin, shape and filament |
 | Precision | Simplification tolerance (mm) |
 | Ignore specks under | Drops islands and holes smaller than this area (mm²) |
-| Remove details thinner than | Hands unprintable slivers to the neighboring color (0 = off) |
+| Clean details and tips under | On by default (0.4 mm): lines and sharp tips a nozzle that wide cannot print go to the neighboring color, without gaps, and corners round to half of it (0 = off) |
 
 ### Good to know
 

@@ -1,5 +1,23 @@
 # Changelog
 
+## 3.8.0
+
+### Changed
+- **Thin details and sharp tips are cleaned by default** (Advanced, "Clean
+  details and tips under", 0.4 mm): lines and needle tips a 0.4 mm nozzle
+  cannot print go to the neighboring color, without gaps, and corners round
+  to 0.2 mm. These are the specks and slivers the slicer printed badly
+  between colors. The cleanup now uses a round tool: the previous one grew
+  the colors back with pointed corners, which rebuilt the very tips it had
+  removed (on a real drawing, what a 0.4 mm nozzle cannot reach went from
+  46 mm2 to 34 mm2 before, to 11 mm2 now), and it takes about a second.
+  Settings that still had the old default, off, move to 0.4 mm once.
+
+### Fixed
+- A color whose pieces touched at a single point was exported as a
+  non-manifold mesh (the pieces shared a vertical edge); each piece is now
+  its own closed shell.
+
 ## 3.7.1
 
 ### Fixed

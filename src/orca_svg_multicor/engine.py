@@ -58,6 +58,7 @@ class Reporter:
 _cache_lock = threading.Lock()
 _doc_cache = {}
 _region_cache = {}
+_result_cache = {}       # merged, reduced and cleaned colors
 _CACHE_MAX = 4
 
 
@@ -96,10 +97,14 @@ def scale_for(doc, opts):
     return opts.size_mm / w
 
 
+def _geometry_key(doc, scale, opts):
+    return (getattr(doc, "cache_key", None) or ("doc", id(doc)), round(scale, 9),
+            opts.include_strokes, opts.step_mm, opts.precision_mm, opts.min_area_mm2)
+
+
 def _raw_regions(doc, scale, opts, rep):
     """Every color of the drawing as visible regions, in mm centered on 0 (cached)."""
-    key = (getattr(doc, "cache_key", None) or ("doc", id(doc)), round(scale, 9),
-           opts.include_strokes, opts.step_mm, opts.precision_mm, opts.min_area_mm2)
+    key = _geometry_key(doc, scale, opts)
     with _cache_lock:
         cached = _region_cache.get(key)
     if cached is None:
@@ -130,6 +135,12 @@ def process(doc, scale, opts, rep=None):
     regions = _raw_regions(doc, scale, opts, rep)
     raw = len(regions)
     rep.progress(0.82, "progress.colors")
+    key = (_geometry_key(doc, scale, opts), opts.merge_tolerance, opts.max_colors,
+           opts.min_detail_mm)
+    with _cache_lock:
+        done = _result_cache.get(key)
+    if done is not None:
+        return dict(done[0]), done[1], raw
     regions, map1 = C.merge_similar(regions, opts.merge_tolerance)
     regions, map2 = C.reduce_colors(regions, opts.max_colors)
     mapping = C.chain_mappings(map1, map2)
@@ -138,7 +149,8 @@ def process(doc, scale, opts, rep=None):
         regions = G.absorb_thin(regions, opts.min_detail_mm, opts.min_area_mm2)
         if not regions:
             raise EngineError("error.no_regions")
-    return regions, mapping, raw
+    _remember(_result_cache, key, (regions, mapping))
+    return dict(regions), mapping, raw
 
 
 def ordered(regions):

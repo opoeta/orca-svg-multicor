@@ -34,7 +34,7 @@ UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 
 
-SETTINGS_REV = 2
+SETTINGS_REV = 3
 BACKUPS_KEPT = 20          # copies of projects replaced by "apply" (apply_output "project")
 
 
@@ -112,8 +112,13 @@ class Service:
                 return
             # rev 2: the size became the file's own size by default. Every page
             # saved the old default (width, 100 mm) without anyone choosing it.
-            if cfg.get("size_mode") == "width" and float(cfg.get("size_mm") or 0) == 100.0:
+            rev = int(cfg.get("settings_rev") or 1)
+            if rev < 2 and cfg.get("size_mode") == "width" and float(cfg.get("size_mm") or 0) == 100.0:
                 cfg["size_mode"] = "original"
+            # rev 3: thin details and sharp tips are cleaned by default (0.4 mm,
+            # a common nozzle); the old default, off, was saved by every page
+            if rev < 3 and "min_detail_mm" in cfg and float(cfg.get("min_detail_mm") or 0) == 0.0:
+                cfg["min_detail_mm"] = 0.4
             cfg["settings_rev"] = SETTINGS_REV
             self.save_config(cfg)
         except Exception:  # noqa: BLE001 - settings must never stop the plugin

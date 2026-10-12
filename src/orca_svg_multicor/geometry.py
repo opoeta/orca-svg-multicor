@@ -325,11 +325,13 @@ def total_area(polys):
 
 def absorb_thin(regions, width, min_area=0.0):
     """
-    Details thinner than `width` mm cannot be printed (think of a 0.1 mm white
-    line with a 0.4 mm nozzle). Each color is opened (shrunk then grown back);
-    what the opening removes goes to the neighboring color that shares the
-    longest border with it, so the colors keep tiling without gaps. Thin
-    pieces that touch no other color stay where they are.
+    Details a nozzle of `width` mm cannot print: lines thinner than it (think
+    of a 0.1 mm white line with a 0.4 mm nozzle) and sharp tips, which leave
+    gaps the slicer fills badly or not at all. Each color is opened with a
+    round tool (shrunk, then grown back, both by width/2): thin lines vanish
+    and corners round to the nozzle's radius. What the opening removes goes to
+    the neighboring color that shares the longest border with it, so the
+    colors keep tiling without gaps. Pieces that touch no other color stay.
     """
     if not width or width <= 0 or len(regions) < 2:
         return regions
@@ -337,30 +339,51 @@ def absorb_thin(regions, width, min_area=0.0):
     kept, thin = {}, []
     for c, polys in regions.items():
         g = shapely.union_all(polys, grid_size=GRID)
-        opened = g.buffer(-r, join_style=2, mitre_limit=10).buffer(r, join_style=2, mitre_limit=10)
-        opened = opened.intersection(g, grid_size=GRID)
-        kept[c] = opened
+        opened = g.buffer(-r, join_style=1, quad_segs=4).buffer(r, join_style=1, quad_segs=4)
         rest = g.difference(opened, grid_size=GRID)
-        thin.extend((c, p) for p in polygons_of(rest) if p.area > 1e-9)
+        # what the round tool cannot reach: thin lines and sharp tips. The crumbs
+        # it shaves off corners of about 70 degrees or more (under r*r/2) stay:
+        # they print fine and moving thousands of them only costs time
+        moved = [q for q in polygons_of(rest) if q.area >= r * r / 2]
+        kept[c] = g.difference(shapely.union_all(moved), grid_size=GRID) if moved else g
+        thin.extend((c, q) for q in moved)
     if not thin:
         return regions
-    eps = max(width / 50.0, 1e-4)
-    grown = {c: g.buffer(eps) for c, g in kept.items()}
+
+    # which colors each piece touches: an index of the kept polygons answers
+    # for all pieces at once; most touch a single other color
+    owners, kept_polys = [], []
+    for c, g in kept.items():
+        for q in polygons_of(g):
+            owners.append(c)
+            kept_polys.append(q)
     extra = {c: [] for c in regions}
-    for c, piece in thin:
-        best, best_len = c, 0.0
-        edge = piece.exterior
-        for c2, g2 in grown.items():
-            if c2 == c or not g2.intersects(piece):
-                continue
-            shared = edge.intersection(g2).length
-            if shared > best_len:
-                best, best_len = c2, shared
-        extra[best].append(piece)
+    if not kept_polys:
+        for c, piece in thin:
+            extra[c].append(piece)
+    else:
+        eps = max(width / 50.0, 1e-4)
+        probes = shapely.buffer(np.array([q for _, q in thin], dtype=object), eps)
+        hit_piece, hit_poly = STRtree(kept_polys).query(probes, predicate="intersects")
+        touching = {}
+        for i, j in zip(hit_piece.tolist(), hit_poly.tolist()):
+            if owners[j] != thin[i][0]:
+                touching.setdefault(i, {}).setdefault(owners[j], []).append(j)
+        for i, (c, piece) in enumerate(thin):
+            colors = touching.get(i)
+            if not colors:
+                best = c
+            elif len(colors) == 1:
+                best = next(iter(colors))
+            else:
+                probe = probes[i]
+                best = max(colors, key=lambda c2: sum(
+                    probe.intersection(kept_polys[j]).area for j in colors[c2]))
+            extra[best].append(piece)
     out = {}
     for c in regions:
         g = shapely.union_all([kept[c]] + extra[c], grid_size=GRID) if extra[c] else kept[c]
-        polys = [orient(p, 1.0) for p in polygons_of(g) if p.area > max(min_area, 1e-9)]
+        polys = [orient(q, 1.0) for q in polygons_of(g) if q.area > max(min_area, 1e-9)]
         if polys:
             out[c] = polys
     return out

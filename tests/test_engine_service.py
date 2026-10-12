@@ -162,7 +162,7 @@ def test_service_upload_and_unknown_action(tmp_path):
 def test_service_save_settings_filters_keys():
     svc, out, store = make_service()
     svc.handle({"action": "save_settings", "settings": {"size_mm": 42, "evil": 1, "language": "xx"}})
-    assert store == {"settings_rev": 2, "size_mm": 42}
+    assert store == {"settings_rev": 3, "size_mm": 42}
     assert out[-1]["type"] in ("saved", "log")
 
 
@@ -223,7 +223,7 @@ def test_analyze_offers_every_color_count_when_asked():
 ])
 def test_settings_move_to_the_files_own_size_once(saved, size_mode):
     svc, _out, store = make_service(cfg=dict(saved))
-    assert store["size_mode"] == size_mode and store["settings_rev"] == 2
+    assert store["size_mode"] == size_mode and store["settings_rev"] == 3
 
 
 def _apply(svc, project, **options):
@@ -268,3 +268,10 @@ def test_backups_keep_the_last_twenty(bbs_project):
     newest = Service._backup(bbs_project)
     names = sorted(os.listdir(folder))
     assert len(names) == 20 and os.path.basename(newest) in names and "old-05.3mf" not in names
+
+
+def test_settings_turn_the_cleanup_on_once():
+    svc, _out, store = make_service(cfg={"min_detail_mm": 0, "settings_rev": 2})
+    assert store["min_detail_mm"] == 0.4 and store["settings_rev"] == 3
+    svc, _out, store = make_service(cfg={"min_detail_mm": 0, "settings_rev": 3})   # chosen after
+    assert store["min_detail_mm"] == 0

@@ -36,7 +36,7 @@ class Options:
         "include_strokes": True,
         "precision_mm": 0.02,        # simplification tolerance
         "min_area_mm2": 0.02,        # specks smaller than this are dropped
-        "min_detail_mm": 0.0,        # thinner details go to the neighbor color; 0 = off
+        "min_detail_mm": 0.4,        # thinner details and sharp tips go to the neighbor color; 0 = off
         "base_thickness_mm": 0.0,    # 0 = no base plate
         "base_margin_mm": 2.0,
         "base_shape": "outline",     # outline | rectangle
@@ -67,7 +67,7 @@ class Options:
         self.include_strokes = _bool(d["include_strokes"])
         self.precision_mm = _f(d["precision_mm"], 0.02, 0.0, 2.0)
         self.min_area_mm2 = _f(d["min_area_mm2"], 0.02, 0.0, 100.0)
-        self.min_detail_mm = _f(d["min_detail_mm"], 0.0, 0.0, 10.0)
+        self.min_detail_mm = _f(d["min_detail_mm"], 0.4, 0.0, 10.0)
         self.base_thickness_mm = _f(d["base_thickness_mm"], 0.0, 0.0, 500.0)
         self.base_margin_mm = _f(d["base_margin_mm"], 2.0, 0.0, 500.0)
         self.base_shape = d["base_shape"] if d["base_shape"] in ("outline", "rectangle") else "outline"
