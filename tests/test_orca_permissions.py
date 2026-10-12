@@ -187,5 +187,44 @@ def check(r, tray):
     for _cat, target in asked:
         assert not target.startswith(r["data_dir"]), target          # the data folder never asks
     assert ("fs_readwrite", tray) in asked                           # the project, written in place
+    assert ("fs_read", tray) not in asked                            # one question for it, not two
     # the second time: nothing new to approve (the backup goes to the data folder)
     assert r["second_prompts"] == [], r["second_prompts"]
+
+
+def test_a_project_is_read_with_one_question_for_reading_and_writing(tmp_path, monkeypatch):
+    import builtins
+    import stat
+
+    import pytest
+
+    from orca_svg_multicor.host import read_for_update
+    p = tmp_path / "p.3mf"
+    p.write_bytes(b"PK project")
+    modes = []
+    real_open = builtins.open
+
+    def spy(path, mode="r", *a, **k):
+        modes.append(mode)
+        return real_open(path, mode, *a, **k)
+
+    monkeypatch.setattr(builtins, "open", spy)
+    assert read_for_update(str(p)) == b"PK project" and modes == ["r+b"]
+    # a read-only file is still read
+    modes.clear()
+    p.chmod(stat.S_IREAD)
+    try:
+        assert read_for_update(str(p), 2) == b"PK" and modes == ["r+b", "rb"]
+    finally:
+        p.chmod(stat.S_IREAD | stat.S_IWRITE)
+
+    # "No" to OrcaSlicer's question is not asked again as a plain read
+    def refuse(path, mode="r", *a, **k):
+        modes.append(mode)
+        raise PermissionError('Plugin attempted audited operation "open" without permission')
+
+    modes.clear()
+    monkeypatch.setattr(builtins, "open", refuse)
+    with pytest.raises(PermissionError):
+        read_for_update(str(p))
+    assert modes == ["r+b"]

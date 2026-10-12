@@ -23,8 +23,8 @@ from . import i18n
 from ._version import __version__
 from .deps import load_engine
 from .errors import Cancelled, EngineError, UserError
-from .host import (Log, default_folders, denied_name, plugin_data_dir, read_settings_copy,
-                   user_folders, write_settings_copy)
+from .host import (Log, default_folders, denied_name, plugin_data_dir, read_for_update,
+                   read_settings_copy, user_folders, write_settings_copy)
 from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
@@ -244,8 +244,11 @@ class Service:
             p = msg.get(key)
             if p and not denied_name(p) and os.path.isfile(p):
                 try:
-                    with open(p, "rb") as f:
-                        f.read(1)
+                    if key == "project":
+                        read_for_update(p, 1)
+                    else:
+                        with open(p, "rb") as f:
+                            f.read(1)
                 except Exception:
                     pass
 
@@ -598,7 +601,8 @@ class Service:
         os.makedirs(folder, exist_ok=True)
         stem = os.path.splitext(os.path.basename(project))[0]
         dest = os.path.join(folder, f"{stem}-{time.strftime('%Y%m%d-%H%M%S')}.3mf")
-        copy_file(project, dest)
+        with open(dest, "wb") as f:
+            f.write(read_for_update(project))
         kept = sorted((os.path.join(folder, n) for n in os.listdir(folder) if n.lower().endswith(".3mf")),
                       key=os.path.getmtime)
         for old in kept[:-BACKUPS_KEPT]:

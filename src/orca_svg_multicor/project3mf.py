@@ -14,6 +14,7 @@ library round trip would rename those prefixes (ns0:, ns1:), silently breaking
 the project.
 """
 
+import io
 import json
 import re
 import uuid
@@ -24,6 +25,7 @@ import numpy as np
 
 from .colors import normalize_hex
 from .errors import ProjectError
+from .host import read_for_update
 from .threemf import CORE_NS, IDENTITY_4X4, PROD_NS, mesh_xml
 
 _C = "{%s}" % CORE_NS
@@ -85,7 +87,7 @@ class Project:
     def __init__(self, path):
         self.path = path
         try:
-            with zipfile.ZipFile(path) as z:
+            with zipfile.ZipFile(io.BytesIO(read_for_update(path))) as z:
                 self.infos = z.infolist()
                 self.files = {i.filename: z.read(i.filename) for i in self.infos}
         except (zipfile.BadZipFile, OSError) as e:

@@ -92,6 +92,25 @@ def plugin_data_dir():
     return os.path.join(orca_data_dir(), PLUGIN_DIR_NAME)
 
 
+def read_for_update(path, size=-1):
+    """
+    The bytes of a project the plugin may write back. Opened for reading and
+    writing although it is only read here: OrcaSlicer asks the user per file
+    and per kind of access, so this is one question ("read/write") instead of
+    "read" now and "read/write" again when applying. A file that cannot be
+    opened for writing (read-only, in use) is read as usual; a "No" to
+    OrcaSlicer's question stays a "No".
+    """
+    try:
+        with open(path, "r+b") as f:
+            return f.read(size)
+    except PermissionError as e:
+        if "audited operation" in str(e):
+            raise
+    with open(path, "rb") as f:
+        return f.read(size)
+
+
 def user_folders():
     """Where a person keeps the files they choose: Downloads, Documents, home."""
     home = os.path.expanduser("~")

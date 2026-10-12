@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- **One permission question per project instead of two.** OrcaSlicer asks
+  before a plugin reads a file and asks again before it writes it; the
+  project is now opened for reading and writing from the start, since
+  applying writes it back. A read-only project is still read; a "No" stays a
+  "No". OrcaSlicer still asks once for every new file, and again after every
+  update of the plugin (it drops the permissions of the previous version).
+
 ## 3.10.2
 
 ### Fixed

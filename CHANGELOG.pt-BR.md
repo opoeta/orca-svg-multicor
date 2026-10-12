@@ -2,6 +2,17 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## Ainda não publicado
+
+### Mudou
+- **Uma pergunta de permissão por projeto em vez de duas.** O OrcaSlicer
+  pergunta antes de um plugin ler um arquivo e pergunta de novo antes de
+  gravá-lo; agora o projeto já é aberto para leitura e gravação, porque
+  aplicar grava nele. Um projeto somente leitura continua sendo lido; um
+  "Não" continua sendo "Não". O OrcaSlicer ainda pergunta uma vez para cada
+  arquivo novo, e de novo a cada atualização do plugin (ele apaga as
+  permissões da versão anterior).
+
 ## 3.10.2
 
 ### Corrigido
