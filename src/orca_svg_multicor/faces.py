@@ -424,26 +424,41 @@ def paint(placed, face, ops, colors=None):
     return out
 
 
-def free_area(placed, face, point, reach=0.3):
+def area_at(placed, face, point, color=None, reach=0.3):
     """
-    (rings, color) of the part of the face the design leaves bare around
-    `point` (within `reach` mm), and the color touching it the most (else
-    the closest): what the bucket fills. None when there is none there.
+    What the bucket fills at `point`: (rings, color). The connected piece
+    there, of one color or of bare face, takes `color` (the color picked),
+    else the color touching it the most (the color next to it). None when
+    there is nothing to change: off the face, or already that color.
     """
     shapes = {c: shapely.union_all(ps, grid_size=GRID) for c, ps in placed.items() if ps}
-    if not shapes:
-        return None
-    covered = shapely.union_all(list(shapes.values()), grid_size=GRID)
-    free = face.polygon.difference(covered, grid_size=GRID)
     pt = shapely.Point(float(point[0]), float(point[1]))
-    near = [(g.distance(pt), g) for g in polygons_of(free)]
-    near = [x for x in near if x[0] <= reach]
-    if not near:
+    if face.polygon.distance(pt) > reach:
         return None
-    piece = min(near, key=lambda x: x[0])[1]
-    edge = piece.boundary
-    color = max(shapes, key=lambda c: (edge.intersection(shapes[c].buffer(0.05)).length,
-                                       -shapes[c].distance(piece)))
+    piece = own = None
+    for c, g in shapes.items():
+        for p in polygons_of(g):
+            if p.distance(pt) <= 1e-9:
+                piece, own = p, c
+                break
+        if piece is not None:
+            break
+    if piece is None:                              # bare face: the design leaves it uncovered
+        covered = shapely.union_all(list(shapes.values()), grid_size=GRID) if shapes else shapely.Polygon()
+        free = face.polygon.difference(covered, grid_size=GRID)
+        near = [(g.distance(pt), i, g) for i, g in enumerate(polygons_of(free)) if g.distance(pt) <= reach]
+        if not near:
+            return None
+        piece = min(near)[2]
+    if color is None:
+        others = {c: g for c, g in shapes.items() if c != own}
+        if not others:
+            return None
+        edge = piece.boundary
+        color = max(others, key=lambda c: (edge.intersection(others[c].buffer(0.05)).length,
+                                           -others[c].distance(piece)))
+    if color == own:
+        return None
     rings = [[[round(x, 4), round(y, 4)] for x, y in piece.exterior.coords]]
     rings += [[[round(x, 4), round(y, 4)] for x, y in r.coords] for r in piece.interiors]
     return rings, color

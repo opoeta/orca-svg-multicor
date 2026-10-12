@@ -565,7 +565,8 @@ class Service:
         point = msg.get("point") or []
         if len(point) != 2:
             return
-        found = engine.paint_fill(svg, face, self._options(msg), _paint_ops(msg), point, rep)
+        color = msg.get("color") if isinstance(msg.get("color"), str) else None
+        found = engine.paint_fill(svg, face, self._options(msg), _paint_ops(msg), point, color, rep)
         d = {"type": "paint_fill", "project": project, "object_id": oid, "mtime": key[1],
              "face_id": msg.get("face_id")}
         if found is None:

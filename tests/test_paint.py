@@ -3,7 +3,7 @@ import pytest
 from shapely.geometry import box
 
 from orca_svg_multicor import engine as E
-from orca_svg_multicor.faces import free_area, paint
+from orca_svg_multicor.faces import area_at, paint
 from orca_svg_multicor.options import Options
 from orca_svg_multicor.project3mf import Project
 from test_faces import tray_project  # noqa: F401  (fixture)
@@ -38,12 +38,19 @@ def test_a_brush_stroke_takes_its_color_over_the_others():
 
 
 def test_the_bucket_fills_the_bare_area_with_the_color_next_to_it():
-    rings, color = free_area(_placed(), _Face(), (15, 0))
+    rings, color = area_at(_placed(), _Face(), (15, 0))
     assert color == RED                                          # touches 3 sides of red, 3 of blue
     filled = paint(_placed(), _Face(), [{"kind": "area", "color": color, "rings": rings}])
     total = sum(p.area for ps in filled.values() for p in ps)
     assert total == pytest.approx(36 * 26, rel=1e-6)            # nothing of the face left bare
-    assert free_area(_placed(), _Face(), (0, 0)) is None          # on the design: nothing to fill
+    # on the design: the piece of that color takes the color next to it,
+    # or the color picked; nothing to change when it already has it
+    rings, color = area_at(_placed(), _Face(), (7, 0))           # the blue piece
+    assert color == RED and len(rings[0]) == 5
+    rings, color = area_at(_placed(), _Face(), (7, 0), color="#00ff00")
+    assert color == "#00ff00"
+    assert area_at(_placed(), _Face(), (7, 0), color=BLUE) is None
+    assert area_at(_placed(), _Face(), (40, 0)) is None           # off the face
 
 
 def _floor(project):
@@ -77,5 +84,8 @@ def test_the_page_asks_where_the_bucket_fills(svg, tray_project):  # noqa: F811
     found = out[-1]
     assert found["type"] == "paint_fill" and found["ok"] and found["op"]["color"] == RED
     assert found["op"]["kind"] == "area" and len(found["op"]["rings"][0]) >= 4
-    svc.handle(dict(msg, point=[0, 0]))
+    # on the design, with a color picked: the piece takes it
+    svc.handle(dict(msg, point=[0, 0], color=BLUE))
+    assert out[-1]["ok"] and out[-1]["op"]["color"] == BLUE
+    svc.handle(dict(msg, point=[0, 0], color=RED))               # already red: nothing to change
     assert out[-1]["ok"] is False and out[-1]["text"]

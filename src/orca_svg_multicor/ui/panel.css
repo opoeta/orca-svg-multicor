@@ -155,11 +155,14 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .paint-tools button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .paint-size { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
 .paint-size input { width: 84px; }
-.paint-color { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--line); flex: 0 0 auto; }
+.paint-color { width: 22px; height: 22px; min-width: 0; padding: 0; border-radius: 4px; border: 1px solid var(--line);
+               flex: 0 0 auto; font-size: 11px; font-weight: 600; color: var(--fg); cursor: pointer; }
+.paint-color.auto { background: repeating-linear-gradient(45deg, var(--tint), var(--tint) 3px, transparent 3px, transparent 6px); }
 .paint-bar .note { font-size: 12px; margin: 0; }
 /* own cursors: OrcaSlicer only takes a plugin's icon for its page tab, the
    page itself draws everything else */
 #preview_place.tool-brush, #preview_place.tool-brush * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg stroke='%23111' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M27 3l2 2-11 13-4-4z' fill='%23f2f2f2'/%3E%3Cpath d='M14 14l4 4c-1 4-5 7-12 8 1-6 4-11 8-12z' fill='%2300b894'/%3E%3C/g%3E%3Ccircle cx='5' cy='27' r='1.6' fill='%23111'/%3E%3C/svg%3E") 4 28, crosshair; }
+#preview_place.tool-pick, #preview_place.tool-pick * { cursor: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2732%27 height=%2732%27 viewBox=%270 0 32 32%27%3E%3Cg stroke=%27%23111%27 stroke-width=%271.6%27 stroke-linejoin=%27round%27%3E%3Cpath d=%27M22 3l7 7-4 4-7-7z%27 fill=%27%23f2f2f2%27/%3E%3Cpath d=%27M18 7l7 7-12 12-5 1 1-5z%27 fill=%27%2300b894%27/%3E%3C/g%3E%3Ccircle cx=%275%27 cy=%2727%27 r=%271.6%27 fill=%27%23111%27/%3E%3C/svg%3E") 4 28, copy; }
 #preview_place.tool-bucket, #preview_place.tool-bucket * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg stroke='%23111' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M14 4l11 11-9 9L5 13z' fill='%23f2f2f2'/%3E%3Cpath d='M5 13h20l-9 9z' fill='%2300b894'/%3E%3Cpath d='M27 18c1 2 3 4 3 6a3 3 0 0 1-6 0c0-2 2-4 3-6z' fill='%2300b894'/%3E%3C/g%3E%3C/svg%3E") 28 28, cell; }
 #preview_place .brush-ring { fill: none; stroke: var(--fg); stroke-width: 1.2; stroke-dasharray: 3 2;
                              vector-effect: non-scaling-stroke; pointer-events: none; }

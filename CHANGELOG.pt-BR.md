@@ -2,6 +2,23 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.13.2
+
+### Corrigido
+- **O pincel pintava com a cor que estava embaixo do traço**, não com a cor
+  escolhida: escolher uma cor e pintar por cima de outra área não mudava
+  nada. Agora pinta com a cor escolhida.
+- **O balde só preenchia áreas vazias**: com o desenho cobrindo a superfície
+  inteira, ele não tinha o que fazer. Agora passa uma área inteira de uma cor
+  para a cor escolhida (ou para a cor vizinha).
+
+### Mudou
+- **Conta-gotas** na barra: clique numa cor do desenho e o pincel e o balde
+  pintam com ela (ele volta para a ferramenta usada antes). O quadrado de cor
+  mostra a cor; "A" (automática) usa a cor vizinha, e clicar no quadrado
+  volta para a automática.
+- Um clique com o pincel pinta um ponto.
+
 ## 3.13.1
 
 ### Corrigido

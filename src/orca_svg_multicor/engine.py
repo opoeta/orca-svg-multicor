@@ -27,7 +27,7 @@ from .errors import Cancelled, EngineError, ProjectError, SvgError
 from .geometry import Frame
 from .i18n import Translator
 from .options import Options, _i
-from .faces import (context_dict, default_face, free_area, paint, place, planar_faces, silhouettes,
+from .faces import (area_at, context_dict, default_face, paint, place, planar_faces, silhouettes,
                     to_object)
 from .project3mf import Project
 from .svgread import read_svg
@@ -595,15 +595,18 @@ def place_design(doc, face, opts, rep=None):
     return place(regions, face, opts.rotation, offset=offset), set(regions), size
 
 
-def paint_fill(svg_path, face, opts, ops, point, rep=None):
+def paint_fill(svg_path, face, opts, ops, point, color=None, rep=None):
     """
-    The bucket: (rings, color) of the bare part of `face` at `point` once the
-    design is placed and painted with `ops`, and the color next to it; None
-    when the point is on the design.
+    The bucket: (rings, color) of the piece of `face` at `point` (of one
+    color, or bare) once the design is placed and painted with `ops`, and
+    the color it takes: `color` if one was picked, else the one next to it.
+    None when there is nothing to change.
     """
     doc = load_document(svg_path, opts.include_strokes, opts.hidden_layers)
     placed, colors, _size = place_design(doc, face, opts, rep)
-    return free_area(paint(placed, face, ops, colors), face, point)
+    if color is not None and color not in colors:
+        color = None
+    return area_at(paint(placed, face, ops, colors), face, point, color)
 
 
 def apply_to_project(svg_path, project_path, object_id, out_path, opts,

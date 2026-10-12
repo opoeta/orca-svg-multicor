@@ -11,6 +11,7 @@
   <symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3 3 8l9 5 9-5zM3 13l9 5 9-5"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></symbol>
   <symbol id="i-move" viewBox="0 0 24 24"><path d="M12 3v18M3 12h18M9 6l3-3 3 3M9 18l3 3 3-3M6 9l-3 3 3 3M18 9l3 3-3 3"/></symbol>
+  <symbol id="i-pick" viewBox="0 0 24 24"><path d="M15 4l5 5-3 3-5-5zM12 7l5 5-9 9H3v-5z"/></symbol>
   <symbol id="i-brush" viewBox="0 0 24 24"><path d="M14 4l6 6-8 8-6-6zM6 12l-2 8 8-2"/></symbol>
   <symbol id="i-bucket" viewBox="0 0 24 24"><path d="M4 11l7-7 8 8-7 7zM4 11h15M20 15s2 2.5 2 4a2 2 0 0 1-4 0c0-1.5 2-4 2-4z"/></symbol>
   <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14L4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"/></symbol>
@@ -214,6 +215,8 @@
         <span class="paint-tools" id="paint_tools">
           <button type="button" class="flat icon" data-tool="move" aria-pressed="true" data-i18n-title="paint.move"
                   data-i18n-aria="paint.move"><svg class="ic"><use href="#i-move"/></svg></button>
+          <button type="button" class="flat icon" data-tool="pick" aria-pressed="false" data-i18n-title="paint.pick"
+                  data-i18n-aria="paint.pick"><svg class="ic"><use href="#i-pick"/></svg></button>
           <button type="button" class="flat icon" data-tool="brush" aria-pressed="false" data-i18n-title="paint.brush"
                   data-i18n-aria="paint.brush"><svg class="ic"><use href="#i-brush"/></svg></button>
           <button type="button" class="flat icon" data-tool="bucket" aria-pressed="false" data-i18n-title="paint.bucket"
@@ -221,7 +224,7 @@
         </span>
         <label class="paint-size" id="paint_size_box" hidden><span data-i18n="paint.size">Brush</span>
           <span class="unit" data-unit="mm"><input id="paint_size" type="number" min="0.4" max="40" step="0.2" value="2"></span></label>
-        <span class="paint-color" id="paint_color" hidden data-i18n-title="paint.color"></span>
+        <button type="button" class="paint-color" id="paint_color" hidden></button>
         <button type="button" class="flat icon" id="paint_undo" data-i18n-title="paint.undo" data-i18n-aria="paint.undo">
           <svg class="ic"><use href="#i-undo"/></svg></button>
         <button type="button" class="flat icon" id="paint_clear" data-i18n-title="paint.clear" data-i18n-aria="paint.clear">

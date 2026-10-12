@@ -119,10 +119,11 @@ right, the main action at the top right.
      its edge is cut off, and moving it chooses what shows. **Fill** covers
      the whole surface in proportion, centered, with no edge left over
      (*Center* puts it back in the middle). The toolbar under the view
-     paints on the surface: the **brush** paints with the color where the
-     stroke starts (a click on a color picks it), the **bucket** fills a
-     bare area of the surface with the color next to it; painted areas are
-     printed with their colors, in the same layers (undo, clear). Choose the **rotation**, *inlaid*
+     paints on the surface: the **dropper** picks a color of the drawing, the
+     **brush** paints with it (drag, or click for a dot), the **bucket** gives
+     a whole area (of one color, or bare) that color; with no color picked
+     they use the color next to it. Painted areas are printed with their
+     colors, in the same layers (undo, clear). Choose the **rotation**, *inlaid*
      (the surface changes color) or *raised*, the width (empty = 85% of the
      face) and the height (empty = in proportion). On the face lying
      on the bed, **First layer** chooses whether the design starts on the first

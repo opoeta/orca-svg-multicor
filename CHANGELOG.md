@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.13.2
+
+### Fixed
+- **The brush painted with the color under the stroke**, not the color
+  picked: picking a color and painting over another area changed nothing.
+  The color picked is now the one painted with.
+- **The bucket only filled bare areas**: with the design covering the whole
+  surface it had nothing to do. It now gives a whole area of one color the
+  color picked (or the color next to it).
+
+### Changed
+- **Dropper** in the toolbar: click a color of the drawing, and the brush
+  and the bucket paint with it (it goes back to the tool used before). The
+  color square shows it; "A" (automatic) uses the color next to it, and a
+  click on the square goes back to automatic.
+- A click with the brush paints a dot.
+
 ## 3.13.1
 
 ### Fixed

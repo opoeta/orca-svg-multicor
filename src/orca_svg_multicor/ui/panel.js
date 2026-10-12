@@ -545,7 +545,8 @@
   // part of their colors, in the same layers, when applied.
   S.tool = 'move';
   S.paint = { key: null, ops: [] };
-  S.brushColor = null;
+  S.brushColor = null;          // picked with the dropper; null: the color next to it
+  S.lastPaint = 'brush';        // where the dropper goes back to
   var stroke = null;
 
   function paintKey() {
@@ -589,24 +590,36 @@
     var bar = $('paint_bar'), on = currentView() === 'placement' && !!selectedFace();
     bar.hidden = !on;
     var place = $('preview_place');
-    place.classList.toggle('tool-brush', on && S.tool === 'brush');
-    place.classList.toggle('tool-bucket', on && S.tool === 'bucket');
+    ['brush', 'bucket', 'pick'].forEach(function (k) { place.classList.toggle('tool-' + k, on && S.tool === k); });
     if (!on) return;
     each('#paint_tools button', function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === S.tool)); });
     $('paint_size_box').hidden = S.tool !== 'brush';
-    var sw = $('paint_color');
-    sw.hidden = S.tool !== 'brush' || !S.brushColor;
-    if (S.brushColor) sw.style.background = colorFill(S.brushColor);
+    // the color the brush and the bucket use: picked, or "auto" (the one next to it)
+    var sw = $('paint_color'), painting = S.tool !== 'move';
+    sw.hidden = !painting;
+    sw.classList.toggle('auto', !S.brushColor);
+    sw.style.background = S.brushColor ? colorFill(S.brushColor) : '';
+    sw.textContent = S.brushColor ? '' : 'A';
+    sw.title = S.brushColor ? t('paint.color') : t('paint.auto');
     var n = paintOps().length;
     $('paint_undo').disabled = $('paint_clear').disabled = !n;
-    $('paint_hint').textContent = S.tool === 'brush' ? t('paint.hint_brush')
-      : S.tool === 'bucket' ? t('paint.hint_bucket') : n ? t('paint.count', { n: n }) : '';
+    var hints = { pick: 'paint.hint_pick', brush: 'paint.hint_brush', bucket: 'paint.hint_bucket' };
+    $('paint_hint').textContent = hints[S.tool] ? t(hints[S.tool]) : n ? t('paint.count', { n: n }) : '';
   }
 
   function setTool(tool) {
     S.tool = tool;
+    if (tool === 'brush' || tool === 'bucket') S.lastPaint = tool;
     closePicker();
     renderPaintBar();
+  }
+
+  // the dropper: the color clicked (or the closest) is the one to paint with
+  function pickAt(e) {
+    var key = keyAt(e.clientX, e.clientY) || nearestKey(e.clientX, e.clientY);
+    if (!key) return;
+    S.brushColor = key;
+    setTool(S.lastPaint);
   }
 
   function facePoint(svg, e) {
@@ -644,11 +657,9 @@
   }
 
   function startStroke(e, svg) {
-    var hit = keyAt(e.clientX, e.clientY);
-    // on the drawing: its color; on a bare spot: the color picked, else the closest one
-    var key = hit || S.brushColor || nearestKey(e.clientX, e.clientY);
-    stroke = { svg: svg, key: key, picked: !!hit, points: [facePoint(svg, e)], moved: false, el: null };
-    if (key) { S.brushColor = key; renderPaintBar(); }
+    // the color picked; none picked: the one where the stroke starts (or the closest)
+    var key = S.brushColor || keyAt(e.clientX, e.clientY) || nearestKey(e.clientX, e.clientY);
+    stroke = { svg: svg, key: key, points: [facePoint(svg, e)], moved: false, el: null };
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveStroke(e) {
@@ -671,13 +682,11 @@
     var s = stroke;
     stroke = null;
     S.dragEnd = Date.now();
-    if (s.moved && s.key) {
-      paintOps().push({ kind: 'brush', color: s.key, width: paintSize(), points: s.points });
-      S.brushColor = s.key;
-    } else if (s.picked) {
-      S.brushColor = s.key;                      // a click on a color: the brush takes it
-    } else if (!s.key) {
+    if (!s.key) {
       setStatus('paint.no_color', null, 'warn');
+    } else {
+      // a drag paints a stroke, a click a dot
+      paintOps().push({ kind: 'brush', color: s.key, width: paintSize(), points: s.moved ? s.points : [s.points[0]] });
     }
     renderPaint();
   }
@@ -691,6 +700,7 @@
     msg.face_id = face.id;
     msg.point = facePoint(svg, e);
     msg.paint = paintOps();
+    msg.color = S.brushColor;
     setStatus('paint.filling', null, 'busy');
     send(msg);
   }
@@ -701,8 +711,7 @@
         String(face.id) !== String(m.face_id)) return;
     if (!m.ok) { setStatus(null, null, 'warn', m.text); return; }
     paintOps().push(m.op);
-    S.brushColor = m.op.color;
-    setStatus('paint.filled');
+    setStatus(S.brushColor ? 'paint.filled_color' : 'paint.filled');
     renderPaint();
   }
 
@@ -838,7 +847,7 @@
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
     if (S.tool !== 'move') {
       if (!face || !svg || e.button !== 0) return;
-      if (S.tool === 'brush') startStroke(e, svg); else bucketAt(e, svg);
+      if (S.tool === 'pick') pickAt(e); else if (S.tool === 'brush') startStroke(e, svg); else bucketAt(e, svg);
       return;
     }
     var t0 = e.target, onHandle = !!(t0.classList && t0.classList.contains('handle'));
@@ -1856,6 +1865,7 @@
       b.addEventListener('click', function () { setTool(b.getAttribute('data-tool')); });
     });
     $('paint_size').addEventListener('change', renderPaintBar);
+    $('paint_color').addEventListener('click', function () { S.brushColor = null; renderPaintBar(); });
     $('preview_place').addEventListener('pointerleave', function () {
       var ring = $('preview_place').querySelector('.brush-ring');
       if (ring && !stroke) ring.setAttribute('visibility', 'hidden');
