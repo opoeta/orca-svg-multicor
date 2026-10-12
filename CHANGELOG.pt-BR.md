@@ -2,6 +2,16 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.14.0
+
+### Novo
+- **Zoom na vista, para pintar os detalhes**: segure o Alt e role a roda do
+  mouse na vista "No objeto" para aproximar ou afastar onde está o ponteiro
+  (até 1200%). Para mover a vista com zoom, arraste com o botão do meio, ou
+  segure o Espaço e arraste (como no Photoshop). A barra mostra o zoom e
+  **Ajustar** volta à superfície inteira. Só a vista muda: o que é pintado
+  e aplicado é o mesmo.
+
 ## 3.13.3
 
 ### Mudou

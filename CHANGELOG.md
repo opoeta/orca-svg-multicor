@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.14.0
+
+### Added
+- **Zoom on the view, to paint the details**: hold Alt and turn the mouse
+  wheel over the "On the object" view to zoom in or out where the pointer
+  is (up to 1200%). To move the zoomed view, drag with the middle button,
+  or hold Space and drag (as in Photoshop). The toolbar shows the zoom and
+  **Fit** goes back to the whole surface. Only the view changes: what is
+  painted and applied is the same.
+
 ## 3.13.3
 
 ### Changed

@@ -123,7 +123,8 @@ right, the main action at the top right.
      Photoshop) copies a color of the drawing, the **brush** paints with it
      (a click or a drag always paints), the **bucket** gives
      a whole area (of one color, or bare) that color; with no color picked
-     they use the color next to it. Painted areas are printed with their
+     they use the color next to it. Alt + mouse wheel zooms the view where
+     the pointer is; the middle button (or Space + drag) moves it. Painted areas are printed with their
      colors, in the same layers (undo, clear). Choose the **rotation**, *inlaid*
      (the surface changes color) or *raised*, the width (empty = 85% of the
      face) and the height (empty = in proportion). On the face lying

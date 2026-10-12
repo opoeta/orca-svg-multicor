@@ -605,7 +605,72 @@
     var n = paintOps().length;
     $('paint_undo').disabled = $('paint_clear').disabled = !n;
     var hints = { pick: 'paint.hint_pick', brush: 'paint.hint_brush', bucket: 'paint.hint_bucket' };
-    $('paint_hint').textContent = hints[S.tool] ? t(hints[S.tool]) : n ? t('paint.count', { n: n }) : '';
+    $('paint_hint').textContent = hints[S.tool] ? t(hints[S.tool]) : n ? t('paint.count', { n: n }) : t('paint.zoom_hint');
+    var zoomed = (S.zoom || 1) > 1.001;
+    $('paint_zoom_box').hidden = !zoomed;
+    $('paint_zoom').textContent = t('paint.zoom', { pct: Math.round((S.zoom || 1) * 100) });
+    $('paint_zoom_box').title = t('paint.zoom_hint');
+  }
+
+  /* ------------------------------------------------------------ zoom and pan (only the view) */
+  var ZOOM_MAX = 12;
+  var pan = null;
+  function applyZoom() {
+    var svg = $('preview_place').querySelector('svg'), b = S.baseVB;
+    if (!svg || !b) return;
+    var k = S.zoom || 1, w = b[2] / k, h = b[3] / k;
+    // the view stays over the face's box
+    var cx = Math.max(b[0] + w / 2, Math.min(b[0] + b[2] - w / 2, S.vc[0]));
+    var cy = Math.max(b[1] + h / 2, Math.min(b[1] + b[3] - h / 2, S.vc[1]));
+    S.vc = [cx, cy];
+    svg.setAttribute('viewBox', [cx - w / 2, cy - h / 2, w, h].map(function (n) { return n.toFixed(3); }).join(' '));
+  }
+  function rootPoint(svg, e) {
+    var pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  // Alt + wheel: zoom about the pointer
+  function onWheel(e) {
+    var svg = $('preview_place').querySelector('svg');
+    if (!e.altKey || !svg || !S.baseVB || currentView() !== 'placement') return;
+    e.preventDefault();
+    var k0 = S.zoom || 1, k1 = Math.max(1, Math.min(ZOOM_MAX, k0 * Math.exp(-e.deltaY * 0.0015)));
+    if (Math.abs(k1 - k0) < 1e-6) return;
+    var p = rootPoint(svg, e);
+    if (k1 <= 1.0001) {
+      k1 = 1;
+      S.vc = [S.baseVB[0] + S.baseVB[2] / 2, S.baseVB[1] + S.baseVB[3] / 2];
+    } else {
+      S.vc = [p.x - (p.x - S.vc[0]) * (k0 / k1), p.y - (p.y - S.vc[1]) * (k0 / k1)];
+    }
+    S.zoom = k1;
+    applyZoom();
+    positionDesign();
+    renderPaintBar();
+  }
+  function fitView() {
+    if (!S.baseVB) return;
+    S.zoom = 1;
+    S.vc = [S.baseVB[0] + S.baseVB[2] / 2, S.baseVB[1] + S.baseVB[3] / 2];
+    applyZoom();
+    positionDesign();
+    renderPaintBar();
+  }
+  // the middle button, or Space + drag (as in Photoshop): move the zoomed view
+  function startPan(e, svg) {
+    pan = { x: e.clientX, y: e.clientY, vc: S.vc.slice(), scale: svg.getScreenCTM().a };
+    $('preview_place').classList.add('panning');
+    $('preview_place').setPointerCapture(e.pointerId);
+  }
+  function movePan(e) {
+    S.vc = [pan.vc[0] - (e.clientX - pan.x) / pan.scale, pan.vc[1] - (e.clientY - pan.y) / pan.scale];
+    applyZoom();
+  }
+  function endPan() {
+    pan = null;
+    S.dragEnd = Date.now();
+    $('preview_place').classList.remove('panning');
   }
 
   function setTool(tool) {
@@ -757,6 +822,14 @@
       var w = Math.max.apply(null, xs) - x0, h = Math.max.apply(null, ys) - y0, size = Math.max(w, h);
       var pad = size * 0.06 + 1, fs = size * 0.035 + 0.5, room = face.sides ? pad + fs * 1.6 : pad;
       var vb = [x0 - room, y0 - room, w + 2 * room, h + 2 * room].map(function (n) { return n.toFixed(2); });
+      // zoom (Alt + wheel) stays while the same face is shown the same way
+      S.baseVB = vb.map(Number);
+      var zkey = paintKey() + '|' + viewTurn();
+      if (S.zoomKey !== zkey) {
+        S.zoomKey = zkey;
+        S.zoom = 1;
+        S.vc = [S.baseVB[0] + S.baseVB[2] / 2, S.baseVB[1] + S.baseVB[3] / 2];
+      }
       // the sides of the plate around the face, as in that view of OrcaSlicer
       var sides = '';
       if (face.sides) {
@@ -791,6 +864,7 @@
         '<g class="paint" clip-path="url(#svgm_face)"></g><circle class="brush-ring" visibility="hidden"/>' +
         '<path class="face-edge" d="' + face.outline + '"/></g>' + sides + '</svg>' + seen;
       S.handleSize = Math.max(w, h) * 0.035;
+      applyZoom();
       renderPaint();
     }
     positionDesign();
@@ -807,7 +881,8 @@
     var tf = 'translate(' + ox.toFixed(3) + ' ' + oy.toFixed(3) + ') rotate(' + (-rotation()) + ') scale(' +
              fit.kx.toFixed(6) + ' ' + fit.ky.toFixed(6) + ')';
     Array.prototype.forEach.call(box.querySelectorAll('.dz'), function (g) { g.setAttribute('transform', tf); });
-    var frame = box.querySelector('.frame'), handle = box.querySelector('.handle'), hs = S.handleSize || 2;
+    var frame = box.querySelector('.frame'), handle = box.querySelector('.handle');
+    var hs = (S.handleSize || 2) / (S.zoom || 1);      // the same size on screen at any zoom
     if (frame) {
       frame.setAttribute('x', (ox - fit.w / 2).toFixed(3)); frame.setAttribute('y', (oy - fit.h / 2).toFixed(3));
       frame.setAttribute('width', fit.w.toFixed(3)); frame.setAttribute('height', fit.h.toFixed(3));
@@ -854,6 +929,11 @@
   }
   function startDrag(e) {
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
+    if (svg && (e.button === 1 || (e.button === 0 && S.spaceDown))) {
+      e.preventDefault();                        // no autoscroll on the middle button
+      startPan(e, svg);
+      return;
+    }
     if (S.tool !== 'move') {
       if (!face || !svg || e.button !== 0) return;
       // the dropper, or Ctrl/Alt + click with the brush or the bucket: copy the color;
@@ -872,6 +952,7 @@
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveDrag(e) {
+    if (pan) { movePan(e); return; }
     if (!stroke) setPicking(e.ctrlKey || e.altKey || e.metaKey);
     showRing(e);
     if (stroke) { moveStroke(e); return; }
@@ -900,6 +981,7 @@
     renderAnalysisInfo();
   }
   function endDrag() {
+    if (pan) { endPan(); return; }
     if (stroke) { endStroke(); return; }
     if (!drag) return;
     if (drag.moved) {
@@ -1883,9 +1965,25 @@
     ['keydown', 'keyup'].forEach(function (type) {
       window.addEventListener(type, function (e) {
         if (e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') setPicking(e.ctrlKey || e.altKey || e.metaKey);
+        // Alt is the zoom key here: it must not open OrcaSlicer's menu when let go
+        if (e.key === 'Alt' && currentView() === 'placement') e.preventDefault();
       });
     });
-    window.addEventListener('blur', function () { setPicking(false); });
+    window.addEventListener('blur', function () { setPicking(false); S.spaceDown = false; });
+    $('preview_place').addEventListener('wheel', onWheel, { passive: false });
+    $('preview_place').addEventListener('auxclick', function (e) { if (e.button === 1) e.preventDefault(); });
+    $('paint_zoom_fit').addEventListener('click', fitView);
+    // Space held over the view: a drag moves it (not while typing)
+    ['keydown', 'keyup'].forEach(function (type) {
+      window.addEventListener(type, function (e) {
+        if (e.code !== 'Space' || currentView() !== 'placement') return;
+        var tag = (e.target && e.target.tagName) || '';
+        if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA' || tag === 'BUTTON') return;
+        e.preventDefault();
+        S.spaceDown = type === 'keydown';
+        $('preview_place').classList.toggle('pan-ready', S.spaceDown);
+      });
+    });
     $('preview_place').addEventListener('pointerleave', function () {
       var ring = $('preview_place').querySelector('.brush-ring');
       if (ring && !stroke) ring.setAttribute('visibility', 'hidden');

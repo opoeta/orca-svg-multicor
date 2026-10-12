@@ -159,6 +159,10 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
                flex: 0 0 auto; font-size: 11px; font-weight: 600; color: var(--fg); cursor: pointer; }
 .paint-color.auto { background: repeating-linear-gradient(45deg, var(--tint), var(--tint) 3px, transparent 3px, transparent 6px); }
 .paint-bar .note { font-size: 12px; margin: 0; }
+.paint-zoom { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
+.paint-zoom button { padding: 1px 8px; }
+#preview_place.panning, #preview_place.panning * { cursor: grabbing !important; }
+#preview_place.pan-ready, #preview_place.pan-ready * { cursor: grab !important; }
 /* own cursors: OrcaSlicer only takes a plugin's icon for its page tab, the
    page itself draws everything else */
 #preview_place.tool-brush, #preview_place.tool-brush * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg stroke='%23111' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M27 3l2 2-11 13-4-4z' fill='%23f2f2f2'/%3E%3Cpath d='M14 14l4 4c-1 4-5 7-12 8 1-6 4-11 8-12z' fill='%2300b894'/%3E%3C/g%3E%3Ccircle cx='5' cy='27' r='1.6' fill='%23111'/%3E%3C/svg%3E") 4 28, crosshair; }
