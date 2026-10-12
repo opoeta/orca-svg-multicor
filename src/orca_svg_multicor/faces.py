@@ -49,16 +49,17 @@ HEAL = 0.01                   # mm
 
 class Face:
     __slots__ = ("id", "normal", "u", "v", "origin", "polygon", "area", "size",
-                 "direction", "height", "inner", "view")
+                 "direction", "height", "inner", "view", "seen", "sides")
 
     def as_dict(self):
         x0, y0, x1, y1 = self.polygon.bounds
-        return {"id": self.id, "dir": self.direction, "inner": self.inner,
-                "w": round(self.size[0], 1), "h": round(self.size[1], 1),
-                "area": round(self.area, 1), "z": round(self.height, 1),
-                "view": round(self.view, 2),
-                "outline": outline_path(self.polygon),
-                "bounds": [round(x0, 2), round(-y1, 2), round(x1, 2), round(-y0, 2)]}
+        d = {"id": self.id, "dir": self.direction, "inner": self.inner,
+             "w": round(self.size[0], 1), "h": round(self.size[1], 1),
+             "area": round(self.area, 1), "z": round(self.height, 1),
+             "view": round(self.view, 2), "seen": self.seen, "sides": self.sides,
+             "outline": outline_path(self.polygon),
+             "bounds": [round(x0, 2), round(-y1, 2), round(x1, 2), round(-y0, 2)]}
+        return d
 
 
 def _frame(n):
@@ -104,6 +105,64 @@ def _view_turn(rot, u, v):
     theta = round(math.degrees(math.atan2(-float(v_w @ right), float(v_w @ up))), 4)
     turns = math.floor(theta / 90.0 + 0.5)
     return (-turns) % 4, theta - 90.0 * turns
+
+
+def _side(vec):
+    """The side of the plate a direction points to: front, back, left, right, top, bottom."""
+    i = int(np.argmax(np.abs(vec)))
+    return (("left", "right"), ("front", "back"), ("bottom", "top"))[i][int(vec[i] > 0)]
+
+
+def _screen(rot, normal):
+    """
+    (seen, sides): where OrcaSlicer's camera is to see the face (its standard
+    view), and the side of the plate at the top, bottom, left and right of
+    that view. The page shows the face turned that way, so these are its sides.
+    """
+    n_w = rot @ normal
+    n_w = n_w / np.linalg.norm(n_w)
+    up = _view_up(n_w)
+    if up is None:
+        return _side(n_w), None
+    right = np.cross(up, n_w)
+    return _side(n_w), {"up": _side(up), "down": _side(-up), "left": _side(-right), "right": _side(right)}
+
+
+def silhouettes(V, F):
+    """
+    silhouette(face): the whole object (V, F) seen from outside the face, in
+    the face's frame: its outline, tabs and notches show where the face is
+    on the object. The triangles that look toward the camera are enough to
+    cover it. Faces looking the same way share one.
+    """
+    tris = np.asarray(V, dtype=float)[np.asarray(F, dtype=np.int64)]
+    normals = np.cross(tris[:, 1] - tris[:, 0], tris[:, 2] - tris[:, 0])
+    cache = {}
+
+    def silhouette(face):
+        key = (tuple(np.round(face.normal, 4)), tuple(np.round(face.u, 4)))
+        if key not in cache:
+            front = normals @ face.normal > 1e-6
+            t = tris[front]
+            uv = np.stack([t @ face.u, t @ face.v], axis=-1)
+            rings = np.concatenate([uv, uv[:, :1]], axis=1)
+            polys = shapely.polygons(rings)
+            polys = polys[shapely.area(polys) > 1e-6]
+            shape = shapely.union_all(polys, grid_size=0.01) if len(polys) else shapely.Polygon()
+            cache[key] = shape.simplify(0.05)
+        x, y = float(face.origin @ face.u), float(face.origin @ face.v)
+        return _translate(cache[key], -x, -y)
+
+    return silhouette
+
+
+def context_dict(shape):
+    """The silhouette for the page: an SVG path and its bounds (y flipped), or {}."""
+    if shape is None or shape.is_empty:
+        return {}
+    x0, y0, x1, y1 = shape.bounds
+    return {"context": outline_path(shape),
+            "context_bounds": [round(x0, 2), round(-y1, 2), round(x1, 2), round(-y0, 2)]}
 
 
 # counterclockwise quarter turns of a frame: (cos, sin) of k * 90 degrees
@@ -230,6 +289,7 @@ def planar_faces(V, F, world=None, min_area=MIN_FACE_AREA, limit=MAX_FACES):
             f.height = float(f.origin[2])
         k, f.view = _view_turn(rot, f.u, f.v)
         _turn(f, k)
+        f.seen, f.sides = _screen(rot, f.normal)
     return [f for f, _start in faces]
 
 

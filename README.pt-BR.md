@@ -104,7 +104,9 @@ direita e a ação principal no canto superior direito.
      visualização **No objeto** mostra essa face como o OrcaSlicer mostra,
      girada como o objeto está na mesa (o fundo como na vista de baixo dele,
      com a frente da mesa para cima), e o desenho alinhado às bordas do
-     objeto. Ali você **arrasta para mover e puxa o
+     objeto; em volta, o objeto inteiro visto daquele lado (abas, encaixes),
+     os lados da mesa e a vista do OrcaSlicer que mostra igual (Ctrl+1 a
+     Ctrl+6). Ali você **arrasta para mover e puxa o
      canto para mudar o tamanho**; ele fica sempre dentro da superfície
      (*Centralizar* volta ao meio). Escolha a **rotação**, o encaixe
      (*embutido*: a superfície muda de cor; ou *em relevo*) e a largura (vazio =

@@ -2,7 +2,15 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
-## Ainda não publicado
+## 3.11.0
+
+### Novo
+- **Onde a face fica no objeto, em "No objeto".** Em volta da face, o objeto
+  inteiro visto daquele lado (tracejado: abas, encaixes e contorno, que não
+  fazem parte da face), os lados da mesa (Frente, Trás, Esquerda, Direita, ou
+  Topo e Fundo numa parede) e qual vista do OrcaSlicer mostra igual, com o
+  atalho (Ctrl+1 a Ctrl+6, por exemplo "Visto de baixo, como a vista de
+  baixo do OrcaSlicer (Ctrl+2)").
 
 ### Mudou
 - **Uma pergunta de permissão por projeto em vez de duas.** O OrcaSlicer

@@ -354,3 +354,52 @@ def test_stopping_early_lists_the_same_largest_faces():
         few = planar_faces(V, F, limit=limit)
         assert [(f.area, f.direction, f.inner) for f in few] == \
                [(f.area, f.direction, f.inner) for f in everything[:limit]]
+
+
+def test_each_face_says_where_it_is_seen_from_and_its_sides():
+    """The page names the plate's sides around the face, as OrcaSlicer's view of it shows them."""
+    V, F = cube(10)
+    faces = {f.direction: f for f in planar_faces(V, F)}
+    assert faces["bottom"].seen == "bottom"
+    assert faces["bottom"].sides == {"up": "front", "down": "back", "left": "left", "right": "right"}
+    assert faces["top"].sides == {"up": "back", "down": "front", "left": "left", "right": "right"}
+    assert faces["front"].seen == "front"
+    assert faces["front"].sides == {"up": "top", "down": "bottom", "left": "left", "right": "right"}
+    assert faces["back"].sides == {"up": "top", "down": "bottom", "left": "right", "right": "left"}
+    # turned on the plate, the view still shows the plate's sides
+    turned = {f.direction: f for f in planar_faces(V, F, world=_turned(90))}
+    assert turned["bottom"].sides == faces["bottom"].sides
+
+
+def test_the_whole_object_is_drawn_around_the_face(tmp_path):
+    """A lid with a tab: the tab is not on the bottom face, but it shows around it."""
+    from orca_svg_multicor.faces import context_dict, silhouettes
+    body = orient(box(-20, -15, 20, 15), 1.0)
+    tab = orient(box(-3, 15, 3, 19), 1.0)                       # sticks out at the back
+    V1, F1 = extrude([body], 2.0, 0.0)
+    V2, F2 = extrude([tab], 1.0, 1.0)                           # above the bed: not on the bottom
+    V = np.concatenate([V1, V2])
+    F = np.concatenate([F1, F2 + len(V1)])
+    faces = planar_faces(V, F)
+    bottom = next(f for f in faces if f.direction == "bottom" and f.height == 0.0)
+    assert bottom.size == pytest.approx((40.0, 30.0))
+    shape = silhouettes(V, F)(bottom)
+    assert shape.area == pytest.approx(40 * 30 + 6 * 4, rel=1e-3)
+    # seen from below with the front up, the tab at the back is at the bottom of the view
+    d = context_dict(shape)
+    assert d["context_bounds"][3] == pytest.approx(19.0, abs=0.01) and d["context"].startswith("M")
+
+
+def test_the_page_gets_the_object_around_a_face(tray_project):
+    from test_engine_service import make_service
+    svc, out, _ = make_service()
+    svc.handle({"action": "faces", "project": tray_project, "object_id": "3"})
+    faces = next(m for m in out if m["type"] == "faces")
+    default = next(f for f in faces["faces"] if f["id"] == faces["default"])
+    assert default["context"].startswith("M") and default["seen"] == "bottom"
+    other = next(f for f in faces["faces"] if f["id"] != faces["default"])
+    assert "context" not in other                     # asked for when chosen
+    svc.handle({"action": "face_context", "project": tray_project, "object_id": "3", "face_id": other["id"]})
+    ctx = out[-1]
+    assert ctx["type"] == "face_context" and ctx["face_id"] == other["id"] and ctx["context"].startswith("M")
+    assert ctx["mtime"] == faces["mtime"]

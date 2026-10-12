@@ -27,7 +27,7 @@ from .errors import Cancelled, EngineError, ProjectError, SvgError
 from .geometry import Frame
 from .i18n import Translator
 from .options import Options, _i
-from .faces import default_face, place, planar_faces, to_object
+from .faces import context_dict, default_face, place, planar_faces, silhouettes, to_object
 from .project3mf import Project
 from .svgread import read_svg
 from .threemf import Part, write_3mf
@@ -498,15 +498,40 @@ def face_name(tr, face):
     return tr("face.inner", dir=name) if face.inner else name
 
 
-def list_faces(project_path, object_id):
-    """{"faces": [...], "default": id} of an object of a saved project."""
+def load_faces(project_path, object_id):
+    """
+    (faces, silhouette) of an object of a saved project: its flat faces, and
+    silhouette(face), the whole object seen from outside one of them.
+    """
     if not project_path or not os.path.isfile(project_path):
         raise EngineError("error.no_project")
     prj = Project(project_path)
     obj = prj.object(object_id)
-    faces = object_faces(prj, obj)
+    V, F = prj.object_mesh(obj.id)
+    return object_faces(prj, obj, (V, F)), silhouettes(V, F)
+
+
+def list_faces(project_path, object_id, loaded=None):
+    """
+    {"faces": [...], "default": id} of an object of a saved project; the
+    default face comes with the object's silhouette (face_context() gives it
+    for the others, when they are chosen: an object full of holes has many).
+    """
+    faces, silhouette = loaded or load_faces(project_path, object_id)
     best = default_face(faces)
-    return {"faces": [f.as_dict() for f in faces], "default": best.id if best else None}
+    out = [f.as_dict() for f in faces]
+    if best is not None:
+        out[best.id].update(context_dict(silhouette(best)))
+    return {"faces": out, "default": best.id if best else None}
+
+
+def face_context(loaded, face_id):
+    """{"context": path, "context_bounds": [...]} of one face, from load_faces()."""
+    faces, silhouette = loaded
+    face = next((f for f in faces if str(f.id) == str(face_id)), None)
+    if face is None:
+        raise EngineError("error.no_faces")
+    return context_dict(silhouette(face))
 
 
 def _rotated_size(w, h, degrees):

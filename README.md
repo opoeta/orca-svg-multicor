@@ -110,7 +110,9 @@ right, the main action at the top right.
      layers). The **On the object** view shows that face as OrcaSlicer does,
      turned like the object on the plate (the bottom as in its bottom view,
      with the front of the plate up), and the design along the object's
-     edges. There you **drag it to move it and drag
+     edges; around it, the whole object seen from that side (tabs, notches),
+     the sides of the plate and the OrcaSlicer view that shows it the same
+     way (Ctrl+1 to Ctrl+6). There you **drag it to move it and drag
      its corner to resize it**; it always stays on the surface (*Center* puts
      it back). Choose the **rotation**, *inlaid* (the surface changes color)
      or *raised*, and the width (empty = 85% of the face). On the face lying

@@ -275,3 +275,4 @@ def test_settings_turn_the_cleanup_on_once():
     assert store["min_detail_mm"] == 0.4 and store["settings_rev"] == 3
     svc, _out, store = make_service(cfg={"min_detail_mm": 0, "settings_rev": 3})   # chosen after
     assert store["min_detail_mm"] == 0
+

@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## 3.11.0
+
+### New
+- **Where the face is on the object, in "On the object".** Around the face,
+  the whole object as seen from that side (dashed: its tabs, notches and
+  outline, which are not on the face itself), the sides of the plate (Front,
+  Back, Left, Right, or Top and Bottom for a wall) and which OrcaSlicer view
+  shows it the same way, with its shortcut (Ctrl+1 to Ctrl+6, for example
+  "Seen from below, like OrcaSlicer's bottom view (Ctrl+2)").
 
 ### Changed
 - **One permission question per project instead of two.** OrcaSlicer asks

@@ -29,7 +29,7 @@ from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
          "save_settings", "open_path", "reset_settings", "changelog", "describe_colors"}
-HEAVY = {"analyze", "generate", "apply", "objects", "faces"}
+HEAVY = {"analyze", "generate", "apply", "objects", "faces", "face_context"}
 UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 
@@ -528,13 +528,32 @@ class Service:
         oid = str(msg.get("object_id") or "").strip()
         if not project or not os.path.isfile(project):
             raise EngineError("error.no_project")
-        key = (project, os.path.getmtime(project), oid)
-        listing = self._faces_cache.get(key)
-        if listing is None:
-            listing = engine.list_faces(project, oid)
-            self._faces_cache = {key: listing}
+        key, loaded, listing = self._faces(engine, project, oid)
         self.send({"type": "faces", "project": project, "object_id": oid, "mtime": key[1],
                    "faces": listing["faces"], "default": listing["default"]})
+
+    def _faces(self, engine, project, oid):
+        """(key, loaded, listing) of an object's faces, kept until the project changes."""
+        key = (project, os.path.getmtime(project), oid)
+        cached = self._faces_cache.get(key)
+        if cached is None:
+            loaded = engine.load_faces(project, oid)
+            cached = (loaded, engine.list_faces(project, oid, loaded))
+            self._faces_cache = {key: cached}
+        return (key,) + cached
+
+    def do_face_context(self, msg, rep):
+        """The whole object seen from outside one face, for the page to draw around it."""
+        engine = load_engine()
+        project = self._allowed((msg.get("project") or "").strip())
+        oid = str(msg.get("object_id") or "").strip()
+        if not project or not os.path.isfile(project):
+            raise EngineError("error.no_project")
+        key, loaded, _listing = self._faces(engine, project, oid)
+        d = engine.face_context(loaded, msg.get("face_id"))
+        d.update({"type": "face_context", "project": project, "object_id": oid, "mtime": key[1],
+                  "face_id": msg.get("face_id")})
+        self.send(d)
 
     def _finish(self, action, dest, report, reopen=False, text=None):
         bad = [r["name"] for r in report if not r["watertight"]]

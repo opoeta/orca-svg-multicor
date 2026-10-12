@@ -466,22 +466,78 @@
     return designCache.html;
   }
 
+  // translated text going into markup built as a string
+  function esc(text) {
+    return String(text).replace(/[&<>"]/g, function (ch) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch];
+    });
+  }
+
+  // OrcaSlicer's camera views: View menu, Ctrl+1 ... Ctrl+6 (Cmd on a Mac)
+  var VIEW_KEYS = { top: 1, bottom: 2, front: 3, back: 4, left: 5, right: 6 };
+  var SEEN = { top: 'place.seen_top', bottom: 'place.seen_bottom', front: 'place.seen_front',
+               back: 'place.seen_back', left: 'place.seen_left', right: 'place.seen_right' };
+  function viewKeys(seen) {
+    var mac = /Mac|iPhone|iPad/.test(navigator.platform || '');
+    return VIEW_KEYS[seen] ? (mac ? '\u2318' : 'Ctrl+') + VIEW_KEYS[seen] : '';
+  }
+
+  // the whole object around a face comes when the face is first shown (an
+  // object full of holes has many faces, each seen from another side)
+  function askContext(face) {
+    if (face.context || face.contextAsked || !S.faces) return;
+    face.contextAsked = true;
+    send({ action: 'face_context', project: S.faces.project, object_id: S.faces.object_id, face_id: face.id });
+  }
+
+  function onFaceContext(m) {
+    var f = S.faces;
+    if (!f || f.project !== m.project || f.object_id !== m.object_id || f.mtime !== m.mtime || !m.context) return;
+    var face = f.list.filter(function (x) { return String(x.id) === String(m.face_id); })[0];
+    if (!face) return;
+    face.context = m.context;
+    face.context_bounds = m.context_bounds;
+    if (selectedFace() === face && currentView() === 'placement') renderPlacement();
+  }
+
   function renderPlacement() {
     var box = $('preview_place'), face = selectedFace(), a = S.analysis;
     if (!face) { box.textContent = ''; box.removeAttribute('data-key'); return; }
-    var key = [S.faces.project, S.faces.mtime, face.id, face.view, a ? a.svg + a.preview.length : ''].join('|');
+    askContext(face);
+    var key = [S.faces.project, S.faces.mtime, face.id, face.view, face.context ? 1 : 0, S.lang,
+               a ? a.svg + a.preview.length : ''].join('|');
     if (box.getAttribute('data-key') !== key) {
       box.setAttribute('data-key', key);
       // the face turned as OrcaSlicer shows it: what is left of the object's
       // turn on the plate (counterclockwise; SVG turns clockwise, Y down)
       var turn = -(face.view || 0), r = turn * Math.PI / 180, c = Math.cos(r), sn = Math.sin(r);
-      var b = face.bounds, xs = [], ys = [];
-      [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].forEach(function (p) {
-        xs.push(p[0] * c - p[1] * sn); ys.push(p[0] * sn + p[1] * c);
+      var xs = [], ys = [];
+      [face.bounds, face.context_bounds].forEach(function (b) {
+        if (!b) return;
+        [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].forEach(function (p) {
+          xs.push(p[0] * c - p[1] * sn); ys.push(p[0] * sn + p[1] * c);
+        });
       });
       var x0 = Math.min.apply(null, xs), y0 = Math.min.apply(null, ys);
-      var w = Math.max.apply(null, xs) - x0, h = Math.max.apply(null, ys) - y0, pad = Math.max(w, h) * 0.06 + 1;
-      var vb = [x0 - pad, y0 - pad, w + 2 * pad, h + 2 * pad].map(function (n) { return n.toFixed(2); });
+      var w = Math.max.apply(null, xs) - x0, h = Math.max.apply(null, ys) - y0, size = Math.max(w, h);
+      var pad = size * 0.06 + 1, fs = size * 0.035 + 0.5, room = face.sides ? pad + fs * 1.6 : pad;
+      var vb = [x0 - room, y0 - room, w + 2 * room, h + 2 * room].map(function (n) { return n.toFixed(2); });
+      // the sides of the plate around the face, as in that view of OrcaSlicer
+      var sides = '';
+      if (face.sides) {
+        var cx = (x0 + w / 2).toFixed(2), cy = (y0 + h / 2).toFixed(2), gap = pad * 0.5;
+        var label = function (side, attrs) {
+          return '<text class="side" font-size="' + fs.toFixed(2) + '" text-anchor="middle" ' + attrs + '>' +
+                 esc(t('face.' + side)) + '</text>';
+        };
+        sides = label(face.sides.up, 'x="' + cx + '" y="' + (y0 - gap).toFixed(2) + '"') +
+                label(face.sides.down, 'x="' + cx + '" y="' + (y0 + h + gap + fs).toFixed(2) + '"') +
+                label(face.sides.left, 'transform="translate(' + (x0 - gap).toFixed(2) + ' ' + cy + ') rotate(-90)"') +
+                label(face.sides.right, 'transform="translate(' + (x0 + w + gap).toFixed(2) + ' ' + cy + ') rotate(90)"');
+      }
+      var seen = face.seen && viewKeys(face.seen)
+        ? '<div class="seen">' + esc(t(SEEN[face.seen], { keys: viewKeys(face.seen) })) + '</div>' : '';
+      var context = face.context ? '<path class="context" d="' + face.context + '"/>' : '';
       var design = '';
       if (a) {
         var g = '<g class="dz">' + designPaths(a) + '</g>';
@@ -492,9 +548,9 @@
       box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb.join(' ') +
         '" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="svgm_face">' +
         '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
-        '<g class="turn" transform="rotate(' + turn.toFixed(3) + ')">' +
+        '<g class="turn" transform="rotate(' + turn.toFixed(3) + ')">' + context +
         '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
-        '<path class="face-edge" d="' + face.outline + '"/></g></svg>';
+        '<path class="face-edge" d="' + face.outline + '"/></g>' + sides + '</svg>' + seen;
       S.handleSize = Math.max(w, h) * 0.035;
     }
     positionDesign();
@@ -1328,6 +1384,7 @@
       case 'analysis': onAnalysis(m); break;
       case 'plate': onPlate(m); break;
       case 'faces': onFaces(m); break;
+      case 'face_context': onFaceContext(m); break;
       case 'colors_info': onColorsInfo(m); break;
       case 'progress':
         if (S.busy) { setBar(m.pct); if (!S.quiet && m.text) setStatus(null, null, 'busy', m.text); }
@@ -1337,6 +1394,7 @@
       case 'cancelled': end(); setStatus(null, null, '', m.text); break;
       case 'saved': if (!m.ok) setStatus(null, null, 'err', m.text); break;
       case 'error':
+        if (m.action === 'face_context') break;      // the drawing around the face is a bonus
         S.plateApply = false;
         S.facesApply = false;
         if (S.busy) end();
