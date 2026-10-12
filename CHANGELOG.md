@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.4.2
+
+### Fixed
+- Reducing the colors lost small but distinct ones: with "Max. colors" below
+  the colors of the drawing, the smallest color was always merged into its
+  nearest one, so a little green became light blue. Now the pair that changes
+  the drawing the least is merged (the area that changes color times how much
+  it changes): similar colors, such as two blues, join first, and a small
+  distinct color stays.
+
 ## 3.4.1
 
 ### Fixed

@@ -96,3 +96,13 @@ def test_write_stl(tmp_path):
     data = p.read_bytes()
     assert len(data) == 84 + 50 * len(F)
     assert np.frombuffer(data[80:84], dtype="<u4")[0] == len(F)
+
+
+def test_reduce_keeps_a_small_distinct_color():
+    """Sky blue + light cyan merge (similar) instead of the small green vanishing."""
+    shares = {"#ffffff": 30.6, "#050808": 28.1, "#54bfed": 15.0, "#a75a21": 12.6,
+              "#a6d6e4": 3.8, "#235ea6": 3.7, "#e7681d": 3.5, "#2c953a": 2.7}
+    reg = {c: [box(0, 2 * k, a, 2 * k + 1)] for k, (c, a) in enumerate(shares.items())}
+    out, mapping = C.reduce_colors(reg, 7)
+    assert "#2c953a" in out                               # the green stays
+    assert "#a6d6e4" in mapping["#54bfed"]                # the light cyan joined the sky blue

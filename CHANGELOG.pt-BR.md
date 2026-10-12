@@ -2,6 +2,15 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.4.2
+
+### Corrigido
+- A redução de cores perdia cores pequenas mas diferentes: com "Máx. de cores"
+  abaixo das cores do desenho, a menor cor sempre se juntava à mais parecida,
+  e um pouco de verde virava azul-claro. Agora se junta o par que menos muda o
+  desenho (a área que muda de cor vezes o quanto ela muda): cores parecidas,
+  como dois azuis, se juntam primeiro, e uma cor pequena e diferente fica.
+
 ## 3.4.1
 
 ### Corrigido

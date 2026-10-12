@@ -238,12 +238,17 @@ def reduce_colors(regions, maximum, pre_tolerance=4.0):
     colors.
 
     1. Collapses practically identical tones (`pre_tolerance`). Without this,
-       two large identical whites never merge (neither is the smallest), and
-       a legitimate color would be sacrificed instead.
-    2. While there are too many parts, the SMALLEST one is merged into the
-       most similar remaining color. Always merging the smallest protects the
-       dominant colors: in a logo with 41% black and 0.04% brown, the brown
-       disappears into something similar and the black stays black.
+       two large identical whites never merge, and a legitimate color would be
+       sacrificed instead.
+    2. While there are too many parts, merges the pair that changes the
+       drawing the least: the area that changes color times how much it
+       changes (Delta E). The smaller of the two takes the color of the larger.
+       A speck merges into its nearest color at almost no cost (in a logo with
+       41% black and 0.04% brown, the brown disappears and the black stays
+       black), and a small but distinct color is kept when a similar pair can
+       merge instead: in a drawing with sky blue, light cyan and a little
+       green, the light cyan joins the sky blue and the green stays green.
+       Merging the smallest part blindly turned that green into light cyan.
     """
     identity = {c: [c] for c in regions}
     if not maximum or maximum <= 0 or len(regions) <= maximum:
@@ -255,18 +260,32 @@ def reduce_colors(regions, maximum, pre_tolerance=4.0):
         if len(regions) <= maximum:
             return regions, map1
 
-    work = {c: [c] for c in regions}
-    area = {c: _area(regions[c]) for c in regions}
-    while len(work) > maximum:
-        smallest = min(work, key=lambda c: area[c])
-        target = min((c for c in work if c != smallest),
-                     key=lambda c: (color_distance(smallest, c), -area[c]))
-        work[target].extend(work.pop(smallest))
-        area[target] += area.pop(smallest)
+    import numpy as np  # only when there is something to reduce
 
+    names = list(regions)
+    n = len(names)
+    area = np.array([_area(regions[c]) for c in names], dtype=float)
+    labs = [lab(c) for c in names]
+    dist = np.zeros((n, n))
+    for i in range(n):
+        for j in range(i + 1, n):
+            dist[i, j] = dist[j, i] = delta_e(labs[i], labs[j])
+    alive = np.ones(n, dtype=bool)
+    members = {i: [names[i]] for i in range(n)}
+    while alive.sum() > maximum:
+        cost = np.minimum.outer(area, area) * dist
+        cost[~(alive[:, None] & alive[None, :])] = np.inf
+        np.fill_diagonal(cost, np.inf)
+        i, j = np.unravel_index(int(np.argmin(cost)), cost.shape)
+        keep, drop = (i, j) if area[i] >= area[j] else (j, i)
+        members[keep].extend(members.pop(drop))
+        area[keep] += area[drop]
+        alive[drop] = False
+
+    work = {names[k]: v for k, v in members.items()}
     merged = _fuse(regions, work)
-    mapping = {rep: [o for m in members for o in map1.get(m, [m])]
-               for rep, members in work.items()}
+    mapping = {rep: [o for m in group for o in map1.get(m, [m])]
+               for rep, group in work.items()}
     return merged, mapping
 
 
