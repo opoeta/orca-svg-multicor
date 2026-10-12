@@ -39,6 +39,12 @@ from .geometry import GRID, polygons_of
 
 MIN_FACE_AREA = 20.0          # mm2; smaller flat bits are not offered
 MAX_FACES = 24
+# Meshes exported from CAD often have vertices a few ten-thousandths of a
+# millimetre apart where they should be one: the triangles of a face then
+# touch only at points, and a rounded corner came off as a separate bit too
+# small to offer (a lid with its corners cut). Closing the face by this much
+# joins them and moves its outline by nothing a printer can see.
+HEAL = 0.01                   # mm
 
 
 class Face:
@@ -174,12 +180,19 @@ def planar_faces(V, F, world=None, min_area=MIN_FACE_AREA, limit=MAX_FACES):
             rings = np.concatenate([uv, uv[:, :1]], axis=1)            # closed
             tris = shapely.polygons(rings)
             region = shapely.union_all(tris[shapely.area(tris) > 1e-12], grid_size=GRID)
+            region = shapely.set_precision(region.buffer(HEAL, join_style=2).buffer(-HEAL, join_style=2), GRID)
             cache[g] = (normal, u, v, plane_d, region)
         return cache[g]
 
     faces = []
     for g in np.argsort(-totals):
         if totals[g] < min_area:
+            break
+        # groups come largest first and a face is never larger than its
+        # group: once `limit` faces are larger than this whole group, no
+        # face left can make the list (an object with a hundred holes has
+        # thousands of small flat groups)
+        if len(faces) >= limit and totals[g] < sorted((f.area for f, _s in faces), reverse=True)[limit - 1]:
             break
         normal, u, v, plane_d, region = flat(g)
         # the same plane looking the other way: two parts pressed together
@@ -200,23 +213,24 @@ def planar_faces(V, F, world=None, min_area=MIN_FACE_AREA, limit=MAX_FACES):
             f.area = float(poly.area)
             f.size = (x1 - x0, y1 - y0)
             inside = poly.representative_point()
-            start = inside.x * u + inside.y * v + plane_d * normal
-            f.inner = rays.blocked(start + 1e-3 * normal, normal)
-            world_n = rot @ normal
-            world_n /= np.linalg.norm(world_n)
-            f.direction = _direction(-world_n if f.inner else world_n)
-            if world is not None:
-                f.height = float((np.asarray(world, dtype=float) @ np.append(f.origin, 1.0))[2])
-            else:
-                f.height = float(f.origin[2])
-            k, f.view = _view_turn(rot, u, v)
-            _turn(f, k)
-            faces.append(f)
-    faces.sort(key=lambda f: -f.area)
+            faces.append((f, inside.x * u + inside.y * v + plane_d * normal))
+    faces.sort(key=lambda fs: -fs[0].area)
     faces = faces[:limit]
-    for i, f in enumerate(faces):
+    # what the list shows, for the faces it shows: casting a ray through the
+    # whole mesh is the slow part
+    for i, (f, start) in enumerate(faces):
         f.id = i
-    return faces
+        f.inner = rays.blocked(start + 1e-3 * f.normal, f.normal)
+        world_n = rot @ f.normal
+        world_n /= np.linalg.norm(world_n)
+        f.direction = _direction(-world_n if f.inner else world_n)
+        if world is not None:
+            f.height = float((np.asarray(world, dtype=float) @ np.append(f.origin, 1.0))[2])
+        else:
+            f.height = float(f.origin[2])
+        k, f.view = _view_turn(rot, f.u, f.v)
+        _turn(f, k)
+    return [f for f, _start in faces]
 
 
 class _RayCaster:

@@ -1,5 +1,19 @@
 # Changelog
 
+## 3.10.2
+
+### Fixed
+- **A corner of the surface cut off diagonally** (a lid's rounded corner,
+  and the design clipped along it). Meshes exported from CAD often have
+  vertices a few ten-thousandths of a millimetre apart where they should be
+  one; the triangles of the rounded corner then touched the rest of the face
+  only at points, and the corner was dropped as a bit too small to offer.
+  The face is now closed by 0.01 mm before it is cut out, which joins them
+  and moves its outline by nothing a printer can see.
+- Listing the surfaces of an object with many small flat faces (a tray with a
+  hundred holes) took about 13 s, with OrcaSlicer frozen; it now takes under
+  a second, with the same list.
+
 ## 3.10.1
 
 ### Fixed

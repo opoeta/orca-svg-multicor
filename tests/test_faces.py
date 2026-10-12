@@ -3,6 +3,7 @@ import os
 import zipfile
 
 import numpy as np
+import shapely
 import pytest
 from shapely.geometry import Polygon, box
 from shapely.geometry.polygon import orient
@@ -324,3 +325,32 @@ def test_layer_plan():
                         {"lh": 0.2, "h1": 0.2}) == (0.32, 0.0)     # the page's layer height wins
     assert E.layer_plan(Options(thickness_mm=0.6, first_layer="above"), {"lh": 0.2, "h1": 0.25},
                         on_bed=True) == (0.6, 0.25)
+
+
+def test_a_crack_in_the_mesh_does_not_cut_a_corner_off():
+    """
+    A lid exported from CAD: its rounded corner is a fan of triangles whose
+    base vertex is 0.0005 mm from the vertex of the rest of the face. The
+    corner touched the face only at points and was dropped as a bit too small
+    to offer, so the design was cut at the corner.
+    """
+    gap = 0.0005
+    V = np.array([[0, 0, 0], [20, 0, 0], [20, 15 - gap, 0], [15, 20, 0], [0, 20, 0],   # the face
+                  [20, 15, 0], [20, 20, 0], [15, 20, 0]], dtype=float)                 # its corner
+    F = np.array([[0, 1, 2], [0, 2, 3], [0, 3, 4], [5, 6, 7]])
+    faces = planar_faces(V, F)
+    assert len(faces) == 1
+    assert faces[0].area == pytest.approx(400.0, abs=0.01)
+    assert faces[0].size == pytest.approx((20.0, 20.0), abs=0.001)
+
+
+def test_stopping_early_lists_the_same_largest_faces():
+    """Many small flat faces (a comb): the list stops looking once nothing left can make it."""
+    teeth = [box(i * 4.0, 0, i * 4.0 + 2.0, 6.0 + i) for i in range(12)]
+    comb = orient(shapely.union_all([box(0, -10, 48, 0)] + teeth), 1.0)
+    V, F = extrude([comb], 5.0, 0.0)
+    everything = planar_faces(V, F, limit=1000)
+    for limit in (3, 8, 15):
+        few = planar_faces(V, F, limit=limit)
+        assert [(f.area, f.direction, f.inner) for f in few] == \
+               [(f.area, f.direction, f.inner) for f in everything[:limit]]

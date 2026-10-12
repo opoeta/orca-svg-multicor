@@ -2,6 +2,20 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.10.2
+
+### Corrigido
+- **Um canto da superfície cortado na diagonal** (o canto arredondado de uma
+  tampa, e o desenho recortado junto). Malhas exportadas de CAD muitas vezes
+  têm vértices a poucos décimos de milésimo de milímetro um do outro onde
+  deveriam ser um só; os triângulos do canto arredondado então só tocavam o
+  resto da face em pontos, e o canto era descartado como um pedaço pequeno
+  demais. Agora a face é fechada em 0,01 mm antes de ser recortada, o que os
+  junta e não muda o contorno de forma que uma impressora perceba.
+- Listar as superfícies de um objeto com muitas faces planas pequenas (uma
+  bandeja com cem furos) levava cerca de 13 s, com o OrcaSlicer travado;
+  agora leva menos de um segundo, com a mesma lista.
+
 ## 3.10.1
 
 ### Corrigido
