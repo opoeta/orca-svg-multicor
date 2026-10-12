@@ -115,9 +115,14 @@ def test_changelogs_cover_the_same_versions():
 
     def versions(name):
         with open(os.path.join(root, name), encoding="utf-8") as f:
-            return re.findall(r"^## (\S+)", f.read(), re.M)
+            return re.findall(r"^## (.+)$", f.read(), re.M)
 
     en, pt = versions("CHANGELOG.md"), versions("CHANGELOG.pt-BR.md")
+    # changes not released yet may sit on top, in both
+    unreleased = {"CHANGELOG.md": "Unreleased", "CHANGELOG.pt-BR.md": "Ainda não publicado"}
+    assert (en[0] == unreleased["CHANGELOG.md"]) == (pt[0] == unreleased["CHANGELOG.pt-BR.md"])
+    if en[0] == unreleased["CHANGELOG.md"]:
+        en, pt = en[1:], pt[1:]
     assert en == pt
     assert en[0] == __version__
 
