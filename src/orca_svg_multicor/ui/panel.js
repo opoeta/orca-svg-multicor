@@ -411,7 +411,9 @@
   }
 
   function renderFaces() {
-    setTimeout(updateLayers, 0);     // the chosen face decides the first layer row
+    // the chosen face decides the first layer row; the assistant shows the
+    // same list (another object's faces there would pick the wrong face)
+    setTimeout(function () { updateLayers(); syncWizard(); }, 0);
     var sel = $('face_select'), f = S.faces;
     sel.textContent = '';
     if (!facesMatchItem() || !f.list.length) {

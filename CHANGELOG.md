@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.11.1
+
+### Fixed
+- The assistant's Surface list kept the faces of the object chosen before:
+  after choosing another object, picking a surface there could select a
+  different face of the new object (since 3.9.0). It now follows the
+  sidebar.
+
 ## 3.11.0
 
 ### New

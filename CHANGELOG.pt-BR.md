@@ -2,6 +2,14 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.11.1
+
+### Corrigido
+- A lista de Superfície do assistente continuava com as faces do objeto
+  escolhido antes: depois de trocar de objeto, escolher uma superfície ali
+  podia selecionar outra face do objeto novo (desde a 3.9.0). Agora ela
+  acompanha a barra lateral.
+
 ## 3.11.0
 
 ### Novo
