@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.13.1
+
+### Fixed
+- **The brush did nothing when the stroke started on a bare part of the
+  surface** without a color picked first. It now copies the closest color
+  there (the color next to it); started on the drawing, it takes that color
+  as before.
+- The brush size field showed no number (too narrow).
+
+### Changed
+- **Own cursors** for the brush and the bucket, and a circle of the brush's
+  size that follows the pointer. (OrcaSlicer takes a plugin's icon only for
+  its page tab; everything inside the page is drawn by the plugin.)
+- **Turn view** has a label next to its icon, and the assistant's last step
+  has the same button.
+
 ## 3.13.0
 
 ### New

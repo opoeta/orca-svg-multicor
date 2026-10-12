@@ -162,6 +162,7 @@
   "place.seen_left": "Visto da sinistra, come la vista sinistra di OrcaSlicer ({keys})",
   "place.seen_right": "Visto da destra, come la vista destra di OrcaSlicer ({keys})",
   "place.turn": "Ruota la vista di 90° (solo la visualizzazione: il risultato non cambia)",
+  "place.turn_short": "Ruota vista",
   "place.turned": "vista ruotata di {deg}°",
   "paint.tools": "Pittura",
   "paint.move": "Sposta e ridimensiona il disegno",

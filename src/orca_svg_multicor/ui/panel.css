@@ -154,11 +154,16 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .paint-tools { display: inline-flex; gap: 2px; }
 .paint-tools button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .paint-size { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }
-.paint-size input { width: 56px; }
+.paint-size input { width: 84px; }
 .paint-color { width: 18px; height: 18px; border-radius: 4px; border: 1px solid var(--line); flex: 0 0 auto; }
 .paint-bar .note { font-size: 12px; margin: 0; }
-#preview_place.tool-brush, #preview_place.tool-brush * { cursor: crosshair; }
-#preview_place.tool-bucket, #preview_place.tool-bucket * { cursor: cell; }
+/* own cursors: OrcaSlicer only takes a plugin's icon for its page tab, the
+   page itself draws everything else */
+#preview_place.tool-brush, #preview_place.tool-brush * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg stroke='%23111' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M27 3l2 2-11 13-4-4z' fill='%23f2f2f2'/%3E%3Cpath d='M14 14l4 4c-1 4-5 7-12 8 1-6 4-11 8-12z' fill='%2300b894'/%3E%3C/g%3E%3Ccircle cx='5' cy='27' r='1.6' fill='%23111'/%3E%3C/svg%3E") 4 28, crosshair; }
+#preview_place.tool-bucket, #preview_place.tool-bucket * { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cg stroke='%23111' stroke-width='1.6' stroke-linejoin='round'%3E%3Cpath d='M14 4l11 11-9 9L5 13z' fill='%23f2f2f2'/%3E%3Cpath d='M5 13h20l-9 9z' fill='%2300b894'/%3E%3Cpath d='M27 18c1 2 3 4 3 6a3 3 0 0 1-6 0c0-2 2-4 3-6z' fill='%2300b894'/%3E%3C/g%3E%3C/svg%3E") 28 28, cell; }
+#preview_place .brush-ring { fill: none; stroke: var(--fg); stroke-width: 1.2; stroke-dasharray: 3 2;
+                             vector-effect: non-scaling-stroke; pointer-events: none; }
+#btn_turn_view { display: inline-flex; align-items: center; gap: 4px; width: auto; padding: 3px 8px; }
 #preview_place .seen { position: absolute; left: 0; top: 0; font-size: 12px; color: var(--muted); pointer-events: none; }
 .dims.warn { color: var(--warn); }
 .spinner { position: absolute; right: 14px; top: 14px; width: 18px; height: 18px; border-radius: 50%;

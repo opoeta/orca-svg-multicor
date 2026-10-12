@@ -162,6 +162,7 @@
   "place.seen_left": "左から見た図、OrcaSlicer の左側面ビューと同じ（{keys}）",
   "place.seen_right": "右から見た図、OrcaSlicer の右側面ビューと同じ（{keys}）",
   "place.turn": "表示を 90° 回転（表示のみ: 結果は変わりません）",
+  "place.turn_short": "表示を回転",
   "place.turned": "表示を {deg}° 回転済み",
   "paint.tools": "ペイント",
   "paint.move": "デザインの移動とサイズ変更",

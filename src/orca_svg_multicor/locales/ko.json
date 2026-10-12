@@ -162,6 +162,7 @@
   "place.seen_left": "왼쪽에서 본 모습, OrcaSlicer의 왼쪽 보기와 같음({keys})",
   "place.seen_right": "오른쪽에서 본 모습, OrcaSlicer의 오른쪽 보기와 같음({keys})",
   "place.turn": "보기를 90° 회전(표시만 바뀌며 결과는 그대로)",
+  "place.turn_short": "보기 회전",
   "place.turned": "보기 {deg}° 회전됨",
   "paint.tools": "칠하기",
   "paint.move": "디자인 이동 및 크기 조절",

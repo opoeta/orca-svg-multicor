@@ -162,6 +162,7 @@
   "place.seen_left": "从左侧看，与 OrcaSlicer 的左视图相同（{keys}）",
   "place.seen_right": "从右侧看，与 OrcaSlicer 的右视图相同（{keys}）",
   "place.turn": "将视图旋转 90°（仅改变显示：结果不变）",
+  "place.turn_short": "旋转视图",
   "place.turned": "视图已旋转 {deg}°",
   "paint.tools": "绘制",
   "paint.move": "移动和缩放图案",

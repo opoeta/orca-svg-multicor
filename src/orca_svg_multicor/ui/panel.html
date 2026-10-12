@@ -194,8 +194,8 @@
         <button type="button" role="tab" data-view="original" aria-selected="false" data-i18n="prev.original">Original</button>
         <button type="button" role="tab" data-view="placement" aria-selected="false" id="view_place" data-i18n="prev.placement">On the object</button>
       </div>
-      <button type="button" class="flat icon" id="btn_turn_view" hidden data-i18n-title="place.turn" title="Turn the view"
-              data-i18n-aria="place.turn"><svg class="ic"><use href="#i-turn"/></svg></button>
+      <button type="button" class="flat icon" id="btn_turn_view" hidden data-i18n-title="place.turn" title="Turn the view">
+        <svg class="ic"><use href="#i-turn"/></svg><span data-i18n="place.turn_short">Turn view</span></button>
       <span class="dims" id="dims"></span>
       <span class="spacer"></span>
       <button type="button" class="primary" id="btn_run"><span id="btn_run_label" data-i18n="out.apply_plate">Apply to the plate</span></button>
@@ -295,7 +295,9 @@
                 <span class="wiz-col"><span data-i18n="plate.rotation">Rotation</span>
                   <select id="wiz_rotation" data-i18n-aria="plate.rotation"></select>
                   <button type="button" class="flat" id="wiz_fill" data-i18n="frame.fill"
-                          data-i18n-title="frame.fill_hint">Fill</button></span>
+                          data-i18n-title="frame.fill_hint">Fill</button>
+                  <button type="button" class="flat" id="wiz_turn" data-i18n-title="place.turn">
+                    <svg class="ic"><use href="#i-turn"/></svg> <span data-i18n="place.turn_short">Turn view</span></button></span>
               </div>
             </div>
           </div>

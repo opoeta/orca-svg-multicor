@@ -162,6 +162,7 @@
   "place.seen_left": "Widok z lewej, jak widok z lewej w OrcaSlicer ({keys})",
   "place.seen_right": "Widok z prawej, jak widok z prawej w OrcaSlicer ({keys})",
   "place.turn": "Obróć widok o 90° (tylko podgląd: wynik się nie zmienia)",
+  "place.turn_short": "Obróć widok",
   "place.turned": "widok obrócony o {deg}°",
   "paint.tools": "Malowanie",
   "paint.move": "Przesuń i zmień rozmiar wzoru",

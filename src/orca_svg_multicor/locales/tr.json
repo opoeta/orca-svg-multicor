@@ -162,6 +162,7 @@
   "place.seen_left": "Soldan görünüm, OrcaSlicer'ın sol görünümü gibi ({keys})",
   "place.seen_right": "Sağdan görünüm, OrcaSlicer'ın sağ görünümü gibi ({keys})",
   "place.turn": "Görünümü 90° döndür (yalnızca gösterim: sonuç değişmez)",
+  "place.turn_short": "Görünümü döndür",
   "place.turned": "görünüm {deg}° döndürüldü",
   "paint.tools": "Boyama",
   "paint.move": "Tasarımı taşı ve boyutlandır",

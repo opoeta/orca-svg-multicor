@@ -162,6 +162,7 @@
   "place.seen_left": "Вид слева, как вид слева в OrcaSlicer ({keys})",
   "place.seen_right": "Вид справа, как вид справа в OrcaSlicer ({keys})",
   "place.turn": "Повернуть вид на 90° (только отображение: результат не меняется)",
+  "place.turn_short": "Повернуть вид",
   "place.turned": "вид повёрнут на {deg}°",
   "paint.tools": "Рисование",
   "paint.move": "Перемещать и менять размер рисунка",

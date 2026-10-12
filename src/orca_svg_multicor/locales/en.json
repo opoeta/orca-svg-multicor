@@ -162,6 +162,7 @@
   "place.seen_left": "Seen from the left, like OrcaSlicer's left view ({keys})",
   "place.seen_right": "Seen from the right, like OrcaSlicer's right view ({keys})",
   "place.turn": "Turn the view 90° (only how it is shown: the result does not change)",
+  "place.turn_short": "Turn view",
   "place.turned": "view turned {deg}°",
   "paint.tools": "Painting",
   "paint.move": "Move and resize the design",

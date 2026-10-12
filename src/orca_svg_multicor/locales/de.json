@@ -162,6 +162,7 @@
   "place.seen_left": "Von links gesehen, wie die linke Ansicht von OrcaSlicer ({keys})",
   "place.seen_right": "Von rechts gesehen, wie die rechte Ansicht von OrcaSlicer ({keys})",
   "place.turn": "Ansicht um 90° drehen (nur die Anzeige: das Ergebnis ändert sich nicht)",
+  "place.turn_short": "Ansicht drehen",
   "place.turned": "Ansicht um {deg}° gedreht",
   "paint.tools": "Malen",
   "paint.move": "Motiv verschieben und skalieren",

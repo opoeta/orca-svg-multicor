@@ -2,6 +2,22 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.13.1
+
+### Corrigido
+- **O pincel não fazia nada quando o traço começava numa parte vazia da
+  superfície** sem uma cor escolhida antes. Agora ele copia a cor mais
+  próxima dali (a cor do lado); começando em cima do desenho, usa aquela cor,
+  como antes.
+- O campo de tamanho do pincel não mostrava o número (estreito demais).
+
+### Mudou
+- **Cursores próprios** para o pincel e o balde, e um círculo do tamanho do
+  pincel que acompanha o ponteiro. (O OrcaSlicer só aceita ícone de plugin na
+  aba da página; tudo dentro da página é desenhado pelo plugin.)
+- **Girar vista** ganhou o texto ao lado do ícone, e o último passo do
+  assistente tem o mesmo botão.
+
 ## 3.13.0
 
 ### Novo

@@ -570,13 +570,13 @@
     if (op.kind === 'brush') {
       var d = op.points.map(function (q, i) { return (i ? 'L' : 'M') + q[0].toFixed(3) + ',' + (-q[1]).toFixed(3); }).join('');
       if (op.points.length === 1) d += 'L' + op.points[0][0].toFixed(3) + ',' + (-op.points[0][1]).toFixed(3);
-      return '<path d="' + d + '" fill="none" stroke="' + fill + '" stroke-width="' + op.width.toFixed(3) +
-             '" stroke-linecap="round" stroke-linejoin="round"/>';
+      return '<path data-paint="' + esc(op.color) + '" d="' + d + '" fill="none" stroke="' + fill +
+             '" stroke-width="' + op.width.toFixed(3) + '" stroke-linecap="round" stroke-linejoin="round"/>';
     }
     var rings = op.rings.map(function (r) {
       return 'M' + r.map(function (q) { return q[0].toFixed(3) + ',' + (-q[1]).toFixed(3); }).join(' ') + 'Z';
     }).join('');
-    return '<path d="' + rings + '" fill="' + fill + '" fill-rule="evenodd"/>';
+    return '<path data-paint="' + esc(op.color) + '" d="' + rings + '" fill="' + fill + '" fill-rule="evenodd"/>';
   }
 
   function renderPaint() {
@@ -614,10 +614,41 @@
     return [p.x, -p.y];                          // the face's frame has y up
   }
 
+  // the color under a point of the screen: the drawing's or a paint's
+  function keyAt(x, y) {
+    var el = document.elementFromPoint(x, y);
+    var hit = el && el.closest && el.closest('#preview_place .dz path[data-key], #preview_place path[data-paint]');
+    return hit ? (hit.getAttribute('data-key') || hit.getAttribute('data-paint')) : null;
+  }
+  // the closest color around a point (rings out to 120 px): "the color next to it"
+  function nearestKey(x, y) {
+    for (var r = 4; r <= 120; r += 4) {
+      for (var a = 0; a < 24; a++) {
+        var k = keyAt(x + r * Math.cos(a * Math.PI / 12), y + r * Math.sin(a * Math.PI / 12));
+        if (k) return k;
+      }
+    }
+    return null;
+  }
+
+  // the brush's size, drawn where the pointer is
+  function showRing(e) {
+    var ring = $('preview_place').querySelector('.brush-ring'), svg = $('preview_place').querySelector('svg');
+    if (!ring || !svg) return;
+    if (S.tool !== 'brush') { ring.setAttribute('visibility', 'hidden'); return; }
+    var q = facePoint(svg, e);
+    ring.setAttribute('cx', q[0].toFixed(3));
+    ring.setAttribute('cy', (-q[1]).toFixed(3));
+    ring.setAttribute('r', (paintSize() / 2).toFixed(3));
+    ring.setAttribute('visibility', 'visible');
+  }
+
   function startStroke(e, svg) {
-    var hit = e.target.closest && e.target.closest('.dz path[data-key]');
-    var key = hit ? hit.getAttribute('data-key') : S.brushColor;
+    var hit = keyAt(e.clientX, e.clientY);
+    // on the drawing: its color; on a bare spot: the color picked, else the closest one
+    var key = hit || S.brushColor || nearestKey(e.clientX, e.clientY);
     stroke = { svg: svg, key: key, picked: !!hit, points: [facePoint(svg, e)], moved: false, el: null };
+    if (key) { S.brushColor = key; renderPaintBar(); }
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveStroke(e) {
@@ -739,7 +770,7 @@
         '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
         '<g class="turn" transform="rotate(' + turn.toFixed(3) + ')">' + context +
         '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
-        '<g class="paint" clip-path="url(#svgm_face)"></g>' +
+        '<g class="paint" clip-path="url(#svgm_face)"></g><circle class="brush-ring" visibility="hidden"/>' +
         '<path class="face-edge" d="' + face.outline + '"/></g>' + sides + '</svg>' + seen;
       S.handleSize = Math.max(w, h) * 0.035;
       renderPaint();
@@ -819,6 +850,7 @@
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveDrag(e) {
+    showRing(e);
     if (stroke) { moveStroke(e); return; }
     if (!drag) return;
     var p = svgPoint(drag.svg, e), dx = p.x - drag.x, dy = p.y - drag.y;
@@ -1806,6 +1838,7 @@
     wireWizard();
 
     // the design on the face: drag to move, its corner to resize
+    $('wiz_turn').addEventListener('click', function () { $('btn_turn_view').click(); });
     $('btn_turn_view').addEventListener('click', function () {
       S.viewTurn = (viewTurn() + 90) % 360;
       renderPlacement();
@@ -1823,6 +1856,10 @@
       b.addEventListener('click', function () { setTool(b.getAttribute('data-tool')); });
     });
     $('paint_size').addEventListener('change', renderPaintBar);
+    $('preview_place').addEventListener('pointerleave', function () {
+      var ring = $('preview_place').querySelector('.brush-ring');
+      if (ring && !stroke) ring.setAttribute('visibility', 'hidden');
+    });
     $('paint_undo').addEventListener('click', function () { paintOps().pop(); renderPaint(); });
     $('paint_clear').addEventListener('click', function () { S.paint.ops = []; renderPaint(); });
     $('wiz_fill').addEventListener('click', function () { S.view = 'placement'; renderPreview(); fillFace(); });
