@@ -16,7 +16,7 @@ BADGE = os.path.join(EXAMPLES, "badge.svg")
 
 
 def test_analyze_badge():
-    res = E.analyze(BADGE, Options())
+    res = E.analyze(BADGE, Options(size_mode="width", size_mm=100))
     assert res["raw_count"] == 5 and len(res["colors"]) == 4
     first = res["colors"][0]
     assert first["color"] == "#1d3557" and first["background"] is True
@@ -82,7 +82,7 @@ def test_apply_places_design_on_top_face(bbs_project, tmp_path):
 def test_options_are_validated():
     o = Options(size_mm="abc", thickness_mm=-3, max_colors=999, fit="weird", size_mode="x")
     assert o.size_mm == 100 and o.thickness_mm == 0.01 and o.max_colors == 64
-    assert o.fit == "inlay" and o.size_mode == "width"
+    assert o.fit == "inlay" and o.size_mode == "original"
     assert Options(include_strokes="false").include_strokes is False
 
 
@@ -162,7 +162,7 @@ def test_service_upload_and_unknown_action(tmp_path):
 def test_service_save_settings_filters_keys():
     svc, out, store = make_service()
     svc.handle({"action": "save_settings", "settings": {"size_mm": 42, "evil": 1, "language": "xx"}})
-    assert store == {"size_mm": 42}
+    assert store == {"settings_rev": 2, "size_mm": 42}
     assert out[-1]["type"] in ("saved", "log")
 
 
@@ -214,3 +214,13 @@ def test_analyze_offers_every_color_count_when_asked():
     four = levels["counts"]["4"]
     assert len(four["colors"]) == 4 and sum(p for _, p in four["colors"]) == pytest.approx(100, abs=0.5)
     assert levels["preview"].startswith("<svg") and 'data-key="' in levels["preview"]
+
+
+@pytest.mark.parametrize("saved, size_mode", [
+    ({"size_mode": "width", "size_mm": 100}, "original"),      # the old default, never chosen
+    ({"size_mode": "width", "size_mm": 80}, "width"),          # chosen: kept
+    ({"size_mode": "width", "size_mm": 100, "settings_rev": 2}, "width"),   # chosen after the change
+])
+def test_settings_move_to_the_files_own_size_once(saved, size_mode):
+    svc, _out, store = make_service(cfg=dict(saved))
+    assert store["size_mode"] == size_mode and store["settings_rev"] == 2

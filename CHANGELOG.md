@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.5.1
+
+### Fixed
+- A new object came out at half the size of the drawing: the size was
+  "Width 100 mm" by default. The default is now **the file's own size**, and
+  settings that still had the old default (width, 100 mm) move to it once.
+- The real size of SVGs exported by Adobe Illustrator: they have no width or
+  height and keep Illustrator's 72 units per inch, so a 201 mm artboard was
+  read as 150.75 mm. Illustrator files are recognized by their metadata.
+- The page shows the file's size under "Size" ("File: 201 × 201 mm").
+
 ## 3.5.0
 
 ### Added

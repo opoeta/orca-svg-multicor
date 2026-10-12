@@ -12,6 +12,8 @@
   "opt.size_width": "Larghezza",
   "opt.size_height": "Altezza",
   "opt.size_original": "Dimensione originale",
+  "opt.size_file": "File: {w} × {h} mm",
+  "opt.size_file_px": "File senza misura: {w} × {h} mm a 96 px per pollice",
   "opt.thickness": "Spessore dei colori",
   "opt.max_colors": "Max. colori",
   "opt.max_colors_hint": "Quanti filamenti può usare la tua stampante. 0 = nessun limite.",

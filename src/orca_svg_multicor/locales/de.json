@@ -12,6 +12,8 @@
   "opt.size_width": "Breite",
   "opt.size_height": "Höhe",
   "opt.size_original": "Originalgröße",
+  "opt.size_file": "Datei: {w} × {h} mm",
+  "opt.size_file_px": "Datei ohne Größe: {w} × {h} mm bei 96 px pro Zoll",
   "opt.thickness": "Dicke der Farbteile",
   "opt.max_colors": "Max. Farben",
   "opt.max_colors_hint": "Wie viele Filamente der Drucker verwenden kann. 0 = unbegrenzt.",

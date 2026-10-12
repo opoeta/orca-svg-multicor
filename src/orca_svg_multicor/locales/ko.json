@@ -12,6 +12,8 @@
   "opt.size_width": "너비",
   "opt.size_height": "높이",
   "opt.size_original": "원본 크기",
+  "opt.size_file": "파일: {w} × {h} mm",
+  "opt.size_file_px": "크기 정보 없음: 인치당 96 px 기준 {w} × {h} mm",
   "opt.thickness": "색상 두께",
   "opt.max_colors": "최대 색상 수",
   "opt.max_colors_hint": "프린터에서 사용할 수 있는 필라멘트 수입니다. 0 = 제한 없음.",

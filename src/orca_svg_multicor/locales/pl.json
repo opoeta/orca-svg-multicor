@@ -12,6 +12,8 @@
   "opt.size_width": "Szerokość",
   "opt.size_height": "Wysokość",
   "opt.size_original": "Rozmiar oryginalny",
+  "opt.size_file": "Plik: {w} × {h} mm",
+  "opt.size_file_px": "Plik bez rozmiaru: {w} × {h} mm przy 96 px na cal",
   "opt.thickness": "Grubość kolorów",
   "opt.max_colors": "Maks. kolorów",
   "opt.max_colors_hint": "Ilu filamentów może używać drukarka. 0 = bez limitu.",

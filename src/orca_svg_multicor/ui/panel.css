@@ -53,7 +53,7 @@ details.adv[open] > summary { margin-bottom: 8px; }
 .row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 30px; }
 .row > span:first-child { color: var(--muted); }
 .ctl { display: flex; align-items: center; gap: 6px; justify-content: flex-end; min-width: 0; }
-.ctl.two select { width: 100px; }
+.ctl.two select { width: auto; min-width: 100px; max-width: 190px; }
 .ctl.wide { justify-content: stretch; }
 .ctl.wide select { flex: 1 1 auto; min-width: 0; }
 .ctl input[type=number] { width: 92px; }

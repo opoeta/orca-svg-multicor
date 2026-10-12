@@ -12,6 +12,8 @@
   "opt.size_width": "宽度",
   "opt.size_height": "高度",
   "opt.size_original": "原始尺寸",
+  "opt.size_file": "文件：{w} × {h} mm",
+  "opt.size_file_px": "文件未标注尺寸：按每英寸 96 px 为 {w} × {h} mm",
   "opt.thickness": "颜色厚度",
   "opt.max_colors": "最大颜色数",
   "opt.max_colors_hint": "打印机可使用的耗材数量。0 = 不限。",

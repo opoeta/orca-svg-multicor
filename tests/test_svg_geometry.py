@@ -191,3 +191,22 @@ def test_preview_svg_contains_every_layer():
     s = G.preview_svg([("#ff0000", "#ff0000", [box(0, 0, 10, 10)]),
                        ("#00ff00", "#00ff00", [box(2, 2, 4, 4)])])
     assert s.startswith("<svg") and s.count("<path") == 2 and 'data-key="#00ff00"' in s
+
+
+def test_illustrator_files_use_72_units_per_inch(tmp_path):
+    """Illustrator writes no width/height: a 201 mm artboard is a 569.76 viewBox."""
+    body = '<rect x="0" y="0" width="569.76" height="569.76" fill="#ff0000"/>'
+    plain = tmp_path / "plain.svg"
+    plain.write_text('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 569.76 569.76">' + body + "</svg>")
+    ai = tmp_path / "ai.svg"
+    ai.write_text('<svg id="Camada_1" data-name="Camada 1" xmlns="http://www.w3.org/2000/svg" '
+                  'viewBox="0 0 569.76 569.76"><metadata><x:xmpmeta xmlns:x="adobe:ns:meta/"/></metadata>'
+                  + body + "</svg>")
+    from orca_svg_multicor import engine as E
+    from orca_svg_multicor.options import Options
+    p, a = read_svg(str(plain)), read_svg(str(ai))
+    assert p.size_mm[0] == pytest.approx(150.75, abs=0.01) and p.physical is False
+    assert a.size_mm[0] == pytest.approx(201.0, abs=0.01) and a.physical is True
+    # the file's own size is the default
+    res = E.analyze(str(ai), Options())
+    assert res["size_mm"][0] == pytest.approx(201.0, abs=0.05)

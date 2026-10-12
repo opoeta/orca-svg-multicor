@@ -27,7 +27,7 @@ from .i18n import Translator
 from .options import Options, _i
 from .faces import default_face, place, planar_faces, to_object
 from .project3mf import Project
-from .svgread import PX_TO_MM, read_svg
+from .svgread import read_svg
 from .threemf import Part, write_3mf
 
 __all__ = ["Options", "Reporter", "analyze", "generate", "apply_to_project",
@@ -88,7 +88,7 @@ def scale_for(doc, opts):
     """mm per SVG pixel for the chosen size."""
     w, h = doc.size_px
     if opts.size_mode == "original":
-        return PX_TO_MM
+        return doc.unit_mm
     if opts.size_mode == "height":
         return opts.size_mm / h
     return opts.size_mm / w

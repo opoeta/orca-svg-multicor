@@ -2,6 +2,19 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.5.1
+
+### Corrigido
+- Um objeto novo saía com metade do tamanho do desenho: o tamanho padrão era
+  "Largura 100 mm". Agora o padrão é **o tamanho do próprio arquivo**, e as
+  configurações que ainda tinham o padrão antigo (largura, 100 mm) passam para
+  ele uma vez.
+- O tamanho real de SVGs exportados pelo Adobe Illustrator: eles não têm
+  largura nem altura e mantêm as 72 unidades por polegada do Illustrator,
+  então uma prancheta de 201 mm era lida como 150,75 mm. Os arquivos do
+  Illustrator são reconhecidos pelos metadados.
+- A página mostra o tamanho do arquivo sob "Tamanho" ("Arquivo: 201 × 201 mm").
+
 ## 3.5.0
 
 ### Novo

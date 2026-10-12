@@ -23,6 +23,7 @@ from .colors import average_color, normalize_hex
 from .errors import SvgError
 
 PX_TO_MM = 25.4 / 96.0
+PT_TO_MM = 25.4 / 72.0     # Adobe Illustrator's user unit: 72 per inch
 
 _JOIN = {"miter": 2, "miter-clip": 2, "arcs": 1, "round": 1, "bevel": 3}
 _CAP = {"butt": 2, "round": 1, "square": 3}
@@ -51,12 +52,13 @@ class PaintOp:
 class SvgDocument:
     """Result of reading an SVG: paint operations plus what the user must know."""
 
-    def __init__(self, path, ops, bbox, warnings, physical):
+    def __init__(self, path, ops, bbox, warnings, physical, unit_mm=PX_TO_MM):
         self.path = path
         self.ops = ops
         self.bbox = bbox          # (x0, y0, x1, y1) in px, strokes included
         self.warnings = warnings  # [(i18n_key, params), ...] without repeats
-        self.physical = physical  # True when width/height carry real units
+        self.physical = physical  # True when the file's real size is known
+        self.unit_mm = unit_mm    # millimeters per px, for the real size
 
     @property
     def size_px(self):
@@ -66,7 +68,7 @@ class SvgDocument:
     @property
     def size_mm(self):
         w, h = self.size_px
-        return (w * PX_TO_MM, h * PX_TO_MM)
+        return (w * self.unit_mm, h * self.unit_mm)
 
     def colors(self):
         seen = []
@@ -304,7 +306,12 @@ def read_svg(path, include_strokes=True):
     if bbox is None or bbox[2] - bbox[0] <= 0 or bbox[3] - bbox[1] <= 0:
         raise SvgError("error.svg_no_area")
     physical = _has_physical_size(raw)
-    return SvgDocument(path, ops, bbox, warnings, physical)
+    unit_mm = PX_TO_MM
+    if not physical and _from_illustrator(raw):
+        # Illustrator writes no width/height but keeps its 72-per-inch units:
+        # a 201 mm artboard is a 569.76 viewBox, not 150.75 mm at 96 per inch
+        physical, unit_mm = True, PT_TO_MM
+    return SvgDocument(path, ops, bbox, warnings, physical, unit_mm)
 
 
 def _bbox(ops):
@@ -334,6 +341,18 @@ _RE_UNIT = re.compile(rb"\b(width|height)\s*=\s*['\"]\s*[0-9.]+\s*(mm|cm|in|pt|p
 def _has_physical_size(raw):
     m = _RE_ROOT.search(raw)
     return bool(m and _RE_UNIT.search(m.group(0)))
+
+
+_ILLUSTRATOR = (b"Generator: Adobe Illustrator", b"adobe:ns:meta", b"ns.adobe.com/xap", b"ns.adobe.com/AdobeIllustrator")
+
+
+def _from_illustrator(raw):
+    """Exported by Adobe Illustrator: its generator comment, its XMP metadata, or its layer names."""
+    head = raw[:200000]
+    if any(marker in head for marker in _ILLUSTRATOR):
+        return True
+    m = _RE_ROOT.search(head)
+    return bool(m and b"data-name=" in m.group(0) and b".cls-1" in head)
 
 
 # ----------------------------------------------------------------------------

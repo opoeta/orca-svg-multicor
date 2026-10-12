@@ -33,6 +33,9 @@ UPLOAD_LIMIT = 64 * 1024 * 1024
 ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 
 
+SETTINGS_REV = 2
+
+
 def settings_defaults():
     inp, out = default_folders()
     d = {"language": "auto", "input_folder": inp, "output_folder": out,
@@ -94,9 +97,25 @@ class Service:
         self.log_file = Log()
         self._listing_cache = {}
         self._faces_cache = {}
+        self._migrate()
         self.tr = i18n.Translator(self._language_setting())
 
     # ------------------------------------------------------------ helpers
+    def _migrate(self):
+        """One-time updates of saved settings, marked by settings_rev."""
+        try:
+            cfg = self.get_config()
+            if int(cfg.get("settings_rev") or 1) >= SETTINGS_REV:
+                return
+            # rev 2: the size became the file's own size by default. Every page
+            # saved the old default (width, 100 mm) without anyone choosing it.
+            if cfg.get("size_mode") == "width" and float(cfg.get("size_mm") or 0) == 100.0:
+                cfg["size_mode"] = "original"
+            cfg["settings_rev"] = SETTINGS_REV
+            self.save_config(cfg)
+        except Exception:  # noqa: BLE001 - settings must never stop the plugin
+            traceback.print_exc()
+
     def _language_setting(self):
         cfg = self.get_config()
         lang = cfg.get("language") or "auto"

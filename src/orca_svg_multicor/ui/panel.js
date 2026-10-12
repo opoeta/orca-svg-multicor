@@ -181,8 +181,14 @@
     });
     S.target = s.target === 'new' ? 'new' : 'plate';
     each('input[name=target]', function (r) { r.checked = r.value === S.target; });
-    $('size_mm').disabled = $('size_mode').value === 'original';
+    updateSizeMode();
     updateMergeOut();
+  }
+  // the file's own size needs no number
+  function updateSizeMode() {
+    var original = $('size_mode').value === 'original';
+    $('size_mm').disabled = original;
+    $('size_mm').parentNode.hidden = original;
   }
   function updateMergeOut() {
     var v = num($('merge_tolerance').value, 0);
@@ -244,7 +250,13 @@
   }
 
   function renderAnalysisInfo() {
-    var a = S.analysis, dims = $('dims'), warn = $('warnings');
+    var a = S.analysis, dims = $('dims'), warn = $('warnings'), note = $('size_note');
+    // the file's own size, which "Original size" keeps
+    note.hidden = !(a && a.original_mm);
+    if (a && a.original_mm) {
+      note.textContent = t(a.physical ? 'opt.size_file' : 'opt.size_file_px',
+                           { w: fmt(a.original_mm[0]), h: fmt(a.original_mm[1]) });
+    }
     var view = currentView(), face = selectedFace();
     dims.className = 'dims';
     if (view === 'placement' && face) {
@@ -1088,9 +1100,7 @@
     $('btn_svg_upload').addEventListener('click', function (e) { e.preventDefault(); $('svg_file').click(); });
     $('svg_file').addEventListener('change', function () { upload($('svg_file')); });
 
-    $('size_mode').addEventListener('change', function () {
-      $('size_mm').disabled = $('size_mode').value === 'original';
-    });
+    $('size_mode').addEventListener('change', updateSizeMode);
     $('merge_tolerance').addEventListener('input', updateMergeOut);
     $('base_thickness_mm').addEventListener('input', updateTarget);
     each('[data-opt]', function (e) {

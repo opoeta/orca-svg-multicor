@@ -12,6 +12,8 @@
   "opt.size_width": "幅",
   "opt.size_height": "高さ",
   "opt.size_original": "元のサイズ",
+  "opt.size_file": "ファイル: {w} × {h} mm",
+  "opt.size_file_px": "サイズ指定なし: 96 px/インチで {w} × {h} mm",
   "opt.thickness": "色の厚さ",
   "opt.max_colors": "最大色数",
   "opt.max_colors_hint": "プリンターで使えるフィラメントの数。0 = 無制限。",

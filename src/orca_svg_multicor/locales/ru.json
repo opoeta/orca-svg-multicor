@@ -12,6 +12,8 @@
   "opt.size_width": "Ширина",
   "opt.size_height": "Высота",
   "opt.size_original": "Исходный размер",
+  "opt.size_file": "Файл: {w} × {h} mm",
+  "opt.size_file_px": "Файл без размера: {w} × {h} mm при 96 px на дюйм",
   "opt.thickness": "Толщина цветного слоя",
   "opt.max_colors": "Макс. цветов",
   "opt.max_colors_hint": "Сколько филаментов может использовать ваш принтер. 0 = без ограничений.",

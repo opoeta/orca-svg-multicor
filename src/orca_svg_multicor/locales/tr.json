@@ -12,6 +12,8 @@
   "opt.size_width": "Genişlik",
   "opt.size_height": "Yükseklik",
   "opt.size_original": "Orijinal boyut",
+  "opt.size_file": "Dosya: {w} × {h} mm",
+  "opt.size_file_px": "Boyutu olmayan dosya: inç başına 96 px ile {w} × {h} mm",
   "opt.thickness": "Renk kalınlığı",
   "opt.max_colors": "Maks. renk",
   "opt.max_colors_hint": "Yazıcınızın kullanabildiği filament sayısı. 0 = sınırsız.",

@@ -24,7 +24,7 @@ class Options:
     """All knobs. Build it from the page's JSON with from_dict()."""
 
     DEFAULTS = {
-        "size_mode": "width",        # width | height | original
+        "size_mode": "original",     # original (the file's own size) | width | height
         "size_mm": 100.0,
         "thickness_mm": 0.6,
         "max_colors": 4,             # 0 = no limit
@@ -49,7 +49,7 @@ class Options:
     def __init__(self, **kw):
         d = dict(self.DEFAULTS)
         d.update({k: v for k, v in kw.items() if k in self.DEFAULTS and v is not None})
-        self.size_mode = d["size_mode"] if d["size_mode"] in ("width", "height", "original") else "width"
+        self.size_mode = d["size_mode"] if d["size_mode"] in ("width", "height", "original") else "original"
         self.size_mm = _f(d["size_mm"], 100.0, 1.0, 5000.0)
         self.thickness_mm = _f(d["thickness_mm"], 0.6, 0.01, 500.0)
         self.max_colors = _i(d["max_colors"], 4, 0, 64)
