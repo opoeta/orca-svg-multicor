@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.13.3
+
+### Changed
+- **Ctrl + click copies a color**, as in Photoshop (Alt + click too): with
+  the brush or the bucket, Ctrl + click takes the color under the pointer
+  without painting, and a plain click or drag always paints. While Ctrl is
+  held, the pointer shows the dropper. The dropper button ("Copy a color")
+  stays in the toolbar.
+
 ## 3.13.2
 
 ### Fixed

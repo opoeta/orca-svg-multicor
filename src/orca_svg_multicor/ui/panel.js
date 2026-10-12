@@ -591,6 +591,7 @@
     bar.hidden = !on;
     var place = $('preview_place');
     ['brush', 'bucket', 'pick'].forEach(function (k) { place.classList.toggle('tool-' + k, on && S.tool === k); });
+    place.classList.toggle('picking', on && !!S.picking && (S.tool === 'brush' || S.tool === 'bucket'));
     if (!on) return;
     each('#paint_tools button', function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === S.tool)); });
     $('paint_size_box').hidden = S.tool !== 'brush';
@@ -644,11 +645,19 @@
     return null;
   }
 
+  // Ctrl (or Alt, as in Photoshop) held: a click copies the color instead of painting
+  function setPicking(on) {
+    on = !!on;
+    if (S.picking === on) return;
+    S.picking = on;
+    renderPaintBar();
+  }
+
   // the brush's size, drawn where the pointer is
   function showRing(e) {
     var ring = $('preview_place').querySelector('.brush-ring'), svg = $('preview_place').querySelector('svg');
     if (!ring || !svg) return;
-    if (S.tool !== 'brush') { ring.setAttribute('visibility', 'hidden'); return; }
+    if (S.tool !== 'brush' || S.picking) { ring.setAttribute('visibility', 'hidden'); return; }
     var q = facePoint(svg, e);
     ring.setAttribute('cx', q[0].toFixed(3));
     ring.setAttribute('cy', (-q[1]).toFixed(3));
@@ -847,7 +856,11 @@
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
     if (S.tool !== 'move') {
       if (!face || !svg || e.button !== 0) return;
-      if (S.tool === 'pick') pickAt(e); else if (S.tool === 'brush') startStroke(e, svg); else bucketAt(e, svg);
+      // the dropper, or Ctrl/Alt + click with the brush or the bucket: copy the color;
+      // a plain click always paints
+      if (S.tool === 'pick' || e.ctrlKey || e.altKey || e.metaKey) pickAt(e);
+      else if (S.tool === 'brush') startStroke(e, svg);
+      else bucketAt(e, svg);
       return;
     }
     var t0 = e.target, onHandle = !!(t0.classList && t0.classList.contains('handle'));
@@ -859,6 +872,7 @@
     $('preview_place').setPointerCapture(e.pointerId);
   }
   function moveDrag(e) {
+    if (!stroke) setPicking(e.ctrlKey || e.altKey || e.metaKey);
     showRing(e);
     if (stroke) { moveStroke(e); return; }
     if (!drag) return;
@@ -1866,6 +1880,12 @@
     });
     $('paint_size').addEventListener('change', renderPaintBar);
     $('paint_color').addEventListener('click', function () { S.brushColor = null; renderPaintBar(); });
+    ['keydown', 'keyup'].forEach(function (type) {
+      window.addEventListener(type, function (e) {
+        if (e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') setPicking(e.ctrlKey || e.altKey || e.metaKey);
+      });
+    });
+    window.addEventListener('blur', function () { setPicking(false); });
     $('preview_place').addEventListener('pointerleave', function () {
       var ring = $('preview_place').querySelector('.brush-ring');
       if (ring && !stroke) ring.setAttribute('visibility', 'hidden');

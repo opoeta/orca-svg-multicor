@@ -113,8 +113,9 @@ direita e a ação principal no canto superior direito.
      mover escolhe o que aparece. **Preencher** cobre a superfície inteira,
      proporcional e centralizado, sem sobrar borda (*Centralizar* volta ao
      meio). A barra embaixo da vista pinta na superfície: o **conta-gotas**
-     escolhe uma cor do desenho, o **pincel** pinta com ela (arrastando, ou um
-     clique para um ponto), o **balde** passa uma área inteira (de uma cor, ou
+     (ou Ctrl + clique, como no Photoshop) copia uma cor do desenho, o
+     **pincel** pinta com ela (clicar ou arrastar sempre pinta), o **balde**
+     passa uma área inteira (de uma cor, ou
      vazia) para essa cor; sem cor escolhida, usam a cor vizinha. O que for
      pintado sai com aquelas cores, nas mesmas camadas (desfazer, limpar). Escolha a **rotação**, o encaixe (*embutido*: a superfície muda de
      cor; ou *em relevo*), a largura (vazio = 85% da face) e a altura (vazio =

@@ -2,6 +2,15 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.13.3
+
+### Mudou
+- **Ctrl + clique copia uma cor**, como no Photoshop (Alt + clique também):
+  com o pincel ou o balde, Ctrl + clique pega a cor embaixo do ponteiro sem
+  pintar, e clicar ou arrastar sem Ctrl sempre pinta. Com o Ctrl apertado, o
+  ponteiro mostra o conta-gotas. O botão de conta-gotas ("Copiar uma cor")
+  continua na barra.
+
 ## 3.13.2
 
 ### Corrigido
