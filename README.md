@@ -23,7 +23,8 @@ assigned to your filaments.
   project, on the flat **surface you choose** (the floor of a tray, a side, the
   inside of a wall, the bottom...), **inlaid** (the object keeps its shape, the
   surface changes color) or **raised**, rotated as you like. Works with the projects OrcaSlicer and Bambu
-  Studio save today. The original project is never overwritten.
+  Studio save today. The project is updated in place, its previous version
+  kept as a backup, or a copy is written instead.
 - **Sees the SVG like a browser does**: shapes painted later cover earlier
   ones, so the parts fit together instead of overlapping; fill rules
   (nonzero / evenodd) are exact; outlines (strokes) become printable areas;
@@ -90,8 +91,10 @@ right, the main action at the top right.
      layer or just above it (the first layer stays the object's color). Then
      **Apply to the plate**. OrcaSlicer's plugin API cannot change the
      plate directly, so the design goes into the saved project, which reopens
-     in OrcaSlicer with the new parts. The original file is kept; the result is
-     saved next to it as `*_svg.3mf` in the output folder.
+     in OrcaSlicer with the new parts. **Save to** chooses where the result
+     goes: *the project itself* (default; the previous version is first copied
+     to `<OrcaSlicer data folder>/svg_multicor/backups`, the last 20 are kept)
+     or *a copy*, `*_svg.3mf` in the output folder.
    - **A new object on the plate**: optionally on a base plate, then **Add to
      the plate**; OrcaSlicer opens the new 3MF.
 

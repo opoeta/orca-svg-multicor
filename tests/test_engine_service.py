@@ -224,3 +224,47 @@ def test_analyze_offers_every_color_count_when_asked():
 def test_settings_move_to_the_files_own_size_once(saved, size_mode):
     svc, _out, store = make_service(cfg=dict(saved))
     assert store["size_mode"] == size_mode and store["settings_rev"] == 2
+
+
+def _apply(svc, project, **options):
+    oid = E.list_objects(project)["objects"][0]["id"]
+    svc.handle({"action": "apply", "svg": BADGE, "project": project, "object_id": oid,
+                "options": options})
+
+
+def test_apply_replaces_the_project_after_a_backup(bbs_project):
+    import glob
+    from orca_svg_multicor.host import plugin_data_dir
+    from orca_svg_multicor.project3mf import Project
+    before = open(bbs_project, "rb").read()
+    svc, out, _ = make_service()
+    _apply(svc, bbs_project)
+    done = next(m for m in out if m.get("type") == "done")
+    assert done["path"] == bbs_project
+    assert Project(bbs_project).objects()[0].parts > 1          # the parts are in the project
+    backups = glob.glob(os.path.join(plugin_data_dir(), "backups", "*.3mf"))
+    assert len(backups) == 1 and open(backups[0], "rb").read() == before
+    assert not os.listdir(os.path.join(plugin_data_dir(), "tmp"))
+
+
+def test_apply_to_a_copy_leaves_the_project(bbs_project):
+    before = open(bbs_project, "rb").read()
+    svc, out, _ = make_service()
+    _apply(svc, bbs_project, apply_output="copy")
+    done = next(m for m in out if m.get("type") == "done")
+    assert done["path"].endswith("project_svg.3mf") and os.path.isfile(done["path"])
+    assert open(bbs_project, "rb").read() == before
+
+
+def test_backups_keep_the_last_twenty(bbs_project):
+    import time as _time
+    from orca_svg_multicor.host import plugin_data_dir
+    folder = os.path.join(plugin_data_dir(), "backups")
+    os.makedirs(folder)
+    for k in range(25):
+        p = os.path.join(folder, f"old-{k:02d}.3mf")
+        open(p, "wb").write(b"x")
+        os.utime(p, (_time.time() - 1000 + k, _time.time() - 1000 + k))
+    newest = Service._backup(bbs_project)
+    names = sorted(os.listdir(folder))
+    assert len(names) == 20 and os.path.basename(newest) in names and "old-05.3mf" not in names

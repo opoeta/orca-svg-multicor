@@ -1,5 +1,21 @@
 # Changelog
 
+## 3.7.0
+
+### Changed
+- **Applying to an object on the plate updates the project itself** instead
+  of writing a new `*_svg.3mf`: the result replaces the saved project, which
+  reopens with the new parts. The previous version is first copied to
+  `<OrcaSlicer data folder>/svg_multicor/backups` (the last 20 are kept).
+  "Save to" (on the page and in the Config tab) still offers a copy.
+  OrcaSlicer's plugin API can only read the plate, so the project file is
+  the way in.
+
+### Fixed
+- "The plate is empty" when the page was read before a project was opened:
+  the page now reads the plate again every few seconds while "An object on
+  the plate" is chosen, redrawing only what changed.
+
 ## 3.6.0
 
 ### Added

@@ -16,6 +16,7 @@ Actions are split in two groups:
 import base64
 import glob
 import os
+import shutil
 import time
 import traceback
 
@@ -34,13 +35,15 @@ ORIGINAL_PREVIEW_LIMIT = 4 * 1024 * 1024
 
 
 SETTINGS_REV = 2
+BACKUPS_KEPT = 20          # copies of projects replaced by "apply" (apply_output "project")
 
 
 def settings_defaults():
     inp, out = default_folders()
     d = {"language": "auto", "input_folder": inp, "output_folder": out,
          "target": "plate", "open_after": False, "icon_mode": "path",
-         "ask_colors": True}
+         "ask_colors": True,
+         "apply_output": "project"}   # project (replaced, after a backup) | copy (<name>_svg.3mf)
     d.update(Options.DEFAULTS)
     return d
 
@@ -480,7 +483,7 @@ class Service:
         self.send({"type": "faces", "project": project, "object_id": oid, "mtime": key[1],
                    "faces": listing["faces"], "default": listing["default"]})
 
-    def _finish(self, action, dest, report, reopen=False):
+    def _finish(self, action, dest, report, reopen=False, text=None):
         bad = [r["name"] for r in report if not r["watertight"]]
         for r in report:
             self.info(self.tr("log.part", name=r["name"], color=r["color"],
@@ -493,7 +496,7 @@ class Service:
                    "folder": os.path.dirname(dest), "report": report,
                    "open_after": reopen or bool(s.get("open_after")),
                    "reopen": reopen,
-                   "text": self.tr("status.saved_to", path=dest)})
+                   "text": text or self.tr("status.saved_to", path=dest)})
 
     def do_generate(self, msg, rep):
         engine = load_engine()
@@ -513,10 +516,44 @@ class Service:
         if not obj:
             raise EngineError("error.no_object")
         opts = self._options(msg)
-        out_dir = self._out_dir(msg)
-        dest = engine.project_output_path(project, out_dir)
-        dest, report = engine.apply_to_project(svg, project, obj, dest, opts,
-                                               self._choices(msg),
-                                               filaments=msg.get("filaments"),
-                                               tr=self.tr, rep=rep, face_id=msg.get("face_id"))
-        self._finish("apply", dest, report, reopen=bool(msg.get("reopen")))
+        mode = (msg.get("options") or {}).get("apply_output") or self.settings().get("apply_output")
+
+        def apply(dest):
+            return engine.apply_to_project(svg, project, obj, dest, opts, self._choices(msg),
+                                           filaments=msg.get("filaments"), tr=self.tr, rep=rep,
+                                           face_id=msg.get("face_id"))
+
+        if mode == "copy":
+            dest, report = apply(engine.project_output_path(project, self._out_dir(msg)))
+            self._finish("apply", dest, report, reopen=bool(msg.get("reopen")))
+            return
+        # the project itself: written aside, the original kept in backups, then replaced
+        work = os.path.join(plugin_data_dir(), "tmp", os.path.basename(project))
+        os.makedirs(os.path.dirname(work), exist_ok=True)
+        _dest, report = apply(work)
+        backup = self._backup(project)
+        shutil.copyfile(work, project)
+        try:
+            os.remove(work)
+        except OSError:
+            pass
+        self.info(self.tr("status.saved_project", path=project, backup=backup))
+        self._finish("apply", project, report, reopen=bool(msg.get("reopen")),
+                     text=self.tr("status.saved_project", path=project, backup=backup))
+
+    @staticmethod
+    def _backup(project):
+        """A copy of `project` in <data>/backups before it is replaced; the last BACKUPS_KEPT stay."""
+        folder = os.path.join(plugin_data_dir(), "backups")
+        os.makedirs(folder, exist_ok=True)
+        stem = os.path.splitext(os.path.basename(project))[0]
+        dest = os.path.join(folder, f"{stem}-{time.strftime('%Y%m%d-%H%M%S')}.3mf")
+        shutil.copyfile(project, dest)
+        kept = sorted((os.path.join(folder, n) for n in os.listdir(folder) if n.lower().endswith(".3mf")),
+                      key=os.path.getmtime)
+        for old in kept[:-BACKUPS_KEPT]:
+            try:
+                os.remove(old)
+            except OSError:
+                pass
+        return dest

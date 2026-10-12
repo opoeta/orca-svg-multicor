@@ -2,6 +2,21 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.7.0
+
+### Mudou
+- **Aplicar num objeto da mesa atualiza o próprio projeto** em vez de gravar
+  um `*_svg.3mf` novo: o resultado substitui o projeto salvo, que reabre já
+  com as peças novas. Antes, a versão anterior é copiada para
+  `<pasta de dados do OrcaSlicer>/svg_multicor/backups` (ficam as últimas 20).
+  "Gravar em" (na página e na aba Config) ainda oferece a cópia. A API de
+  plugins do OrcaSlicer só lê a mesa, então o caminho é o arquivo do projeto.
+
+### Corrigido
+- "A mesa está vazia" quando a página lia a mesa antes de um projeto ser
+  aberto: agora a página relê a mesa a cada poucos segundos enquanto "Um
+  objeto da mesa" está escolhido, redesenhando só o que mudou.
+
 ## 3.6.0
 
 ### Novo

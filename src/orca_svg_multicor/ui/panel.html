@@ -87,6 +87,11 @@
         </div>
         <p class="note" id="plate_state"></p>
         <p class="note" data-i18n="plate.hint">The design goes into the saved project, which reopens here with the new parts. Save the project (Ctrl+S) first.</p>
+        <label class="row"><span data-i18n="plate.output">Save to</span>
+          <span class="ctl"><select id="apply_output" data-opt="apply_output">
+            <option value="project" data-i18n="plate.output_project">The project itself (with a backup)</option>
+            <option value="copy" data-i18n="plate.output_copy">A copy (_svg.3mf)</option>
+          </select></span></label>
         <label class="row"><span data-i18n="plate.surface">Surface</span>
           <span class="ctl"><select id="face_select" data-i18n-aria="plate.surface" disabled></select></span></label>
         <label class="row"><span data-i18n="plate.rotation">Rotation</span>

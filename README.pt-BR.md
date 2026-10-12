@@ -23,8 +23,8 @@ atribuídas aos seus filamentos.
   bandeja, uma lateral, o lado de dentro de uma parede, a base...),
   **embutidas** (o objeto mantém a forma, a superfície muda de cor) ou **em
   relevo**, com a rotação que quiser. Funciona com os projetos que o
-  OrcaSlicer e o Bambu Studio salvam hoje. O projeto original nunca é
-  sobrescrito.
+  OrcaSlicer e o Bambu Studio salvam hoje. O projeto é atualizado no próprio
+  arquivo, com a versão anterior guardada num backup, ou numa cópia.
 - **Enxerga o SVG como o navegador**: o que é pintado depois cobre o que veio
   antes, então as peças se encaixam em vez de se sobreporem; as regras de
   preenchimento (nonzero / evenodd) são exatas; contornos (stroke) viram áreas
@@ -86,8 +86,10 @@ direita e a ação principal no canto superior direito.
      desenho começa na 1ª camada ou logo acima dela (a 1ª fica da cor do
      objeto). Depois clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
      altera a mesa diretamente, então o desenho vai para o projeto salvo, que
-     reabre no OrcaSlicer já com as peças novas. O arquivo original é mantido; o
-     resultado é salvo como `*_svg.3mf` na pasta de saída.
+     reabre no OrcaSlicer já com as peças novas. **Gravar em** escolhe onde o
+     resultado fica: *no próprio projeto* (padrão; antes, a versão anterior é
+     copiada para `<pasta de dados do OrcaSlicer>/svg_multicor/backups`, que
+     guarda as últimas 20) ou *numa cópia*, `*_svg.3mf` na pasta de saída.
    - **Um objeto novo na mesa**: com ou sem placa de base, clique em
      **Adicionar à mesa**; o OrcaSlicer abre o 3MF novo.
 

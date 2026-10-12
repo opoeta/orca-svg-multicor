@@ -1191,17 +1191,21 @@
   function onPlate(m) {
     var apply = S.plateApply;
     S.plateApply = false;
+    // read now and then: redraw only what changed (an open list must stay open)
+    var sig = JSON.stringify([m.project, m.project_mtime, m.dirty, m.project_error,
+      (m.objects || []).map(function (o) { return [o.name, o.size, o.object_id]; })]);
+    var changed = sig !== S.plateSig;
+    S.plateSig = sig;
     S.plate = m;
-    renderPlate();
-    renderFaces();
+    if (changed || apply) { renderPlate(); renderFaces(); }
     var problem = apply ? plateProblem(m) : null;
     if (apply && !problem) {
       // the surface list must be the one of the file that will be changed
       if (facesFresh()) sendApply(); else requestFaces(true);
       return;
     }
-    end();
-    renderPreview();
+    if (S.busy === 'plate') end();
+    if (changed || apply) renderPreview();
     if (problem) { setStatus(problem[0], problem[1], 'err', problem[2]); return; }
     ensureFaces();
   }
@@ -1347,6 +1351,12 @@
         readPlate(false);
       }
     });
+    // nor changes to the plate in Prepare (a project opened, an object added)
+    setInterval(function () {
+      if (S.target !== 'plate' || S.busy || document.hidden || Date.now() - S.plateReadAt < 3000) return;
+      S.plateReadAt = Date.now();
+      send({ action: 'plate' });
+    }, 3000);
     // OrcaSlicer does not announce filament changes; check now and then
     setInterval(function () {
       if (!S.busy && !document.hidden) send({ action: 'filaments', silent: true });
