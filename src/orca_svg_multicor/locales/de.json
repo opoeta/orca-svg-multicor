@@ -112,7 +112,7 @@
   "plate.surface": "Fläche",
   "plate.rotation": "Drehung",
   "plate.read": "Platte neu einlesen",
-  "plate.hint": "Die Plugin-API von OrcaSlicer kann die Druckplatte nicht direkt ändern: Das Motiv wird auf das gespeicherte Projekt angewendet, das hier mit den neuen Teilen neu geöffnet wird. Projekt vorher speichern (Ctrl+S).",
+  "plate.hint": "Die Plugin-API von OrcaSlicer kann die Druckplatte nicht direkt ändern: Das Motiv kommt in das gespeicherte Projekt, das hier mit den neuen Teilen wieder geöffnet wird. Projekt vorher speichern (Strg+S) und, wenn OrcaSlicer fragt, „Als Projekt öffnen“ wählen („Nur Geometrie importieren“ würde die Objekte noch einmal hinzufügen).",
   "plate.output": "Speichern in",
   "plate.output_project": "Das Projekt selbst (mit Sicherung)",
   "plate.output_copy": "Eine Kopie (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "Filamente den nächstliegenden Farben zugeordnet.",
   "status.saved": "Einstellungen gespeichert.",
   "status.saved_to": "Gespeichert: {path}",
-  "status.reopening": "Ergebnis wird in OrcaSlicer geöffnet…",
+  "status.reopening": "Ergebnis wird in OrcaSlicer geöffnet… „Als Projekt öffnen“ wählen.",
   "status.cancelled": "Abgebrochen.",
   "status.open_folder": "Ordner öffnen",
 

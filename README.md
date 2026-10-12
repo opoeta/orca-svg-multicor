@@ -136,6 +136,11 @@ in Portuguese).
   name, including numpy's own `numpy/__config__.py`, so the plugin loads its
   libraries (numpy, shapely) when OrcaSlicer starts, which takes a moment.
   Keep SVGs and projects out of folders with those words in the name.
+- When the result reopens on a plate that already has objects, OrcaSlicer
+  asks how to load it (Preferences, "Load behaviour": ask when relevant).
+  Choose **Open as project**: *Import geometry only* adds the objects again
+  on top of the ones already there (Ctrl+Z undoes it). "Load all" in that
+  preference opens projects without asking.
 - Inlaying relies on OrcaSlicer giving parts added later priority where parts
   overlap, the same mechanism used when you add a part inside an object by hand.
 - OrcaSlicer's **Plugins dialog shows an image and a changelog only for plugins

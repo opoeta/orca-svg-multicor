@@ -1,5 +1,15 @@
 # Changelog
 
+## 3.7.1
+
+### Fixed
+- The objects were doubled on the plate after applying: when the project
+  reopens on a plate that has objects, OrcaSlicer asks how to load it and
+  preselects the last choice, and "Import geometry only" adds the objects
+  again. The plugin cannot answer for you (OrcaSlicer's settings are closed
+  to plugins), so the page and the reopening message now say to choose
+  "Open as project". Ctrl+Z undoes a doubled import.
+
 ## 3.7.0
 
 ### Changed

@@ -112,7 +112,7 @@
   "plate.surface": "Superficie",
   "plate.rotation": "Rotación",
   "plate.read": "Volver a leer la placa",
-  "plate.hint": "La API de plugins de OrcaSlicer no puede cambiar la placa directamente: el diseño se aplica al proyecto guardado, que se vuelve a abrir aquí con las piezas nuevas. Guarde el proyecto (Ctrl+S) antes.",
+  "plate.hint": "La API de complementos de OrcaSlicer no cambia la cama directamente: el diseño va al proyecto guardado, que se vuelve a abrir aquí con las piezas nuevas. Guarde el proyecto (Ctrl+S) antes y, cuando OrcaSlicer pregunte, elija “Abrir como proyecto” (“Importar solo la geometría” añadiría los objetos otra vez).",
   "plate.output": "Guardar en",
   "plate.output_project": "El propio proyecto (con copia de seguridad)",
   "plate.output_copy": "Una copia (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "Filamentos asignados a los colores más cercanos.",
   "status.saved": "Ajustes guardados.",
   "status.saved_to": "Guardado: {path}",
-  "status.reopening": "Abriendo el resultado en OrcaSlicer…",
+  "status.reopening": "Abriendo el resultado en OrcaSlicer… elija “Abrir como proyecto”.",
   "status.cancelled": "Cancelado.",
   "status.open_folder": "Abrir carpeta",
 

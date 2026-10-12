@@ -112,7 +112,7 @@
   "plate.surface": "Surface",
   "plate.rotation": "Rotation",
   "plate.read": "Read the plate again",
-  "plate.hint": "OrcaSlicer's plugin API cannot change the plate directly: the design goes into the saved project, which reopens here with the new parts. Save the project (Ctrl+S) first.",
+  "plate.hint": "OrcaSlicer's plugin API cannot change the plate directly: the design goes into the saved project, which reopens here with the new parts. Save the project (Ctrl+S) first, and when OrcaSlicer asks, choose “Open as project” (“Import geometry only” would add the objects again).",
   "plate.output": "Save to",
   "plate.output_project": "The project itself (with a backup)",
   "plate.output_copy": "A copy (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "Filaments matched to the closest colors.",
   "status.saved": "Settings saved.",
   "status.saved_to": "Saved: {path}",
-  "status.reopening": "Opening the result in OrcaSlicer…",
+  "status.reopening": "Opening the result in OrcaSlicer… choose “Open as project”.",
   "status.cancelled": "Cancelled.",
   "status.open_folder": "Open folder",
 

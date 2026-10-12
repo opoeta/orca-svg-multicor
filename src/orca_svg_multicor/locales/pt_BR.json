@@ -112,7 +112,7 @@
   "plate.surface": "Superfície",
   "plate.rotation": "Rotação",
   "plate.read": "Ler a mesa de novo",
-  "plate.hint": "A API de plugins do OrcaSlicer não altera a mesa diretamente: o desenho vai para o projeto salvo, que reabre aqui já com as peças novas. Salve o projeto (Ctrl+S) antes.",
+  "plate.hint": "A API de plugins do OrcaSlicer não altera a mesa diretamente: o desenho vai para o projeto salvo, que reabre aqui já com as peças novas. Salve o projeto (Ctrl+S) antes e, quando o OrcaSlicer perguntar, escolha “Abrir como projeto” (“Importar somente geometria” somaria os objetos de novo).",
   "plate.output": "Gravar em",
   "plate.output_project": "No próprio projeto (com backup)",
   "plate.output_copy": "Numa cópia (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "Filamentos casados com as cores mais próximas.",
   "status.saved": "Configurações salvas.",
   "status.saved_to": "Salvo: {path}",
-  "status.reopening": "Abrindo o resultado no OrcaSlicer…",
+  "status.reopening": "Abrindo o resultado no OrcaSlicer… escolha “Abrir como projeto”.",
   "status.cancelled": "Cancelado.",
   "status.open_folder": "Abrir pasta",
 

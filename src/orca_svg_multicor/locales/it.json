@@ -112,7 +112,7 @@
   "plate.surface": "Superficie",
   "plate.rotation": "Rotazione",
   "plate.read": "Rileggi il piatto",
-  "plate.hint": "L'API dei plugin di OrcaSlicer non può modificare direttamente il piatto: il disegno viene applicato al progetto salvato, che si riapre qui con le nuove parti. Salva prima il progetto (Ctrl+S).",
+  "plate.hint": "L’API dei plugin di OrcaSlicer non modifica il piatto direttamente: il disegno va nel progetto salvato, che si riapre qui con le nuove parti. Salva prima il progetto (Ctrl+S) e, quando OrcaSlicer lo chiede, scegli “Apri come progetto” (“Importa solo la geometria” aggiungerebbe di nuovo gli oggetti).",
   "plate.output": "Salva in",
   "plate.output_project": "Il progetto stesso (con un backup)",
   "plate.output_copy": "Una copia (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "Filamenti abbinati ai colori più vicini.",
   "status.saved": "Impostazioni salvate.",
   "status.saved_to": "Salvato: {path}",
-  "status.reopening": "Apertura del risultato in OrcaSlicer…",
+  "status.reopening": "Apertura del risultato in OrcaSlicer… scegli “Apri come progetto”.",
   "status.cancelled": "Annullato.",
   "status.open_folder": "Apri cartella",
 

@@ -112,7 +112,7 @@
   "plate.surface": "面",
   "plate.rotation": "回転",
   "plate.read": "プレートを再読み込み",
-  "plate.hint": "OrcaSlicer のプラグイン API ではプレートを直接変更できません。デザインは保存済みのプロジェクトに適用され、新しいパーツを含めてここで開き直されます。先にプロジェクトを保存してください（Ctrl+S）。",
+  "plate.hint": "OrcaSlicer のプラグイン API はプレートを直接変更できません。デザインは保存済みのプロジェクトに入り、新しいパーツ付きでここに開き直されます。先にプロジェクトを保存 (Ctrl+S) し、OrcaSlicer に聞かれたら「プロジェクトとして開く」を選んでください (「ジオメトリのみインポート」ではオブジェクトがもう一度追加されます)。",
   "plate.output": "保存先",
   "plate.output_project": "プロジェクト本体 (バックアップあり)",
   "plate.output_copy": "コピー (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "各色に最も近いフィラメントを割り当てました。",
   "status.saved": "設定を保存しました。",
   "status.saved_to": "保存しました：{path}",
-  "status.reopening": "OrcaSlicer で結果を開いています…",
+  "status.reopening": "OrcaSlicer で結果を開いています…「プロジェクトとして開く」を選んでください。",
   "status.cancelled": "キャンセルしました。",
   "status.open_folder": "フォルダーを開く",
 

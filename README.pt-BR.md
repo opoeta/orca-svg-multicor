@@ -113,6 +113,11 @@ português.
   entregue à janela do OrcaSlicer já aberta, do mesmo jeito que o próprio
   inicializador dele faz; iniciar o executável do OrcaSlicer fica como
   alternativa.
+- Quando o resultado reabre numa mesa que já tem objetos, o OrcaSlicer
+  pergunta como carregá-lo (Preferências, "Comportamento ao carregar":
+  perguntar quando relevante). Escolha **Abrir como projeto**: *Importar
+  somente geometria* soma os objetos de novo aos que já estão na mesa (Ctrl+Z
+  desfaz). "Carregar tudo" nessa preferência abre os projetos sem perguntar.
 - O OrcaSlicer recusa aos plugins qualquer caminho com "conf", "cert" ou
   "secret" no nome, inclusive o `numpy/__config__.py` do próprio numpy; por
   isso o plugin carrega as bibliotecas dele (numpy, shapely) quando o

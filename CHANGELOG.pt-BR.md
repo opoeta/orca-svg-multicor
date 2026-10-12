@@ -2,6 +2,17 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.7.1
+
+### Corrigido
+- Os objetos ficavam duplicados na mesa depois de aplicar: quando o projeto
+  reabre numa mesa que tem objetos, o OrcaSlicer pergunta como carregá-lo e
+  já deixa marcada a última escolha, e "Importar somente geometria" soma os
+  objetos de novo. O plugin não pode responder por você (as configurações do
+  OrcaSlicer são fechadas aos plugins), então a página e a mensagem de
+  reabertura agora dizem para escolher "Abrir como projeto". Ctrl+Z desfaz uma
+  importação duplicada.
+
 ## 3.7.0
 
 ### Mudou

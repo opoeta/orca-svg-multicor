@@ -112,7 +112,7 @@
   "plate.surface": "Powierzchnia",
   "plate.rotation": "Obrót",
   "plate.read": "Odczytaj płytę ponownie",
-  "plate.hint": "API wtyczek OrcaSlicer nie może bezpośrednio zmieniać płyty: wzór trafia do zapisanego projektu, który otwiera się tu ponownie z nowymi częściami. Najpierw zapisz projekt (Ctrl+S).",
+  "plate.hint": "API wtyczek OrcaSlicer nie zmienia stołu bezpośrednio: wzór trafia do zapisanego projektu, który otwiera się tu ponownie z nowymi częściami. Najpierw zapisz projekt (Ctrl+S), a gdy OrcaSlicer zapyta, wybierz „Otwórz jako projekt” („Importuj tylko geometrię” dodałoby obiekty ponownie).",
   "plate.output": "Zapisz w",
   "plate.output_project": "Sam projekt (z kopią zapasową)",
   "plate.output_copy": "Kopia (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "Filamenty dopasowane do najbliższych kolorów.",
   "status.saved": "Ustawienia zapisane.",
   "status.saved_to": "Zapisano: {path}",
-  "status.reopening": "Otwieranie wyniku w OrcaSlicer…",
+  "status.reopening": "Otwieranie wyniku w OrcaSlicer… wybierz „Otwórz jako projekt”.",
   "status.cancelled": "Anulowano.",
   "status.open_folder": "Otwórz folder",
 

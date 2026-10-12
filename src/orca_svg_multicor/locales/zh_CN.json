@@ -112,7 +112,7 @@
   "plate.surface": "表面",
   "plate.rotation": "旋转",
   "plate.read": "重新读取打印板",
-  "plate.hint": "OrcaSlicer 插件 API 无法直接修改打印板：图案会应用到已保存的项目中，然后在这里重新打开并带有新零件。请先保存项目（Ctrl+S）。",
+  "plate.hint": "OrcaSlicer 插件 API 无法直接修改热床：图案会写入已保存的项目，并在此重新打开，带有新零件。请先保存项目（Ctrl+S）；OrcaSlicer 询问时选择“作为项目打开”（“仅导入几何体”会再次添加对象）。",
   "plate.output": "保存到",
   "plate.output_project": "项目本身（先备份）",
   "plate.output_copy": "副本（_svg.3mf）",
@@ -149,7 +149,7 @@
   "status.matched": "已为各颜色匹配最接近的耗材。",
   "status.saved": "设置已保存。",
   "status.saved_to": "已保存：{path}",
-  "status.reopening": "正在 OrcaSlicer 中打开结果…",
+  "status.reopening": "正在 OrcaSlicer 中打开结果… 请选择“作为项目打开”。",
   "status.cancelled": "已取消。",
   "status.open_folder": "打开文件夹",
 

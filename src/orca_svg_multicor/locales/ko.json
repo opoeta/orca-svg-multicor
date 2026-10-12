@@ -112,7 +112,7 @@
   "plate.surface": "면",
   "plate.rotation": "회전",
   "plate.read": "플레이트 다시 읽기",
-  "plate.hint": "OrcaSlicer 플러그인 API는 플레이트를 직접 바꿀 수 없습니다. 디자인은 저장된 프로젝트에 적용되고, 새 파트가 포함된 프로젝트가 여기에서 다시 열립니다. 먼저 프로젝트를 저장하세요(Ctrl+S).",
+  "plate.hint": "OrcaSlicer 플러그인 API는 베드를 직접 바꿀 수 없습니다. 디자인은 저장된 프로젝트에 들어가고, 프로젝트가 새 파트와 함께 여기서 다시 열립니다. 먼저 프로젝트를 저장(Ctrl+S)하고, OrcaSlicer가 물으면 “프로젝트로 열기”를 선택하세요(“지오메트리만 가져오기”는 객체를 다시 추가합니다).",
   "plate.output": "저장 위치",
   "plate.output_project": "프로젝트 자체 (백업 포함)",
   "plate.output_copy": "사본 (_svg.3mf)",
@@ -149,7 +149,7 @@
   "status.matched": "각 색상에 가장 가까운 필라멘트를 매칭했습니다.",
   "status.saved": "설정이 저장되었습니다.",
   "status.saved_to": "저장됨: {path}",
-  "status.reopening": "OrcaSlicer에서 결과를 여는 중…",
+  "status.reopening": "OrcaSlicer에서 결과를 여는 중… “프로젝트로 열기”를 선택하세요.",
   "status.cancelled": "취소되었습니다.",
   "status.open_folder": "폴더 열기",
 
