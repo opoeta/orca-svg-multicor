@@ -148,6 +148,7 @@
   "plate.output_copy": "Eine Kopie (_svg.3mf)",
   "status.saved_project": "Projekt aktualisiert: {path}. Das Original liegt in {backup}.",
   "plate.project": "Projekt: {name}",
+  "plate.presets_only": "Projekt: {name} · Profile haben ungespeicherte Änderungen (sie verhindern das Anwenden nicht: das Projekt öffnet sich mit den darin gespeicherten Einstellungen)",
   "plate.not_saved": "noch nicht gespeichert",
   "plate.no_match": "{name} ist noch nicht im gespeicherten Projekt. Speichern (Ctrl+S) und die Platte neu einlesen.",
   "face.top": "Oben",

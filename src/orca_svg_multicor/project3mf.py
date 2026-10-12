@@ -60,6 +60,8 @@ class ProjectObject:
         self.parts = 0
         self.triangles = 0
         self.bbox = None            # (min xyz, max xyz) in object coordinates
+        self.world_bbox = None      # (min xyz, max xyz) on the plate (first instance)
+        self.instances = 0          # build items of this object
         self.item_matrix = None     # 4x4, object -> plate (first instance)
 
     @property
@@ -70,9 +72,11 @@ class ProjectObject:
         return tuple(float(x) for x in (hi - lo))
 
     def as_dict(self):
+        box = self.world_bbox
         return {"id": self.id, "name": self.name, "kind": self.kind,
-                "parts": self.parts, "triangles": self.triangles,
-                "size": list(self.size) if self.size else None}
+                "parts": self.parts, "triangles": self.triangles, "instances": self.instances,
+                "size": list(self.size) if self.size else None,
+                "world_bbox": [[float(x) for x in box[0]], [float(x) for x in box[1]]] if box else None}
 
 
 class Project:
@@ -194,10 +198,11 @@ class Project:
         """Objects placed on the build plate(s), with their size."""
         root = self.tree(self.root_name)
         build = root.find(_C + "build")
-        placed, matrices = [], {}
+        placed, matrices, counts = [], {}, {}
         if build is not None:
             for item in build.findall(_C + "item"):
                 oid = item.get("objectid")
+                counts[oid] = counts.get(oid, 0) + 1
                 if oid not in placed:
                     placed.append(oid)
                     matrices[oid] = _matrix(item.get("transform"))
@@ -212,6 +217,7 @@ class Project:
                     or f"#{oid}")
             obj = ProjectObject(oid, name, kind)
             obj.item_matrix = matrices.get(oid)
+            obj.instances = counts.get(oid, 0)
             meshes = []
             self._collect(self.root_name, el, np.eye(4), meshes)
             if not meshes:
@@ -222,6 +228,9 @@ class Project:
             obj.parts = len(comps.findall(_C + "component")) if comps is not None else 1
             if len(allv):
                 obj.bbox = (allv.min(axis=0), allv.max(axis=0))
+                m = obj.item_matrix if obj.item_matrix is not None else np.eye(4)
+                world = allv @ m[:3, :3].T + m[:3, 3]
+                obj.world_bbox = (world.min(axis=0), world.max(axis=0))
             out.append(obj)
         return out
 

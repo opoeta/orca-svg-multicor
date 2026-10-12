@@ -148,6 +148,7 @@
   "plate.output_copy": "コピー (_svg.3mf)",
   "status.saved_project": "プロジェクトを更新しました: {path}。元のファイルは {backup} にあります。",
   "plate.project": "プロジェクト: {name}",
+  "plate.presets_only": "プロジェクト: {name} · プリセットに未保存の変更があります（適用は可能: プロジェクトは保存済みの設定で再度開きます）",
   "plate.not_saved": "未保存",
   "plate.no_match": "{name} はまだ保存済みプロジェクトにありません。保存（Ctrl+S）してからプレートを再読み込みしてください。",
   "face.top": "上面",

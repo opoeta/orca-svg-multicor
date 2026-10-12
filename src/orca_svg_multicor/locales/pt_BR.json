@@ -148,6 +148,7 @@
   "plate.output_copy": "Numa cópia (_svg.3mf)",
   "status.saved_project": "Projeto atualizado: {path}. O original está em {backup}.",
   "plate.project": "Projeto: {name}",
+  "plate.presets_only": "Projeto: {name} · há presets alterados e não salvos (não impedem aplicar: o projeto reabre com os ajustes gravados nele)",
   "plate.not_saved": "ainda não salvo",
   "plate.no_match": "{name} ainda não está no projeto salvo. Salve (Ctrl+S) e leia a mesa de novo.",
   "face.top": "Topo",

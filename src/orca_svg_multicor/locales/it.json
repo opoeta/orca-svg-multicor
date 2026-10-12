@@ -148,6 +148,7 @@
   "plate.output_copy": "Una copia (_svg.3mf)",
   "status.saved_project": "Progetto aggiornato: {path}. L’originale è in {backup}.",
   "plate.project": "Progetto: {name}",
+  "plate.presets_only": "Progetto: {name} · ci sono preset modificati non salvati (non impediscono di applicare: il progetto si riapre con le impostazioni salvate al suo interno)",
   "plate.not_saved": "non ancora salvato",
   "plate.no_match": "{name} non è ancora nel progetto salvato. Salvalo (Ctrl+S) e rileggi il piatto.",
   "face.top": "Sopra",

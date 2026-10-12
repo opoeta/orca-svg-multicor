@@ -586,22 +586,32 @@ class OrcaHost(BaseHost):
         items = []
         for i, obj in enumerate(_member(model, "objects", []) or []):
             bb = _member(obj, "bounding_box")
-            size = None
+            size = box = None
             if bb is not None and _member(bb, "defined", True):
                 s = _member(bb, "size")
                 if s:
                     size = [float(s[0]), float(s[1]), float(s[2])]
+                lo, hi = _member(bb, "min"), _member(bb, "max")
+                if lo and hi:
+                    box = [[float(x) for x in lo], [float(x) for x in hi]]
             items.append({
                 "index": i,
                 "name": str(_member(obj, "name", f"#{i}")),
                 "size": size,
+                "bbox": box,
+                "instances": int(_member(obj, "instance_count", 0) or 0),
                 "parts": int(_member(obj, "volume_count", 0) or 0),
                 "file": str(_member(obj, "input_file", "") or ""),
                 "painted": bool(_member(obj, "is_mm_painted", False)),
             })
-        dirty = None
+        dirty = presets_dirty = None
         try:
-            dirty = bool(_member(self.orca.host.plater(), "is_project_dirty"))
+            plater = self.orca.host.plater()
+            dirty = bool(_member(plater, "is_project_dirty"))
+            # OrcaSlicer counts presets edited but not saved as presets as
+            # unsaved project changes, and Ctrl+S does not clear that
+            flag = _member(plater, "is_presets_dirty")
+            presets_dirty = None if flag is None else bool(flag)
         except Exception:
             pass
         project = ""
@@ -610,7 +620,7 @@ class OrcaHost(BaseHost):
             if f.lower().endswith(".3mf") and os.path.isfile(f):
                 project = f
                 break
-        return {"objects": items, "dirty": dirty, "project": project}
+        return {"objects": items, "dirty": dirty, "presets_dirty": presets_dirty, "project": project}
 
     def open_path(self, path):
         if not (os.path.isfile(path) and path.lower().endswith(".3mf")):

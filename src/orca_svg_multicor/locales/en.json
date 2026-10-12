@@ -148,6 +148,7 @@
   "plate.output_copy": "A copy (_svg.3mf)",
   "status.saved_project": "Project updated: {path}. The original is in {backup}.",
   "plate.project": "Project: {name}",
+  "plate.presets_only": "Project: {name} · presets have unsaved edits (they do not block applying: the project reopens with the settings saved in it)",
   "plate.not_saved": "not saved yet",
   "plate.no_match": "{name} is not in the saved project yet. Save it (Ctrl+S) and read the plate again.",
   "face.top": "Top",

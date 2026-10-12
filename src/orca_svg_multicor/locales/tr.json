@@ -148,6 +148,7 @@
   "plate.output_copy": "Bir kopyaya (_svg.3mf)",
   "status.saved_project": "Proje güncellendi: {path}. Orijinali: {backup}.",
   "plate.project": "Proje: {name}",
+  "plate.presets_only": "Proje: {name} · kaydedilmemiş ön ayar değişiklikleri var (uygulamayı engellemez: proje içinde kayıtlı ayarlarla yeniden açılır)",
   "plate.not_saved": "henüz kaydedilmedi",
   "plate.no_match": "{name} henüz kayıtlı projede değil. Kaydedin (Ctrl+S) ve plakayı yeniden okuyun.",
   "face.top": "Üst",

@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.10.1
+
+### Fixed
+- **"The open project has unsaved changes" even right after Ctrl+S.**
+  OrcaSlicer counts presets edited but not saved as presets as unsaved
+  project changes, and saving the project does not clear that. When only
+  the presets are unsaved and every object on the plate is where the saved
+  project has it (same objects, parts and position), applying is allowed;
+  the plate line says so. If an object was moved, turned, added or removed
+  since the last save, the page still asks to save first, since reopening
+  the file would lose it.
+
 ## 3.10.0
 
 ### Changed

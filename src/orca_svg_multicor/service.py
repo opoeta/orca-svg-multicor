@@ -329,6 +329,7 @@ class Service:
                 ids = engine.match_plate_objects(d["objects"], listing["objects"])
                 for item, oid in zip(d["objects"], ids):
                     item["object_id"] = oid
+                d["plate_saved"] = engine.plate_matches_file(d["objects"], listing["objects"], ids)
             except UserError as e:
                 d["project_error"] = self.tr(e.key, **e.params)
             except Exception as e:  # noqa: BLE001 - a broken file must not break the page

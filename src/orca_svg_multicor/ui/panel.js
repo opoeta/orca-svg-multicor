@@ -939,7 +939,8 @@
     if (!objs.length) { text = t('status.plate_empty'); cls = 'err'; }
     else if (!m.project) { text = t('status.plate_unsaved'); cls = 'err'; }
     else if (m.project_error) { text = m.project_error; cls = 'err'; }
-    else if (m.dirty) { text = t('apply.dirty'); cls = 'warn'; }
+    else if (m.dirty && !onlyPresetsUnsaved(m)) { text = t('apply.dirty'); cls = 'warn'; }
+    else if (m.dirty) { text = t('plate.presets_only', { name: basename(m.project) }); cls = 'ok'; }
     else { text = t('plate.project', { name: basename(m.project) }); cls = 'ok'; }
     state.textContent = text;
     state.className = 'note ' + cls;
@@ -1409,12 +1410,19 @@
     else if (S.wiz.open) syncWizard();
   }
 
+  // OrcaSlicer also calls a project unsaved when presets were edited and not
+  // saved as presets, and Ctrl+S does not change that. When the plate is
+  // still what the saved file has, reopening the file loses nothing of it.
+  function onlyPresetsUnsaved(m) {
+    return m.presets_dirty === true && m.plate_saved === true;
+  }
+
   function plateProblem(m) {
     var item = plateItem();
     if (!(m.objects || []).length) return ['status.plate_empty'];
     if (!m.project) return ['status.plate_unsaved'];
     if (m.project_error) return [null, null, m.project_error];
-    if (m.dirty) return ['apply.dirty'];
+    if (m.dirty && !onlyPresetsUnsaved(m)) return ['apply.dirty'];
     if (!item) return ['error.no_object'];
     if (!item.object_id) return ['plate.no_match', { name: item.name }];
     return null;
@@ -1424,7 +1432,7 @@
     var apply = S.plateApply;
     S.plateApply = false;
     // read now and then: redraw only what changed (an open list must stay open)
-    var sig = JSON.stringify([m.project, m.project_mtime, m.dirty, m.project_error,
+    var sig = JSON.stringify([m.project, m.project_mtime, m.dirty, m.presets_dirty, m.plate_saved, m.project_error,
       (m.objects || []).map(function (o) { return [o.name, o.size, o.object_id]; })]);
     var changed = sig !== S.plateSig;
     S.plateSig = sig;

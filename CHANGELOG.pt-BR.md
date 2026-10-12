@@ -2,6 +2,18 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.10.1
+
+### Corrigido
+- **"O projeto aberto tem alterações não salvas" mesmo logo depois do
+  Ctrl+S.** O OrcaSlicer conta presets alterados e não salvos como preset
+  como alterações do projeto, e salvar o projeto não limpa isso. Quando só os
+  presets estão pendentes e todos os objetos da mesa estão onde o projeto
+  salvo os tem (mesmos objetos, peças e posição), dá para aplicar; a linha da
+  mesa avisa. Se algum objeto foi movido, girado, adicionado ou removido desde
+  o último salvamento, a página continua pedindo para salvar antes, porque
+  reabrir o arquivo perderia isso.
+
 ## 3.10.0
 
 ### Mudou

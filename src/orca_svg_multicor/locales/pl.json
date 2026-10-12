@@ -148,6 +148,7 @@
   "plate.output_copy": "Kopia (_svg.3mf)",
   "status.saved_project": "Projekt zaktualizowany: {path}. Oryginał jest w {backup}.",
   "plate.project": "Projekt: {name}",
+  "plate.presets_only": "Projekt: {name} · profile mają niezapisane zmiany (nie blokują nakładania: projekt otworzy się z ustawieniami w nim zapisanymi)",
   "plate.not_saved": "jeszcze nie zapisano",
   "plate.no_match": "{name} nie ma jeszcze w zapisanym projekcie. Zapisz go (Ctrl+S) i odczytaj płytę ponownie.",
   "face.top": "Góra",

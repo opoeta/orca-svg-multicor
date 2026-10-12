@@ -148,6 +148,7 @@
   "plate.output_copy": "Una copia (_svg.3mf)",
   "status.saved_project": "Proyecto actualizado: {path}. El original está en {backup}.",
   "plate.project": "Proyecto: {name}",
+  "plate.presets_only": "Proyecto: {name} · hay perfiles modificados sin guardar (no impiden aplicar: el proyecto se reabre con los ajustes guardados en él)",
   "plate.not_saved": "aún no guardado",
   "plate.no_match": "{name} aún no está en el proyecto guardado. Guárdelo (Ctrl+S) y vuelva a leer la placa.",
   "face.top": "Arriba",

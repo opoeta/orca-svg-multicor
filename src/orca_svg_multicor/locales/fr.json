@@ -148,6 +148,7 @@
   "plate.output_copy": "Une copie (_svg.3mf)",
   "status.saved_project": "Projet mis à jour : {path}. L’original est dans {backup}.",
   "plate.project": "Projet : {name}",
+  "plate.presets_only": "Projet : {name} · des préréglages ont des modifications non enregistrées (elles n’empêchent pas d’appliquer : le projet se rouvre avec les réglages enregistrés dedans)",
   "plate.not_saved": "pas encore enregistré",
   "plate.no_match": "{name} n’est pas encore dans le projet enregistré. Enregistrez-le (Ctrl+S) et relisez le plateau.",
   "face.top": "Dessus",

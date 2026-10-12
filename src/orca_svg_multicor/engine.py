@@ -459,6 +459,34 @@ def match_plate_objects(plate_items, file_objects):
     return out
 
 
+def plate_matches_file(plate_items, file_objects, ids, tol=0.05):
+    """
+    True when every object on the plate is in the saved project, with the
+    same number of parts and instances and at the same place (its box on the
+    plate within `tol` mm): a project reopened from the file loses nothing of
+    the plate. False when something differs; None when the plate cannot tell
+    (no positions from OrcaSlicer).
+    """
+    by_id = {f["id"]: f for f in file_objects}
+    if len(plate_items) != len(file_objects):
+        return False
+    for item, oid in zip(plate_items, ids):
+        f = by_id.get(oid)
+        if f is None:
+            return False
+        live, saved = item.get("bbox"), f.get("world_bbox")
+        if not live:
+            return None
+        if not saved:
+            return False
+        if any(abs(a - b) > tol for pl, ps in zip(live, saved) for a, b in zip(pl, ps)):
+            return False
+        for key in ("parts", "instances"):
+            if item.get(key) and f.get(key) and item[key] != f[key]:
+                return False
+    return True
+
+
 def object_faces(project, obj, mesh=None):
     V, F = mesh if mesh is not None else project.object_mesh(obj.id)
     return planar_faces(V, F, world=obj.item_matrix)

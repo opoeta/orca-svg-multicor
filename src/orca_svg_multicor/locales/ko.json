@@ -148,6 +148,7 @@
   "plate.output_copy": "사본 (_svg.3mf)",
   "status.saved_project": "프로젝트를 업데이트했습니다: {path}. 원본은 {backup}에 있습니다.",
   "plate.project": "프로젝트: {name}",
+  "plate.presets_only": "프로젝트: {name} · 프리셋에 저장되지 않은 변경이 있습니다(적용에는 문제없음: 프로젝트는 저장된 설정으로 다시 열립니다)",
   "plate.not_saved": "아직 저장 안 됨",
   "plate.no_match": "{name}은(는) 아직 저장된 프로젝트에 없습니다. 저장(Ctrl+S)한 뒤 플레이트를 다시 읽으세요.",
   "face.top": "윗면",
