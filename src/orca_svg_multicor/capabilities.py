@@ -31,7 +31,7 @@ import orca
 from . import i18n
 from .host import OrcaHost, config_store_for
 from .panel import build_settings_html, build_html, build_note_html
-from .service import Service, settings_defaults
+from .service import SETTINGS_REV, Service, settings_defaults
 
 NAME_PAGE = "SVG Multicolor"
 NAME_WINDOW = "SVG Multicolor - window"
@@ -98,7 +98,12 @@ class _Common:
     """Settings live in the owner's config (Config tab); others borrow them."""
 
     def get_default_config(self):
-        return settings_defaults()
+        # what "Restore defaults" stores. The settings_rev mark tells it apart
+        # from a new install, whose config is empty and takes the copy of the
+        # settings kept in the data folder (Service._migrate).
+        d = settings_defaults()
+        d["settings_rev"] = SETTINGS_REV
+        return d
 
     def _store(self):
         owner = _SETTINGS_OWNER[0] if _SETTINGS_OWNER else self

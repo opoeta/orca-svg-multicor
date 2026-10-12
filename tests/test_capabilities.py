@@ -216,7 +216,6 @@ def test_permission_errors_get_a_clear_message(monkeypatch):
 
 
 def test_open_path_hands_3mf_to_orca_window_or_falls_back(monkeypatch, tmp_path):
-    import types
     from orca_svg_multicor import host as H
     f = tmp_path / "result.3mf"
     f.write_bytes(b"x")
@@ -228,12 +227,40 @@ def test_open_path_hands_3mf_to_orca_window_or_falls_back(monkeypatch, tmp_path)
     assert H.find_orca_window() is None
     h.open_path(str(f))
     assert calls == [("exe", str(f))]
-    # inside OrcaSlicer: the window gets the file, from a thread, without a new process
+    # inside OrcaSlicer: the window gets the file right away, without a new
+    # process and without a thread (recent builds ask before a plugin starts one)
     calls.clear()
     monkeypatch.setattr(H, "find_orca_window", lambda: 1234)
-    monkeypatch.setattr(H.time, "sleep", lambda s: None)
+    threads = __import__("threading").active_count()
     h.open_path(str(f))
-    for t in list(__import__("threading").enumerate()):
-        if t.name == "svg-multicolor-open":
-            t.join(5)
     assert calls == [("ipc", 1234, str(f))]
+    assert __import__("threading").active_count() == threads
+
+    # if the window refuses it, the launcher still opens it
+    def refuse(hwnd, p):
+        raise OSError("gone")
+    calls.clear()
+    monkeypatch.setattr(H, "send_to_window", refuse)
+    h.open_path(str(f))
+    assert calls == [("exe", str(f))]
+
+
+def test_restore_defaults_is_not_undone_by_the_settings_copy(plugin):
+    orca, caps, pkg = plugin
+    page = caps["PanelPage"]()
+    default = page.get_default_config()["thickness_mm"]
+    page.on_message({"action": "save_settings", "settings": {"thickness_mm": 1.2}, "quiet": True})
+    # Config tab > Restore defaults: OrcaSlicer stores get_default_config()
+    page.save_config(json.dumps(page.get_default_config()))
+    again = caps["PanelPage"]()                     # OrcaSlicer started again
+    again._config = page._config
+    again.on_message({"action": "init"})
+    assert json.loads(again.get_config())["thickness_mm"] == default
+    # a new install (an empty config) takes the settings of the last start
+    fresh = caps["PanelPage"]()
+    fresh.on_message({"action": "init"})
+    assert json.loads(fresh.get_config())["thickness_mm"] == default
+    page.on_message({"action": "save_settings", "settings": {"thickness_mm": 0.8}, "quiet": True})
+    newer = caps["PanelPage"]()
+    newer.on_message({"action": "init"})
+    assert json.loads(newer.get_config())["thickness_mm"] == 0.8

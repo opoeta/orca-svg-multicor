@@ -129,3 +129,15 @@ def test_config_tab_shows_the_changelog_in_the_language():
     assert read_changelog("fr") == read_changelog("en")        # no French changelog: English
     assert "### Corrigido" in build_settings_html("pt_BR")
     assert "### Fixed" in build_settings_html("de")
+
+
+def test_every_element_the_page_script_looks_up_exists():
+    """$('id') in panel.js returning null is a TypeError in OrcaSlicer, not a test failure."""
+    with open(os.path.join(UI_DIR, "panel.js"), encoding="utf-8") as f:
+        js = f.read()
+    with open(os.path.join(UI_DIR, "panel.html"), encoding="utf-8") as f:
+        html = f.read()
+    used = set(re.findall(r"\$\('([A-Za-z0-9_\-]+)'\)", js))
+    present = set(re.findall(r'id="([^"]+)"', html)) | set(re.findall(r"\.id\s*=\s*'([^']+)'", js))
+    assert len(used) > 50
+    assert sorted(used - present) == []

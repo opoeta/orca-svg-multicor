@@ -259,6 +259,7 @@
   "batch.summary": "{ok} convertido(s), {failed} con error. Salida: {folder}",
   "whatsnew.title": "Novedades",
   "whatsnew.empty": "Este paquete no incluye historial de cambios.",
+  "whatsnew.local_note": "Instalado desde un archivo: OrcaSlicer solo llena la pestaña Changelog para plugins instalados desde OrcaCloud.",
   "cfg.hint": "SVG Multicolor empieza con estos valores y recuerda lo que cambie en su página.",
   "cfg.files": "Archivos",
   "cfg.input_folder": "Carpeta de entrada (lote)",

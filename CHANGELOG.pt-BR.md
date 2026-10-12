@@ -2,6 +2,37 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.9.1
+
+### Corrigido
+- **Procurar… abria na pasta de dados do plugin.** Agora abre onde está o SVG
+  atual, senão de onde veio o último (lembrado entre uma sessão e outra),
+  senão em Downloads.
+- **Um pedido de permissão a cada "Aplicar na mesa"**: a cópia de segurança
+  do projeto tinha um nome novo a cada vez, e o OrcaSlicer perguntava sobre o
+  projeto e essa cópia juntos. Agora a cópia é gravada sozinha na pasta de
+  dados, que não precisa de permissão: o mesmo trabalho não pergunta nada na
+  segunda vez. Um teste roda cada ação duas vezes com as regras de permissão
+  do OrcaSlicer para manter assim.
+- Escolher uma pasta de saída fora da pasta de dados não pede mais para criar
+  e apagar um arquivo de teste nela.
+- Reabrir o projeto não inicia mais uma thread (versões recentes do
+  OrcaSlicer perguntam antes de um plugin iniciar uma): o arquivo vai direto
+  para o OrcaSlicer.
+- Um OrcaSlicer portátil, ou iniciado com `--datadir`, guarda os arquivos do
+  plugin na própria pasta de dados.
+
+### Mudou
+- **Instalado pela OrcaCloud**, o OrcaSlicer mostra a imagem do plugin em
+  *Plugin Info* e as novidades na aba *Changelog* (ele só preenche isso para
+  plugins da OrcaCloud), e a aba Config não repete mais o changelog.
+  Instalado por arquivo, a aba Config continua com ele, fechado. As notas
+  enviadas à OrcaCloud vão em texto simples, uma linha por item, como a aba
+  Changelog mostra.
+- As configurações também ficam guardadas na pasta de dados, então instalar
+  de novo (ou pela OrcaCloud em vez de por arquivo) as mantém; "Restaurar
+  padrões" continua restaurando os padrões.
+
 ## 3.9.0
 
 ### Novo

@@ -43,12 +43,25 @@ assigned to your filaments.
 
 ## Installing
 
+**From OrcaCloud (recommended)**: subscribe to
+[SVG Multicolor](https://cloud.orcaslicer.com/p/51a884bf98ad) in the Plugin Hub,
+then tick it in OrcaSlicer's **File > Plugins** (signed in with the same
+OrcaCloud account; *Refresh* if it is not listed yet). OrcaSlicer then shows
+its image in *Plugin Info*, what's new in the *Changelog* tab, and offers
+each new version. OrcaSlicer fills those only for plugins that come from
+OrcaCloud.
+
+**From a file**:
+
 1. Download `orca_svg_multicor-<version>-py3-none-any.whl` from the
    [latest release](https://github.com/opoeta/orca-svg-multicor/releases/latest).
 2. In OrcaSlicer, open the **Plugins** dialog and install the `.whl` file as a
    local plugin. OrcaSlicer installs the dependencies (numpy, shapely,
    svgelements, mapbox-earcut) by itself.
-3. Enable the plugin. It adds:
+
+Either way, keep only one copy: delete the other one in the Plugins dialog
+first (both would load the same Python package). The settings carry over.
+Enable the plugin. It adds:
    - **SVG Multicolor**: a page next to Prepare and Preview;
    - **SVG Multicolor - batch**: converts every SVG of the input folder with the
      same settings, from the Plugins dialog's Run action.
@@ -113,8 +126,9 @@ right, the main action at the top right.
 
 The page remembers the values you change. Defaults, the output folder, the
 file format, STL export and the language are in the Plugins dialog, **Config**
-tab, along with what's new in each version (in Portuguese when OrcaSlicer is
-in Portuguese).
+tab. Installed from a file, the Config tab also has what's new in each
+version (in Portuguese when OrcaSlicer is in Portuguese), since the Changelog
+tab stays empty for local plugins.
 
 ![Settings in the Config tab](docs/config.png)
 

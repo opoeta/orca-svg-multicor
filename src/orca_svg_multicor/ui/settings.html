@@ -109,8 +109,11 @@
   </div>
 </form>
 
-<details id="news" open>
+<!-- installed from a file: OrcaSlicer fills its Changelog tab only for
+     plugins installed from OrcaCloud, so the changelog is here instead -->
+<details id="news">
   <summary data-i18n="whatsnew.title">What's new</summary>
+  <p class="note" data-i18n="whatsnew.local_note">Installed from a file: OrcaSlicer fills the Changelog tab only for plugins installed from OrcaCloud.</p>
   <div class="md" id="news_body"></div>
 </details>
 
@@ -163,7 +166,9 @@
   });
   if (window.orca && window.orca.onConfig) window.orca.onConfig(fill); else fill({});
 
-  // what's new: the changelog OrcaSlicer only shows for OrcaCloud plugins
+  // what's new: the changelog OrcaSlicer only shows for OrcaCloud plugins,
+  // in its Changelog tab; installed from OrcaCloud, it is there
+  if (B.cloud) { document.getElementById('news').hidden = true; return; }
   function inline(node, text) {
     var re = /(\*\*[^*]+\*\*|`[^`]+`)/g, last = 0, m;
     while ((m = re.exec(text))) {

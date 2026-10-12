@@ -259,6 +259,7 @@
   "batch.summary": "{ok} converti(s), {failed} en échec. Sortie : {folder}",
   "whatsnew.title": "Nouveautés",
   "whatsnew.empty": "Aucun journal des modifications dans ce paquet.",
+  "whatsnew.local_note": "Installé depuis un fichier : OrcaSlicer ne remplit l’onglet Changelog que pour les plugins installés depuis OrcaCloud.",
   "cfg.hint": "SVG Multicolor démarre avec ces valeurs et retient ce que vous modifiez sur sa page.",
   "cfg.files": "Fichiers",
   "cfg.input_folder": "Dossier d’entrée (lot)",

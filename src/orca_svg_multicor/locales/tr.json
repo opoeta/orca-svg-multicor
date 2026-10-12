@@ -259,6 +259,7 @@
   "batch.summary": "{ok} dönüştürüldü, {failed} başarısız. Çıktı: {folder}",
   "whatsnew.title": "Yenilikler",
   "whatsnew.empty": "Bu pakette değişiklik günlüğü yok.",
+  "whatsnew.local_note": "Dosyadan kuruldu: OrcaSlicer, Changelog sekmesini yalnızca OrcaCloud'dan kurulan eklentiler için doldurur.",
   "cfg.hint": "SVG Multicolor bu değerlerle başlar ve sayfasında değiştirdiklerinizi hatırlar.",
   "cfg.files": "Dosyalar",
   "cfg.input_folder": "Giriş klasörü (toplu)",

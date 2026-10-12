@@ -15,7 +15,6 @@ import shutil
 import subprocess
 import sys
 import threading
-import time
 
 from .colors import normalize_hex
 
@@ -41,8 +40,34 @@ def denied_name(path):
     return None
 
 
-def orca_data_dir():
-    """OrcaSlicer's data folder (plugins may write there without a prompt)."""
+def _installed_at(path=None):
+    """
+    (path parts, index of "orca_plugins") when `path` is inside a wheel
+    OrcaSlicer installed, <data>/orca_plugins/.../__whl_extracted__/...;
+    None otherwise (a checkout, the tests).
+    """
+    parts = re.split(r"[\\/]+", os.path.abspath(path or __file__))
+    lowered = [p.lower() for p in parts]
+    if "__whl_extracted__" not in lowered:
+        return None
+    wheel = len(lowered) - 1 - lowered[::-1].index("__whl_extracted__")
+    roots = [i for i in range(1, wheel) if lowered[i] == "orca_plugins"]
+    return (parts, roots[-1]) if roots else None
+
+
+def orca_data_dir(package=None):
+    """
+    OrcaSlicer's data folder (plugins may write there without a prompt).
+    Installed, this package lives in <data folder>/orca_plugins/..., which
+    also finds a portable OrcaSlicer or one started with --datadir; else the
+    platform's usual place.
+    """
+    found = _installed_at(package)
+    if found:
+        parts, cut = found
+        base = os.sep.join(parts[:cut])
+        if os.path.isdir(base + os.sep):
+            return base
     try:
         if sys.platform == "win32":
             root = os.environ.get("APPDATA") or os.path.expanduser("~")
@@ -65,6 +90,44 @@ def plugin_data_dir():
     if override:
         return override
     return os.path.join(orca_data_dir(), PLUGIN_DIR_NAME)
+
+
+def user_folders():
+    """Where a person keeps the files they choose: Downloads, Documents, home."""
+    home = os.path.expanduser("~")
+    return [os.path.join(home, "Downloads"), os.path.join(home, "Documents"), home]
+
+
+def is_cloud_install(path=None):
+    """
+    True when this package was installed from OrcaCloud: OrcaSlicer keeps
+    those under <data>/orca_plugins/_subscribed/<user>/<plugin id>/.
+    """
+    found = _installed_at(path)
+    return bool(found) and "_subscribed" in [p.lower() for p in found[0][found[1]:]]
+
+
+def settings_copy_path():
+    """A copy of the settings in the data folder, outside OrcaSlicer's per-install config."""
+    return os.path.join(plugin_data_dir(), "settings.json")
+
+
+def read_settings_copy():
+    try:
+        with open(settings_copy_path(), encoding="utf-8") as f:
+            data = json.load(f)
+        return data if isinstance(data, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def write_settings_copy(cfg):
+    try:
+        os.makedirs(plugin_data_dir(), exist_ok=True)
+        with open(settings_copy_path(), "w", encoding="utf-8") as f:
+            json.dump(cfg, f, ensure_ascii=False, indent=1)
+    except (OSError, TypeError, ValueError):
+        pass
 
 
 def default_folders(base=None):
@@ -562,17 +625,15 @@ class OrcaHost(BaseHost):
         if hwnd is None:
             open_in_orca(path)                # the launcher: hands it to the open window
             return
-
-        def deliver():
-            # on_message is still running on the UI thread: let it return first,
-            # so OrcaSlicer opens the file from its idle event loop
-            time.sleep(0.5)
-            try:
-                send_to_window(hwnd, path)
-            except Exception as e:
-                print(f"[svg multicolor] could not hand {path} to OrcaSlicer: {e}")
-
-        threading.Thread(target=deliver, name="svg-multicolor-open", daemon=True).start()
+        # Sent right here, on the UI thread: OrcaSlicer's handler only posts an
+        # event (OtherInstanceMessageHandler::handle_message), so the file opens
+        # from its event loop after on_message returns. No thread: recent
+        # OrcaSlicer builds ask the user before a plugin starts one.
+        try:
+            send_to_window(hwnd, path)
+        except Exception as e:
+            print(f"[svg multicolor] could not hand {path} to OrcaSlicer: {e}")
+            open_in_orca(path)
 
     def message(self, text, title, icon="info"):
         fn = getattr(self.ui, "message", None)

@@ -259,6 +259,7 @@
   "batch.summary": "{ok}개 변환됨, {failed}개 실패. 출력: {folder}",
   "whatsnew.title": "새로운 기능",
   "whatsnew.empty": "이 패키지에는 변경 내역이 없습니다.",
+  "whatsnew.local_note": "파일에서 설치됨: OrcaSlicer는 OrcaCloud에서 설치한 플러그인에만 Changelog 탭을 채웁니다.",
   "cfg.hint": "SVG Multicolor는 이 값으로 시작하고 페이지에서 바꾼 내용을 기억합니다.",
   "cfg.files": "파일",
   "cfg.input_folder": "입력 폴더(일괄)",

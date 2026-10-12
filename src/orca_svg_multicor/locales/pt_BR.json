@@ -259,6 +259,7 @@
   "batch.summary": "{ok} convertido(s), {failed} com falha. Saída: {folder}",
   "whatsnew.title": "Novidades",
   "whatsnew.empty": "Nenhum changelog neste pacote.",
+  "whatsnew.local_note": "Instalado de um arquivo: o OrcaSlicer só preenche a aba Changelog para plugins instalados pela OrcaCloud.",
   "cfg.hint": "O SVG Multicor começa com estes valores e lembra o que você muda na página dele.",
   "cfg.files": "Arquivos",
   "cfg.input_folder": "Pasta de entrada (lote)",

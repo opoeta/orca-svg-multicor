@@ -259,6 +259,7 @@
   "batch.summary": "{ok} convertiti, {failed} non riusciti. Output: {folder}",
   "whatsnew.title": "Novità",
   "whatsnew.empty": "Nessun registro delle modifiche in questo pacchetto.",
+  "whatsnew.local_note": "Installato da un file: OrcaSlicer compila la scheda Changelog solo per i plugin installati da OrcaCloud.",
   "cfg.hint": "SVG Multicolor parte da questi valori e ricorda ciò che modifichi nella sua pagina.",
   "cfg.files": "File",
   "cfg.input_folder": "Cartella di input (batch)",

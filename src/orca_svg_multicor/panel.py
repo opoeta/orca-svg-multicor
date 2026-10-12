@@ -10,6 +10,7 @@ import os
 
 from . import i18n
 from ._version import __version__
+from .host import is_cloud_install
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 UI_DIR = os.path.join(HERE, "ui")
@@ -61,11 +62,18 @@ def build_html(lang=None, mode="page", extra_head=""):
     return extra_head + html if extra_head else html
 
 
-def build_settings_html(lang=None, defaults=None):
-    """Settings page for the Plugins dialog's Config tab (window.orca.getConfig/saveConfig)."""
+def build_settings_html(lang=None, defaults=None, cloud=None):
+    """
+    Settings page for the Plugins dialog's Config tab (window.orca.getConfig/saveConfig).
+    `cloud`: installed from OrcaCloud, whose Changelog tab has the changelog
+    (found from the install folder when None).
+    """
     tr = i18n.Translator(lang)
+    if cloud is None:
+        cloud = is_cloud_install()
     boot = {"lang": tr.lang, "catalog": tr.catalog(), "languages": i18n.available(),
-            "defaults": defaults or {}, "changelog": read_changelog(tr.lang), "version": __version__}
+            "defaults": defaults or {}, "changelog": "" if cloud else read_changelog(tr.lang),
+            "cloud": bool(cloud), "version": __version__}
     return _read("settings.html").replace("/*BOOT*/", _json(boot), 1)
 
 

@@ -259,6 +259,7 @@
   "batch.summary": "Przekonwertowano: {ok}, błędy: {failed}. Wyjście: {folder}",
   "whatsnew.title": "Nowości",
   "whatsnew.empty": "Ten pakiet nie zawiera listy zmian.",
+  "whatsnew.local_note": "Zainstalowano z pliku: OrcaSlicer wypełnia kartę Changelog tylko dla wtyczek zainstalowanych z OrcaCloud.",
   "cfg.hint": "SVG Multicolor zaczyna od tych wartości i zapamiętuje zmiany wprowadzone na jego stronie.",
   "cfg.files": "Pliki",
   "cfg.input_folder": "Folder wejściowy (wsadowo)",

@@ -40,12 +40,24 @@ atribuídas aos seus filamentos.
 
 ## Instalação
 
+**Pela OrcaCloud (recomendado)**: assine o
+[SVG Multicolor](https://cloud.orcaslicer.com/p/51a884bf98ad) no Plugin Hub e
+marque-o em **Arquivo > Plugins** no OrcaSlicer (com a mesma conta da
+OrcaCloud; *Atualizar* se ainda não aparecer). Assim o OrcaSlicer mostra a
+imagem em *Plugin Info*, as novidades na aba *Changelog* e oferece cada versão
+nova. O OrcaSlicer só preenche isso para plugins que vêm da OrcaCloud.
+
+**Por arquivo**:
+
 1. Baixe `orca_svg_multicor-<versão>-py3-none-any.whl` na
    [última versão](https://github.com/opoeta/orca-svg-multicor/releases/latest).
 2. No OrcaSlicer, abra a janela de **Plugins** e instale o `.whl` como plugin
    local. O OrcaSlicer instala as dependências (numpy, shapely, svgelements,
    mapbox-earcut) sozinho.
-3. Ative o plugin. Ele acrescenta:
+
+Nos dois casos, mantenha uma cópia só: apague a outra na janela de Plugins
+antes (as duas carregariam o mesmo pacote Python). As configurações são
+mantidas. Ative o plugin. Ele acrescenta:
    - **SVG Multicolor**: uma página ao lado de Preparar e Visualizar;
    - **SVG Multicolor - batch**: converte todos os SVGs da pasta de entrada com
      as mesmas configurações, pela ação Executar do diálogo de Plugins.
@@ -107,9 +119,10 @@ direita e a ação principal no canto superior direito.
 ![Um objeto novo sobre uma placa de base](docs/screenshot-new-pt_BR.png)
 
 A página lembra os valores que você muda. Os padrões, a pasta de saída, o
-formato, o STL e o idioma ficam no diálogo de Plugins, aba **Config**, junto
-com as novidades de cada versão, em português quando o OrcaSlicer está em
-português.
+formato, o STL e o idioma ficam no diálogo de Plugins, aba **Config**.
+Instalado por arquivo, a aba Config também traz as novidades de cada versão,
+em português quando o OrcaSlicer está em português, porque a aba Changelog
+fica vazia para plugins locais.
 
 ![As configurações na aba Config](docs/config-pt_BR.png)
 

@@ -259,6 +259,7 @@
   "batch.summary": "Перетворено: {ok}, з помилками: {failed}. Папка: {folder}",
   "whatsnew.title": "Що нового",
   "whatsnew.empty": "У цьому пакеті немає списку змін.",
+  "whatsnew.local_note": "Встановлено з файлу: OrcaSlicer заповнює вкладку Changelog лише для плагінів, встановлених з OrcaCloud.",
   "cfg.hint": "SVG Multicolor починає з цих значень і запам'ятовує те, що ви змінюєте на його сторінці.",
   "cfg.files": "Файли",
   "cfg.input_folder": "Вхідна тека (пакетно)",

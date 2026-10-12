@@ -259,6 +259,7 @@
   "batch.summary": "已转换 {ok} 个，失败 {failed} 个。输出：{folder}",
   "whatsnew.title": "更新内容",
   "whatsnew.empty": "此软件包中没有更新日志。",
+  "whatsnew.local_note": "从文件安装：OrcaSlicer 只为从 OrcaCloud 安装的插件填写 Changelog 选项卡。",
   "cfg.hint": "SVG Multicolor 以这些值开始，并记住你在其页面上的更改。",
   "cfg.files": "文件",
   "cfg.input_folder": "输入文件夹（批量）",

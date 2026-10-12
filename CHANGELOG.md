@@ -1,5 +1,35 @@
 # Changelog
 
+## 3.9.1
+
+### Fixed
+- **Browse… opened in the plugin's data folder.** It now opens where the
+  current SVG is, else where the last one came from (remembered across
+  restarts), else Downloads.
+- **A permission prompt at every "Apply to the plate"**: the backup of the
+  project got a new name each time, and OrcaSlicer asked about the project
+  and that backup together. The backup is now written on its own in the data
+  folder, which needs no permission: the same work asks nothing the second
+  time. A test runs every action twice under OrcaSlicer's permission rules to
+  keep it that way.
+- Choosing an output folder outside the data folder no longer asks to create
+  and delete a test file there.
+- Reopening the project no longer starts a thread (recent OrcaSlicer builds
+  ask before a plugin starts one): the file is handed to OrcaSlicer directly.
+- A portable OrcaSlicer, or one started with `--datadir`, keeps the plugin's
+  files in its own data folder.
+
+### Changed
+- **Installed from OrcaCloud**, OrcaSlicer shows the plugin's image in
+  *Plugin Info* and what's new in the *Changelog* tab (it fills them only for
+  OrcaCloud plugins), and the Config tab no longer repeats the changelog.
+  Installed from a file, the Config tab keeps it, closed. The notes sent to
+  OrcaCloud are plain text, one line per item, as the Changelog tab shows
+  them.
+- The settings are also kept in the data folder, so installing again (or from
+  OrcaCloud instead of a file) keeps them; "Restore defaults" still restores
+  the defaults.
+
 ## 3.9.0
 
 ### New

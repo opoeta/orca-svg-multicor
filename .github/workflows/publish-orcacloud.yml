@@ -32,7 +32,9 @@ jobs:
         run: |
           mkdir -p dist
           gh release download "$TAG" --pattern '*-py3-none-any.whl' --dir dist
-          gh release view "$TAG" --json body --jq .body > notes.md
+          # plain text: OrcaSlicer's Changelog tab shows it as is, Markdown included
+          python3 tools/cloud_notes.py "${TAG#v}" > notes.md
+          test -s notes.md || gh release view "$TAG" --json body --jq .body > notes.md
           # OrcaCloud wants a target suffix in the file name ("_any" = every OS)
           cp dist/orca_svg_multicor-*-py3-none-any.whl dist/orca_svg_multicor_any.whl
       - name: Publish

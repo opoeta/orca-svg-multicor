@@ -16,7 +16,6 @@ Actions are split in two groups:
 import base64
 import glob
 import os
-import shutil
 import time
 import traceback
 
@@ -24,7 +23,8 @@ from . import i18n
 from ._version import __version__
 from .deps import load_engine
 from .errors import Cancelled, EngineError, UserError
-from .host import Log, default_folders, denied_name, plugin_data_dir
+from .host import (Log, default_folders, denied_name, plugin_data_dir, read_settings_copy,
+                   user_folders, write_settings_copy)
 from .options import Options
 
 QUICK = {"init", "set_language", "filaments", "plate", "pick", "upload", "inputs",
@@ -46,6 +46,21 @@ def settings_defaults():
          "apply_output": "project"}   # project (replaced, after a backup) | copy (<name>_svg.3mf)
     d.update(Options.DEFAULTS)
     return d
+
+
+def copy_file(src, dst, chunk=1 << 20):
+    """
+    Copies with one open() per file instead of shutil.copyfile. OrcaSlicer
+    judges shutil.copyfile's source and destination together: a backup with
+    a new name each time made it ask permission at every apply. Each open()
+    is judged alone, and the plugin's data folder needs no permission.
+    """
+    with open(src, "rb") as fi, open(dst, "wb") as fo:
+        while True:
+            block = fi.read(chunk)
+            if not block:
+                break
+            fo.write(block)
 
 
 def _safe_name(name):
@@ -94,7 +109,15 @@ class Service:
 
     def __init__(self, host, config, respond, mode="page"):
         self.host = host
-        self.get_config, self.save_config = config
+        self.get_config, save = config
+
+        def save_config(cfg):
+            ok = save(cfg)
+            if ok:
+                write_settings_copy(cfg)
+            return ok
+
+        self.save_config = save_config
         self.respond = respond
         self.mode = mode
         self.log_file = Log()
@@ -108,7 +131,17 @@ class Service:
         """One-time updates of saved settings, marked by settings_rev."""
         try:
             cfg = self.get_config()
+            if "settings_rev" not in cfg:
+                # a fresh config: the plugin was (re)installed, maybe from
+                # OrcaCloud after a file. The copy in the data folder has the
+                # settings the person had.
+                copy = read_settings_copy()
+                if copy.get("settings_rev"):
+                    cfg.update(copy)
+                    self.save_config(cfg)
             if int(cfg.get("settings_rev") or 1) >= SETTINGS_REV:
+                if read_settings_copy() != cfg:
+                    write_settings_copy(cfg)     # the copy follows "Restore defaults" too
                 return
             # rev 2: the size became the file's own size by default. Every page
             # saved the old default (width, 100 mm) without anyone choosing it.
@@ -201,8 +234,11 @@ class Service:
 
     def preflight(self, msg):
         """
-        Touches the files a heavy action will use, on the calling (UI) thread,
-        so OrcaSlicer's permission prompt, if any, shows up where it can.
+        Reads the files a heavy action will use, on the calling (UI) thread,
+        so OrcaSlicer's permission prompt, if any, shows up where it can (off
+        the UI thread it refuses first and asks afterwards). Nothing is
+        written: OrcaSlicer asks per exact file, so a test file would only add
+        prompts of its own.
         """
         for key in ("svg", "project"):
             p = msg.get(key)
@@ -212,16 +248,6 @@ class Service:
                         f.read(1)
                 except Exception:
                     pass
-        if msg.get("action") in ("generate", "apply"):
-            try:
-                out = self._out_dir(msg)
-                os.makedirs(out, exist_ok=True)
-                probe = os.path.join(out, ".svg_multicor_probe")
-                with open(probe, "w") as f:
-                    f.write("ok")
-                os.remove(probe)
-            except Exception:
-                pass
 
     # ------------------------------------------------------------ quick
     def _inputs(self):
@@ -320,10 +346,9 @@ class Service:
         kind = msg.get("kind")
         s = self.settings()
         if kind == "svg":
-            args = ("file", self.tr("pick.svg"), msg.get("initial") or s["input_folder"],
-                    ("*.svg",), "SVG")
+            args = ("file", self.tr("pick.svg"), self._pick_start("svg", msg), ("*.svg",), "SVG")
         elif kind == "project":
-            args = ("file", self.tr("pick.project"), msg.get("initial") or s["input_folder"],
+            args = ("file", self.tr("pick.project"), self._pick_start("project", msg),
                     ("*.3mf",), "3MF")
         elif kind in ("output", "input"):
             args = ("folder", self.tr("pick.folder"),
@@ -340,8 +365,27 @@ class Service:
             self.send({"type": "picked", "kind": kind, "path": "", "failed": True,
                        "text": self.tr("error.denied_name", path=path)})
             return
+        if path and kind in ("svg", "project"):
+            self._remember_folder(kind, os.path.dirname(path))
         self.send({"type": "picked", "kind": kind, "path": path,
                    "cancelled": not path})
+
+    def _pick_start(self, kind, msg):
+        """
+        The folder the picker opens in: the current file's, the one chosen
+        last time, then Downloads, Documents, home.
+        """
+        cfg = self.get_config()
+        for folder in [msg.get("initial"), cfg.get(f"last_{kind}_folder")] + user_folders():
+            if folder and os.path.isdir(folder) and not denied_name(folder):
+                return folder
+        return ""
+
+    def _remember_folder(self, kind, folder):
+        cfg = self.get_config()
+        if folder and cfg.get(f"last_{kind}_folder") != folder:
+            cfg[f"last_{kind}_folder"] = folder
+            self.save_config(cfg)
 
     def do_upload(self, msg):
         kind = msg.get("kind")
@@ -537,7 +581,7 @@ class Service:
         os.makedirs(os.path.dirname(work), exist_ok=True)
         _dest, report = apply(work)
         backup = self._backup(project)
-        shutil.copyfile(work, project)
+        copy_file(work, project)
         try:
             os.remove(work)
         except OSError:
@@ -553,7 +597,7 @@ class Service:
         os.makedirs(folder, exist_ok=True)
         stem = os.path.splitext(os.path.basename(project))[0]
         dest = os.path.join(folder, f"{stem}-{time.strftime('%Y%m%d-%H%M%S')}.3mf")
-        shutil.copyfile(project, dest)
+        copy_file(project, dest)
         kept = sorted((os.path.join(folder, n) for n in os.listdir(folder) if n.lower().endswith(".3mf")),
                       key=os.path.getmtime)
         for old in kept[:-BACKUPS_KEPT]:

@@ -30,7 +30,7 @@ release publishes the new version there, with its changelog.
    | Description | below |
    | Version | the version of the file you uploaded |
    | Plugin type | Script (it also adds a page next to Prepare/Preview) |
-   | Changelog | the notes of that version's GitHub release (English and Portuguese) |
+   | Changelog | `python tools/cloud_notes.py <version>`: that version's notes as plain text, English and Portuguese |
    | Tags | utility, workflow, multicolor, svg |
    | Public | on, to appear in the Plugin Hub |
 
@@ -49,7 +49,9 @@ release publishes the new version there, with its changelog.
      `CHANGELOG.pt-BR.md`), `.github/workflows/release.yml`;
    - **publishing the draft** (on GitHub, or
      `gh release edit vX.Y.Z --draft=false`) releases it and publishes it on
-     OrcaCloud, `.github/workflows/publish-orcacloud.yml`. OrcaCloud only
+     OrcaCloud, `.github/workflows/publish-orcacloud.yml`, with the notes as
+     plain text (`tools/cloud_notes.py`): OrcaSlicer's Changelog tab shows
+     them as they are, Markdown included. OrcaCloud only
      accepts runs started by a published release, and a release published by
      a workflow's own token starts no workflow: that is why a person publishes
      the draft.
