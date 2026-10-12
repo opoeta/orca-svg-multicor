@@ -18,6 +18,8 @@ import math
 import os
 import threading
 
+import numpy as np
+
 from . import colors as C
 from . import geometry as G
 from . import mesh as M
@@ -269,7 +271,7 @@ def _choice(choices, color, index, tr, fils, filaments=None):
 
 
 def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
-                filaments=None, with_base=False, transform=None):
+                filaments=None, with_base=False, transform=None, thickness=None):
     """
     Extrudes every enabled color (and the base plate) into Parts.
     `transform` maps the extruded vertices (N x 3) into the object, when the
@@ -305,7 +307,7 @@ def build_parts(regions, opts, choices, tr, rep, z0=0.0, dx=0.0, dy=0.0,
     total = len(selected)
     for k, (_index, c, name, fil, shown) in enumerate(selected):
         rep.progress(0.85 + 0.1 * k / max(total, 1), "progress.mesh", name=name)
-        V, F = M.extrude(regions[c], opts.thickness_mm, color_z)
+        V, F = M.extrude(regions[c], thickness or opts.thickness_mm, color_z)
         if not len(F):
             rep.warn("warn.empty_part", name=name)
             continue
@@ -341,15 +343,45 @@ def _safe_filename(name, fallback="part"):
     return clean[:80]
 
 
-def generate(svg_path, out_dir, opts, choices=None, filaments=None, tr=None, rep=None):
-    """Writes <svg name>_multicolor.3mf in out_dir. Returns (path, report)."""
+DEFAULT_LAYER = 0.2
+
+
+def layer_plan(opts, heights=None, on_bed=False):
+    """
+    (thickness, start) of the colors, in mm. With thickness_mode "layers"
+    the thickness is a number of print layers: the layer height is the
+    page's, else the project's (or printer profile's), else 0.2 mm. On the
+    bed the first of them is the first layer, often thicker. `start` is how
+    far inside the face the colors begin: the first layer when it stays the
+    object's color (first_layer "above").
+    """
+    heights = heights or {}
+    lh = opts.layer_height_mm or heights.get("lh") or DEFAULT_LAYER
+    h1 = heights.get("h1") or lh
+    above = on_bed and opts.first_layer == "above"
+    if opts.thickness_mode == "layers":
+        n = opts.thickness_layers
+        thickness = h1 + (n - 1) * lh if on_bed and not above else n * lh
+    else:
+        thickness = opts.thickness_mm
+    return round(thickness, 6), (round(h1, 6) if above else 0.0)
+
+
+def generate(svg_path, out_dir, opts, choices=None, filaments=None, tr=None, rep=None,
+             heights=None):
+    """
+    Writes <svg name>_multicolor.3mf in out_dir. Returns (path, report).
+    `heights`: the printer profile's layer heights, for a thickness in layers.
+    """
     tr = tr or Translator()
     rep = rep or Reporter()
     doc = load_document(svg_path, opts.include_strokes)
     scale = scale_for(doc, opts)
     regions, _mapping, _raw = process(doc, scale, opts, rep)
+    # without a base plate the colors are the first layers of the new object
+    thickness, _start = layer_plan(opts, heights, on_bed=opts.base_thickness_mm <= 0)
     parts = build_parts(regions, opts, choices, tr, rep, filaments=filaments,
-                        with_base=True)
+                        with_base=True, thickness=thickness)
 
     os.makedirs(out_dir, exist_ok=True)
     stem = _safe_filename(os.path.splitext(os.path.basename(svg_path))[0], "design")
@@ -369,7 +401,8 @@ def list_objects(project_path):
     if not project_path or not os.path.isfile(project_path):
         raise EngineError("error.no_project")
     prj = Project(project_path)
-    return {"objects": [o.as_dict() for o in prj.objects()], "filaments": prj.filaments()}
+    return {"objects": [o.as_dict() for o in prj.objects()], "filaments": prj.filaments(),
+            "layers": prj.layer_heights()}
 
 
 def match_plate_objects(plate_items, file_objects):
@@ -466,27 +499,40 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
         scale = opts.apply_fraction * min(face_w / rw, face_h / rh)
     rep.log("log.face", name=obj.name, face=face_name(tr, face),
             w=f"{face_w:.2f}", h=f"{face_h:.2f}")
-    if rw * scale > face_w + 1e-6 or rh * scale > face_h + 1e-6:
+    # the design never leaves the face: at most its size, and moved only as
+    # far as it still fits (the page does the same while you drag it)
+    fit_scale = min(face_w / rw, face_h / rh)
+    if scale > fit_scale + 1e-12:
+        scale = fit_scale
         rep.warn("warn.exceeds_face", w=f"{face_w:.2f}", h=f"{face_h:.2f}")
+    room_x, room_y = max(0.0, (face_w - rw * scale) / 2), max(0.0, (face_h - rh * scale) / 2)
+    offset = (max(-room_x, min(room_x, opts.offset_x_mm)), max(-room_y, min(room_y, opts.offset_y_mm)))
+    # a face lying on the bed is printed first: its first layer is the first layer
+    world = np.c_[V_obj, np.ones(len(V_obj))] @ np.asarray(obj.item_matrix, dtype=float).T
+    on_bed = (face.direction == "bottom" and not face.inner
+              and face.height <= float(world[:, 2].min()) + 0.05)
+    thickness, start = layer_plan(opts, project.layer_heights(obj.id), on_bed)
+    if opts.fit != "inlay":
+        start = 0.0
     depth = float((V_obj @ face.normal).max() - (V_obj @ face.normal).min())
-    if opts.fit == "inlay" and opts.thickness_mm > depth:
+    if opts.fit == "inlay" and thickness + start > depth:
         rep.warn("warn.too_thick")
 
     regions, _mapping, _raw = process(doc, scale, opts, rep)
-    placed = place(regions, face, rotation)
+    placed = place(regions, face, rotation, offset=offset)
     if not placed:
         raise EngineError("error.nothing_on_face")
-    z0 = -opts.thickness_mm if opts.fit == "inlay" else 0.0
+    z0 = -(thickness + start) if opts.fit == "inlay" else 0.0
     project_fils = project.filaments()
     parts = build_parts(placed, opts, choices, tr, rep, z0=z0,
                         filaments=filaments or project_fils, with_base=False,
-                        transform=lambda V: to_object(V, face))
+                        transform=lambda V: to_object(V, face), thickness=thickness)
     if project_fils:
         beyond = [p.name for p in parts if p.extruder > len(project_fils)]
         if beyond:
             rep.warn("warn.project_filaments", n=len(project_fils), names=", ".join(beyond))
     rep.log("log.placed_face", w=f"{rw * scale:.2f}", h=f"{rh * scale:.2f}",
-            t=f"{opts.thickness_mm:.2f}")
+            t=f"{thickness:.2f}")
     rep.progress(0.96, "progress.writing")
     project.add_parts(obj.id, parts)
     os.makedirs(os.path.dirname(os.path.abspath(out_path)), exist_ok=True)

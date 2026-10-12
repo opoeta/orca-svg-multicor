@@ -272,6 +272,38 @@ class Project:
                  "color": (normalize_hex(str(colors[i])) or "") if i < len(colors) else ""}
                 for i in range(count)]
 
+    def layer_heights(self, object_id=None):
+        """
+        {"lh": layer height, "h1": first layer height} of the project (the
+        object's own layer height when it has one), or None when unknown.
+        """
+        def num(v):
+            if isinstance(v, (list, tuple)):
+                v = v[0] if v else None
+            try:
+                x = float(str(v).strip().rstrip("%"))
+            except (TypeError, ValueError):
+                return None
+            return x if 0 < x < 5 else None
+
+        cfg = {}
+        data = self.files.get(PROJECT_SETTINGS)
+        if data:
+            try:
+                cfg = json.loads(data.decode("utf-8"))
+            except (ValueError, UnicodeDecodeError):
+                cfg = {}
+        lh = num(cfg.get("layer_height"))
+        h1 = num(cfg.get("initial_layer_print_height")) or num(cfg.get("first_layer_height"))
+        o = self._config_object(object_id) if object_id is not None else None
+        if o is not None:
+            for m in o.findall("metadata"):
+                if m.get("key") == "layer_height" and num(m.get("value")):
+                    lh = num(m.get("value"))
+        if not lh:
+            return None
+        return {"lh": lh, "h1": h1 or lh}
+
     # --------------------------------------------------------------- edits
     def _max_id(self):
         best = 0

@@ -78,10 +78,13 @@ direita e a ação principal no canto superior direito.
      objeto, com os nomes que você vê na mesa (*Topo*, *Frente*, *Frente
      (interna)* para o lado de dentro da parede da frente...) e o tamanho; de
      início fica a maior face virada para cima. A visualização **No objeto**
-     mostra o desenho sobre essa face: o que sobra para fora aparece apagado,
-     porque é cortado. Escolha a **rotação**, o encaixe (*embutido*: a
-     superfície muda de cor; ou *em relevo*) e a largura (vazio = 85% da face)
-     e clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
+     mostra o desenho sobre essa face, onde você **arrasta para mover e puxa o
+     canto para mudar o tamanho**; ele fica sempre dentro da superfície
+     (*Centralizar* volta ao meio). Escolha a **rotação**, o encaixe
+     (*embutido*: a superfície muda de cor; ou *em relevo*) e a largura (vazio =
+     85% da face). Na face apoiada na mesa, **Primeira camada** escolhe se o
+     desenho começa na 1ª camada ou logo acima dela (a 1ª fica da cor do
+     objeto). Depois clique em **Aplicar na mesa**. A API de plugins do OrcaSlicer não
      altera a mesa diretamente, então o desenho vai para o projeto salvo, que
      reabre no OrcaSlicer já com as peças novas. O arquivo original é mantido; o
      resultado é salvo como `*_svg.3mf` na pasta de saída.

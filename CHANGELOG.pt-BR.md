@@ -2,6 +2,24 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.6.0
+
+### Novo
+- **Reenquadrar o desenho no objeto**: em "No objeto", arraste o desenho para
+  mover e puxe o canto para mudar o tamanho. Ele fica sempre dentro da
+  superfície: não pode ser maior que a face nem passar das bordas (o plugin
+  também garante isso). "Centralizar" volta ao meio.
+- **Espessura em camadas**: "Espessura das cores" em mm ou em camadas. A
+  altura de camada é a do projeto (aplicando na mesa) ou a do perfil da
+  impressora (objeto novo), ou a definida em Avançado; na mesa, a altura da
+  1ª camada vale para a primeira delas. A página mostra o resultado em mm.
+- **Primeira camada**: na face apoiada na mesa, escolha se o desenho começa
+  na 1ª camada ou logo acima dela, com a 1ª camada inteira da cor do objeto.
+
+### Mudou
+- Um desenho maior que a superfície escolhida é reduzido para caber, em vez
+  de ser cortado nas bordas.
+
 ## 3.5.1
 
 ### Corrigido

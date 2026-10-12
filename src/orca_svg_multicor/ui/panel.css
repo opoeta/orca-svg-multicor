@@ -211,3 +211,12 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .crow.sel { background: var(--hover); box-shadow: inset 3px 0 0 var(--accent); }
 .fp-other { padding: 3px 10px; border: 1px solid var(--line); border-radius: 4px; font-size: 12px; }
 .fp-other:hover { background: var(--hover); }
+
+/* ---------- the design on the face: move and resize ---------- */
+#preview_place .dz { cursor: move; }
+#preview_place .frame { fill: none; stroke: var(--accent); stroke-width: 1.2; stroke-dasharray: 5 4;
+                        vector-effect: non-scaling-stroke; cursor: move; pointer-events: stroke; }
+#preview_place .handle { fill: var(--accent); stroke: var(--bg); stroke-width: 1.5; vector-effect: non-scaling-stroke;
+                         cursor: nwse-resize; }
+#preview_place { touch-action: none; }
+#frame_row .note { margin: 0; }

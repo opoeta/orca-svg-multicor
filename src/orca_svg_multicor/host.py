@@ -366,6 +366,10 @@ class BaseHost:
     def filaments(self):
         return {"filaments": [], "source": "none"}
 
+    def layer_heights(self):
+        """{"lh", "h1"} of the printer profile in use, or None."""
+        return None
+
     def plate(self):
         return {"objects": [], "dirty": None, "project": ""}
 
@@ -494,6 +498,24 @@ class OrcaHost(BaseHost):
                 "color": colors[i] if i < len(colors) and colors[i] else ""}
                for i in range(total)]
         return {"filaments": out, "source": source}
+
+    def layer_heights(self):
+        """Layer and first layer heights of the profile in use. Read only."""
+        pb = self.orca.host.preset_bundle()
+
+        def value(key):
+            try:
+                v = pb.full_config_value(key)
+                v = v[0] if isinstance(v, (list, tuple)) else v
+                x = float(str(v).split(";")[0].strip())
+                return x if 0 < x < 5 else None
+            except Exception:
+                return None
+
+        lh = value("layer_height")
+        if not lh:
+            return None
+        return {"lh": lh, "h1": value("initial_layer_print_height") or lh}
 
     def plate(self):
         """Objects on the plate now and the project they came from. Read only."""

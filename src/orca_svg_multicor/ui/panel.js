@@ -26,6 +26,8 @@
     plateApply: false,
     plateReadAt: 0,
     faces: null,         // {project, object_id, mtime, list, chosen}
+    frame: { ox: 0, oy: 0 },   // the design's center on the face, mm (not saved)
+    presetLayers: null,        // {lh, h1} of the printer profile in use
     faceWant: null,      // the surface the user picked, found again after a new save
     facesApply: false,
     pendingFaces: null,
@@ -80,6 +82,7 @@
     updateTarget();
     renderAnalysisInfo();
     updateMergeOut();
+    updateLayers();
   }
 
   /* ------------------------------------------------------------ bridge */
@@ -176,14 +179,60 @@
       if (!(k in s)) return;
       var v = s[k];
       if (e.type === 'checkbox') e.checked = !!v;
-      else if (k === 'apply_width_mm') e.value = v ? v : '';
+      else if (k === 'apply_width_mm' || k === 'layer_height_mm') e.value = v ? v : '';
       else e.value = v;
     });
     S.target = s.target === 'new' ? 'new' : 'plate';
     each('input[name=target]', function (r) { r.checked = r.value === S.target; });
     updateSizeMode();
+    updateLayers();
     updateMergeOut();
   }
+  /* ------------------------------------------------------------ thickness in layers */
+  function currentHeights() {
+    var h = S.target === 'plate' ? (S.plate && S.plate.layers) : S.presetLayers;
+    var lh = num($('layer_height_mm').value, 0) || (h && h.lh) || 0.2;
+    return { lh: lh, h1: (h && h.h1) || lh };
+  }
+
+  // the face (or the new object) starts on the bed: its first layer is the first layer
+  function onBedNow() {
+    if (S.target === 'plate') {
+      var f = selectedFace();
+      return !!(f && f.dir === 'bottom' && !f.inner && f.z <= 0.05);
+    }
+    return num($('base_thickness_mm').value, 0) <= 0;
+  }
+
+  // the same plan as engine.layer_plan()
+  function layerPlan() {
+    var h = currentHeights(), onBed = onBedNow();
+    var above = onBed && S.target === 'plate' && $('first_layer').value === 'above';
+    var plan = { above: above, h1: h.h1, lh: h.lh, layers: $('thickness_mode').value === 'layers' };
+    if (plan.layers) {
+      plan.n = Math.max(1, Math.round(num($('thickness_layers').value, 3)));
+      plan.first = onBed && !above;
+      plan.mm = plan.first ? h.h1 + (plan.n - 1) * h.lh : plan.n * h.lh;
+    }
+    return plan;
+  }
+
+  function updateLayers() {
+    var layers = $('thickness_mode').value === 'layers';
+    $('thickness_mm_box').hidden = layers;
+    $('thickness_layers').hidden = !layers;
+    $('first_layer_row').hidden = !(S.target === 'plate' && onBedNow());
+    var p = layerPlan(), parts = [], note = $('layers_note');
+    if (p.layers) {
+      if (p.first && p.n === 1) parts.push(t('layer.note_one', { mm: fmt(p.mm, 2) }));
+      else if (p.first) parts.push(t('layer.note_first', { mm: fmt(p.mm, 2), h1: fmt(p.h1, 2), n: p.n - 1, lh: fmt(p.lh, 2) }));
+      else parts.push(t('layer.note', { mm: fmt(p.mm, 2), n: p.n, lh: fmt(p.lh, 2) }));
+    }
+    if (p.above) parts.push(t('layer.starts', { mm: fmt(p.h1, 2) }));
+    note.textContent = parts.join(' · ');
+    note.hidden = !parts.length;
+  }
+
   // the file's own size needs no number
   function updateSizeMode() {
     var original = $('size_mode').value === 'original';
@@ -359,6 +408,7 @@
   }
 
   function renderFaces() {
+    setTimeout(updateLayers, 0);     // the chosen face decides the first layer row
     var sel = $('face_select'), f = S.faces;
     sel.textContent = '';
     if (!facesMatchItem() || !f.list.length) {
@@ -383,14 +433,22 @@
   }
 
   // the same scale the plugin will use (engine.apply_to_project)
+  // the same scale and position the plugin will use (engine.apply_to_project):
+  // never larger than the face, and moved only as far as it still fits
   function placement(a, face, rot) {
     if (!a || !a.box_mm || !(a.box_mm[0] > 0 && a.box_mm[1] > 0)) return null;
     var W = a.box_mm[0], H = a.box_mm[1];
     var r = rot * Math.PI / 180, c = Math.abs(Math.cos(r)), s = Math.abs(Math.sin(r));
     var rw = W * c + H * s, rh = W * s + H * c;
     var width = num($('apply_width_mm').value, 0);
-    var k = width > 0 ? width / W : num(S.settings.apply_fraction, 0.85) * Math.min(face.w / rw, face.h / rh);
-    return { k: k, w: rw * k, h: rh * k };
+    var kmax = Math.min(face.w / rw, face.h / rh);
+    var k = width > 0 ? width / W : num(S.settings.apply_fraction, 0.85) * kmax;
+    k = Math.min(k, kmax);
+    var fit = { k: k, kmax: kmax, W: W, w: rw * k, h: rh * k };
+    var roomX = Math.max(0, (face.w - fit.w) / 2), roomY = Math.max(0, (face.h - fit.h) / 2);
+    S.frame.ox = Math.max(-roomX, Math.min(roomX, S.frame.ox));
+    S.frame.oy = Math.max(-roomY, Math.min(roomY, S.frame.oy));
+    return fit;
   }
 
   var designCache = { src: null, html: '' };
@@ -408,30 +466,98 @@
   function renderPlacement() {
     var box = $('preview_place'), face = selectedFace(), a = S.analysis;
     if (!face) { box.textContent = ''; box.removeAttribute('data-key'); return; }
-    var rot = rotation(), fit = placement(a, face, rot);
-    var key = [S.faces.project, S.faces.mtime, face.id, rot, fit ? fit.k.toFixed(6) : '',
-               a ? a.svg + a.preview.length : ''].join('|');
-    if (box.getAttribute('data-key') === key) return;
-    box.setAttribute('data-key', key);
-    var b = face.bounds.slice();
-    if (fit) {   // the design is centered on the face: show what falls outside too
-      b = [Math.min(b[0], -fit.w / 2), Math.min(b[1], -fit.h / 2),
-           Math.max(b[2], fit.w / 2), Math.max(b[3], fit.h / 2)];
+    var key = [S.faces.project, S.faces.mtime, face.id, a ? a.svg + a.preview.length : ''].join('|');
+    if (box.getAttribute('data-key') !== key) {
+      box.setAttribute('data-key', key);
+      var b = face.bounds, w = b[2] - b[0], h = b[3] - b[1], pad = Math.max(w, h) * 0.06 + 1;
+      var vb = [b[0] - pad, b[1] - pad, w + 2 * pad, h + 2 * pad].map(function (n) { return n.toFixed(2); });
+      var design = '';
+      if (a) {
+        var g = '<g class="dz">' + designPaths(a) + '</g>';
+        design = '<g class="ghost">' + g + '</g><g clip-path="url(#svgm_face)">' + g + '</g>' +
+                 '<rect class="frame"/><rect class="handle"/>';
+      }
+      // outlines and paths come from the plugin: numbers and hex colors only
+      box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb.join(' ') +
+        '" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="svgm_face">' +
+        '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
+        '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
+        '<path class="face-edge" d="' + face.outline + '"/></svg>';
+      S.handleSize = Math.max(w, h) * 0.035;
     }
-    var w = b[2] - b[0], h = b[3] - b[1], pad = Math.max(w, h) * 0.06 + 1;
-    var vb = [b[0] - pad, b[1] - pad, w + 2 * pad, h + 2 * pad].map(function (n) { return n.toFixed(2); });
-    var design = '';
-    if (fit) {
-      // the plugin rotates counterclockwise with Y up; this SVG has Y down
-      var g = '<g transform="rotate(' + (-rot) + ') scale(' + fit.k.toFixed(6) + ')">' + designPaths(a) + '</g>';
-      design = '<g class="ghost">' + g + '</g><g clip-path="url(#svgm_face)">' + g + '</g>';
+    positionDesign();
+  }
+
+  // where the design is on the face: its transform, its frame and handle
+  function positionDesign() {
+    var box = $('preview_place'), face = selectedFace(), a = S.analysis;
+    var fit = face && placement(a, face, rotation());
+    renderFramePos();
+    if (!fit) return;
+    var ox = S.frame.ox, oy = -S.frame.oy;          // this SVG has Y down
+    var tf = 'translate(' + ox.toFixed(3) + ' ' + oy.toFixed(3) + ') rotate(' + (-rotation()) + ') scale(' +
+             fit.k.toFixed(6) + ')';
+    Array.prototype.forEach.call(box.querySelectorAll('.dz'), function (g) { g.setAttribute('transform', tf); });
+    var frame = box.querySelector('.frame'), handle = box.querySelector('.handle'), hs = S.handleSize || 2;
+    if (frame) {
+      frame.setAttribute('x', (ox - fit.w / 2).toFixed(3)); frame.setAttribute('y', (oy - fit.h / 2).toFixed(3));
+      frame.setAttribute('width', fit.w.toFixed(3)); frame.setAttribute('height', fit.h.toFixed(3));
     }
-    // outlines and paths come from the plugin: numbers and hex colors only
-    box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="' + vb.join(' ') +
-      '" preserveAspectRatio="xMidYMid meet"><defs><clipPath id="svgm_face">' +
-      '<path clip-rule="evenodd" d="' + face.outline + '"/></clipPath></defs>' +
-      '<path class="face" fill-rule="evenodd" d="' + face.outline + '"/>' + design +
-      '<path class="face-edge" d="' + face.outline + '"/></svg>';
+    if (handle) {
+      handle.setAttribute('x', (ox + fit.w / 2 - hs / 2).toFixed(3));
+      handle.setAttribute('y', (oy + fit.h / 2 - hs / 2).toFixed(3));
+      handle.setAttribute('width', hs.toFixed(3)); handle.setAttribute('height', hs.toFixed(3));
+    }
+  }
+
+  function renderFramePos() {
+    var f = S.frame, centered = Math.abs(f.ox) < 0.05 && Math.abs(f.oy) < 0.05;
+    $('frame_pos').textContent = centered ? t('frame.centered') : t('frame.pos', { x: fmt(f.ox), y: fmt(f.oy) });
+    $('btn_center').disabled = centered;
+  }
+
+  function resetFrame() { S.frame.ox = 0; S.frame.oy = 0; }
+
+  // drag the design to move it, its corner to resize it
+  var drag = null;
+  function svgPoint(svg, e) {
+    var pt = svg.createSVGPoint();
+    pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function startDrag(e) {
+    var face = selectedFace(), svg = $('preview_place').querySelector('svg');
+    if (!face || !S.analysis || !svg || e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    var t0 = e.target, onHandle = t0.classList && t0.classList.contains('handle');
+    if (!onHandle && !t0.closest('.dz') && !(t0.classList && t0.classList.contains('frame'))) return;
+    var p = svgPoint(svg, e), fit = placement(S.analysis, face, rotation());
+    drag = { svg: svg, handle: onHandle, x: p.x, y: p.y, ox: S.frame.ox, oy: S.frame.oy, fit: fit, moved: false };
+    $('preview_place').setPointerCapture(e.pointerId);
+  }
+  function moveDrag(e) {
+    if (!drag) return;
+    var p = svgPoint(drag.svg, e), dx = p.x - drag.x, dy = p.y - drag.y;
+    if (!drag.moved && Math.sqrt(dx * dx + dy * dy) < (S.handleSize || 2) / 4) return;
+    drag.moved = true;
+    if (drag.handle) {            // uniform scale about the center
+      var cx = drag.ox, cy = -drag.oy, f = drag.fit;
+      var s = Math.max((p.x - cx) / (f.w / 2), (p.y - cy) / (f.h / 2));
+      var k = Math.max(1 / f.W, Math.min(f.kmax, f.k * s));
+      $('apply_width_mm').value = (k * f.W).toFixed(1);
+    } else {
+      S.frame.ox = drag.ox + dx;
+      S.frame.oy = drag.oy - dy;
+    }
+    positionDesign();
+    renderAnalysisInfo();
+  }
+  function endDrag() {
+    if (!drag) return;
+    if (drag.moved) {
+      S.dragEnd = Date.now();
+      if (drag.handle) rememberSoon();
+    }
+    drag = null;
   }
 
   function requestFaces(thenApply) {
@@ -819,7 +945,9 @@
   }
 
   function jobMessage(action) {
-    return { action: action, svg: S.svg, options: options(), colors: colorsPayload(), reopen: true,
+    var opts = options();
+    if (S.target === 'plate') { opts.offset_x_mm = S.frame.ox; opts.offset_y_mm = S.frame.oy; }
+    return { action: action, svg: S.svg, options: opts, colors: colorsPayload(), reopen: true,
              filaments: S.filaments.length ? S.filaments : null };
   }
 
@@ -875,6 +1003,7 @@
 
   function useSvg(path) {
     S.svg = path;
+    resetFrame();
     S.askColors = S.settings.ask_colors !== false;   // a new drawing: how many colors?
     $('pick_fallback').hidden = true;
     renderSvgLine();
@@ -988,6 +1117,7 @@
   }
 
   function onInit(m) {
+    S.presetLayers = m.layers || null;
     S.cat = m.catalog || S.cat;
     S.lang = m.lang || S.lang;
     S.mode = m.mode || S.mode;
@@ -1116,6 +1246,7 @@
         if (!r.checked) return;
         S.target = r.value;
         updateTarget();
+        updateLayers();
         renderPreview();
         rememberSoon();
         if (S.target === 'plate' && !S.busy) readPlate(false);
@@ -1130,6 +1261,7 @@
     $('face_select').addEventListener('change', function () {
       if (!facesMatchItem()) return;
       S.faces.chosen = parseInt($('face_select').value, 10);
+      resetFrame();
       var f = selectedFace();
       if (f) {
         S.faceWant = { project: S.faces.project, object_id: S.faces.object_id,
@@ -1163,9 +1295,23 @@
     });
     $('wiz_keep').addEventListener('click', closeWizard);
 
+    // the design on the face: drag to move, its corner to resize
+    $('preview_place').addEventListener('pointerdown', startDrag);
+    $('preview_place').addEventListener('pointermove', moveDrag);
+    $('preview_place').addEventListener('pointerup', endDrag);
+    $('preview_place').addEventListener('pointercancel', endDrag);
+    $('btn_center').addEventListener('click', function () {
+      resetFrame(); positionDesign(); renderAnalysisInfo();
+    });
+    ['thickness_mode', 'thickness_layers', 'layer_height_mm', 'first_layer', 'base_thickness_mm'].forEach(function (id) {
+      $(id).addEventListener('input', updateLayers);
+      $(id).addEventListener('change', updateLayers);
+    });
+
     // a color of the drawing: its filament (Ctrl/Shift + click: several)
     $('preview').addEventListener('click', function (e) {
       if (e.target.closest('#fil_pop') || e.target.closest('#wizard')) return;
+      if (S.dragEnd && Date.now() - S.dragEnd < 300) return;      // the end of a drag, not a click
       var p = e.target.closest('path[data-key]');
       var key = p && p.getAttribute('data-key');
       if (!key || !S.rows[key]) { closePicker(); return; }

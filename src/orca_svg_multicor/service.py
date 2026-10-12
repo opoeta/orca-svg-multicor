@@ -228,6 +228,12 @@ class Service:
         except Exception as e:
             return {"filaments": [], "source": f"error: {e}"}
 
+    def _layer_heights(self):
+        try:
+            return self.host.layer_heights()
+        except Exception:  # noqa: BLE001 - optional information
+            return None
+
     def do_init(self, msg):
         s = self.settings()
         fil = self._filaments()
@@ -235,7 +241,7 @@ class Service:
             "type": "init", "version": __version__, "mode": self.mode,
             "lang": self.tr.lang, "lang_setting": s.get("language", "auto"),
             "host_lang": self.host.language(), "languages": i18n.available(),
-            "catalog": self.tr.catalog(), "settings": s,
+            "catalog": self.tr.catalog(), "settings": s, "layers": self._layer_heights(),
             "filaments": fil["filaments"], "filament_source": fil["source"],
             "data_dir": plugin_data_dir(),
         })
@@ -285,6 +291,7 @@ class Service:
                 if listing is None:
                     listing = engine.list_objects(d["project"])
                     self._listing_cache = {key: listing}
+                d["layers"] = listing.get("layers")
                 ids = engine.match_plate_objects(d["objects"], listing["objects"])
                 for item, oid in zip(d["objects"], ids):
                     item["object_id"] = oid
@@ -494,7 +501,8 @@ class Service:
         opts = self._options(msg)
         out = self._out_dir(msg)
         dest, report = engine.generate(svg, out, opts, self._choices(msg),
-                                       filaments=msg.get("filaments"), tr=self.tr, rep=rep)
+                                       filaments=msg.get("filaments"), tr=self.tr, rep=rep,
+                                       heights=self._layer_heights())
         self._finish("generate", dest, report, reopen=bool(msg.get("reopen")))
 
     def do_apply(self, msg, rep):

@@ -82,10 +82,13 @@ right, the main action at the top right.
      the object, named as you see them on the plate (*Top*, *Front*,
      *Front (inner)* for the inside of the front wall...) with their size; the
      largest face looking up is chosen at first. The **On the object** view
-     shows the design on that face: what falls outside it is faded, because it
-     is cut off. Choose the **rotation**, *inlaid* (the surface changes color)
-     or *raised*, and the width (empty = 85% of the face), then **Apply to
-     the plate**. OrcaSlicer's plugin API cannot change the
+     shows the design on that face, where you **drag it to move it and drag
+     its corner to resize it**; it always stays on the surface (*Center* puts
+     it back). Choose the **rotation**, *inlaid* (the surface changes color)
+     or *raised*, and the width (empty = 85% of the face). On the face lying
+     on the bed, **First layer** chooses whether the design starts on the first
+     layer or just above it (the first layer stays the object's color). Then
+     **Apply to the plate**. OrcaSlicer's plugin API cannot change the
      plate directly, so the design goes into the saved project, which reopens
      in OrcaSlicer with the new parts. The original file is kept; the result is
      saved next to it as `*_svg.3mf` in the output folder.
@@ -106,7 +109,7 @@ in Portuguese).
 | Setting | Meaning |
 | --- | --- |
 | Size | Width, height, or the SVG's own physical size |
-| Color thickness | Height of the color parts (mm) |
+| Color thickness | Height of the color parts, in mm or in **layers** (of the project's or printer profile's layer height, or the one in Advanced) |
 | Max. colors | Merge colors down to this number (0 = no limit) |
 | Merge similar tones | Joins colors closer than this ΔE (0 = off) |
 | Include outlines | Turns strokes into printable areas |

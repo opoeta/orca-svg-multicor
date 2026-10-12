@@ -164,3 +164,74 @@ def test_face_listing_survives_a_real_project_layout(tray_project):
     with zipfile.ZipFile(tray_project) as z:
         assert "3D/Objects/object_1.model" in z.namelist()
     assert len(E.list_faces(tray_project, "3")["faces"]) >= 8
+
+
+def _with_layers(path, lh, h1):
+    """The tray project with print settings, as OrcaSlicer saves them."""
+    import json
+    import shutil
+    out = path.replace(".3mf", "_layers.3mf")
+    shutil.copy(path, out)
+    with zipfile.ZipFile(out, "a") as z:
+        z.writestr("Metadata/project_settings.config",
+                   json.dumps({"layer_height": str(lh), "initial_layer_print_height": str(h1)}))
+    return out
+
+
+def _new_z(path):
+    V, F = Project(path).object_mesh("3")
+    new = V[F[-200:]].reshape(-1, 3)
+    return new[:, 2].min(), new[:, 2].max()
+
+
+def test_the_project_layer_heights_are_read(tray_project):
+    assert Project(tray_project).layer_heights() is None
+    assert Project(_with_layers(tray_project, 0.12, 0.2)).layer_heights() == {"lh": 0.12, "h1": 0.2}
+
+
+@pytest.mark.parametrize("first_layer, z", [("include", (0.0, 0.44)), ("above", (0.2, 0.56))])
+def test_on_the_bed_the_first_layer_is_the_choice(tray_project, tmp_path, first_layer, z):
+    """3 layers of 0.12 mm, first layer 0.2 mm, inlaid in the face lying on the bed."""
+    prj = _with_layers(tray_project, 0.12, 0.2)
+    bottom = next(f for f in E.list_faces(prj, "3")["faces"] if f["dir"] == "bottom")
+    out = str(tmp_path / "base.3mf")
+    E.apply_to_project(BADGE, prj, "3", out,
+                       Options(thickness_mode="layers", thickness_layers=3, first_layer=first_layer),
+                       face_id=bottom["id"])
+    assert _new_z(out) == pytest.approx(z, abs=1e-6)
+
+
+def test_layers_away_from_the_bed_are_whole_layers(tray_project, tmp_path):
+    prj = _with_layers(tray_project, 0.12, 0.2)
+    floor = next(f for f in E.list_faces(prj, "3")["faces"] if f["dir"] == "top" and f["z"] == 2.0)
+    out = str(tmp_path / "floor.3mf")
+    E.apply_to_project(BADGE, prj, "3", out, Options(thickness_mode="layers", thickness_layers=2,
+                                                     first_layer="above"), face_id=floor["id"])
+    assert _new_z(out) == pytest.approx((2.0 - 0.24, 2.0), abs=1e-6)   # "above" only on the bed
+
+
+def test_the_design_moves_on_the_face_and_stays_inside(tray_project, tmp_path):
+    floor = next(f for f in E.list_faces(tray_project, "3")["faces"] if f["dir"] == "top" and f["z"] == 2.0)
+    n0 = len(Project(tray_project).object_mesh("3")[1])
+
+    def placed(name, **kw):
+        out = str(tmp_path / name)
+        E.apply_to_project(BADGE, tray_project, "3", out, Options(apply_width_mm=10, **kw),
+                           face_id=floor["id"])
+        V, F = Project(out).object_mesh("3")
+        return V[F[n0:]].reshape(-1, 3)
+
+    center, moved = placed("center.3mf"), placed("moved.3mf", offset_x_mm=12, offset_y_mm=-10)
+    assert moved[:, 0].min() - center[:, 0].min() == pytest.approx(12, abs=0.05)   # 12 mm right
+    # asked for 10 mm down: it stops against the wall, never past it
+    assert -13 - 1e-6 <= moved[:, 1].min() <= -12.9
+
+
+def test_layer_plan():
+    o = Options(thickness_mode="layers", thickness_layers=4)
+    assert E.layer_plan(o, {"lh": 0.1, "h1": 0.3}, on_bed=True) == (0.6, 0.0)
+    assert E.layer_plan(o, None) == (0.8, 0.0)                     # 0.2 mm when unknown
+    assert E.layer_plan(Options(thickness_mode="layers", thickness_layers=4, layer_height_mm=0.08),
+                        {"lh": 0.2, "h1": 0.2}) == (0.32, 0.0)     # the page's layer height wins
+    assert E.layer_plan(Options(thickness_mm=0.6, first_layer="above"), {"lh": 0.2, "h1": 0.25},
+                        on_bed=True) == (0.6, 0.25)

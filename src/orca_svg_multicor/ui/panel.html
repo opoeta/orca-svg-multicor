@@ -42,7 +42,14 @@
         </span></label>
       <p class="note" id="size_note" hidden></p>
       <label class="row"><span data-i18n="opt.thickness">Color thickness</span>
-        <span class="ctl"><span class="unit" data-unit="mm"><input id="thickness_mm" type="number" min="0.04" step="0.04" data-opt="thickness_mm"></span></span></label>
+        <span class="ctl">
+          <span class="unit" data-unit="mm" id="thickness_mm_box"><input id="thickness_mm" type="number" min="0.04" step="0.04" data-opt="thickness_mm"></span>
+          <input id="thickness_layers" type="number" min="1" max="500" step="1" data-opt="thickness_layers" hidden>
+          <select id="thickness_mode" data-opt="thickness_mode" data-i18n-aria="opt.thickness">
+            <option value="mm">mm</option>
+            <option value="layers" data-i18n="layer.unit">layers</option>
+          </select></span></label>
+      <p class="note" id="layers_note" hidden></p>
       <label class="row"><span data-i18n="opt.max_colors">Max. colors</span>
         <span class="ctl"><input id="max_colors" type="number" min="0" max="64" step="1" data-opt="max_colors"
               data-i18n-title="opt.max_colors_hint">
@@ -88,6 +95,17 @@
             <option value="90">90°</option>
             <option value="180">180°</option>
             <option value="270">270°</option>
+          </select></span></label>
+        <div class="row" id="frame_row">
+          <span data-i18n="frame.position">Position</span>
+          <span class="ctl"><span class="note" id="frame_pos"></span>
+            <button type="button" class="flat" id="btn_center" data-i18n="frame.center">Center</button></span>
+        </div>
+        <p class="note" data-i18n="frame.hint">In "On the object", drag the design to move it and its corner to resize it; it stays on the surface.</p>
+        <label class="row" id="first_layer_row" hidden><span data-i18n="layer.first">First layer</span>
+          <span class="ctl"><select id="first_layer" data-opt="first_layer">
+            <option value="include" data-i18n="layer.first_include">With the design</option>
+            <option value="above" data-i18n="layer.first_above">The object's color only</option>
           </select></span></label>
         <label class="row"><span data-i18n="apply.fit">Placement</span>
           <span class="ctl"><select id="fit" data-opt="fit">
@@ -138,6 +156,9 @@
       <label class="row"><span data-i18n="adv.min_detail">Remove details thinner than</span>
         <span class="ctl"><span class="unit" data-unit="mm"><input id="min_detail_mm" type="number" min="0" step="0.05"
               data-opt="min_detail_mm" data-i18n-title="adv.min_detail_hint"></span></span></label>
+      <label class="row"><span data-i18n="layer.height">Layer height</span>
+        <span class="ctl"><span class="unit" data-unit="mm"><input id="layer_height_mm" type="number" min="0" step="0.02"
+              data-opt="layer_height_mm" data-i18n-ph="apply.auto" placeholder="auto" data-i18n-title="layer.height_hint"></span></span></label>
     </details>
   </aside>
 

@@ -195,16 +195,20 @@ def outline_path(poly):
     return "".join(parts)
 
 
-def place(regions, face, rotation=0.0, clip=True):
+def place(regions, face, rotation=0.0, clip=True, offset=(0.0, 0.0)):
     """
-    Rotates the design (mm, centered on 0) and clips it to the face outline.
+    Rotates the design (mm, centered on 0), moves its center to `offset` on
+    the face and clips it to the face outline: it never leaves the object.
     Returns {color: [Polygon]} in the face's 2D frame.
     """
+    dx, dy = offset
     out = {}
     for color, polys in regions.items():
         placed = []
         for p in polys:
             q = _rotate(p, rotation, origin=(0, 0)) if rotation else p
+            if dx or dy:
+                q = _translate(q, dx, dy)
             if clip:
                 q = q.intersection(face.polygon, grid_size=GRID)
             placed.extend(orient(x, 1.0) for x in polygons_of(q) if x.area > 1e-6)

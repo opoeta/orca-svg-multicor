@@ -1,5 +1,24 @@
 # Changelog
 
+## 3.6.0
+
+### Added
+- **Reframe the design on the object**: in "On the object", drag the design
+  to move it and drag its corner to resize it. It always stays on the
+  surface: it cannot be larger than the face nor go past its edges (the
+  plugin keeps it inside too). "Center" puts it back in the middle.
+- **Thickness in layers**: "Color thickness" in mm or in layers. The layer
+  height is the project's (applying to the plate) or the printer profile's
+  (a new object), or the one set in Advanced; on the bed the first layer
+  height counts for the first of them. The page shows the result in mm.
+- **First layer**: on the face lying on the bed, choose whether the design
+  starts on the first layer or just above it, the first layer staying the
+  object's color.
+
+### Changed
+- A design larger than the chosen surface is reduced to fit instead of
+  being cut at its edges.
+
 ## 3.5.1
 
 ### Fixed

@@ -27,6 +27,10 @@ class Options:
         "size_mode": "original",     # original (the file's own size) | width | height
         "size_mm": 100.0,
         "thickness_mm": 0.6,
+        "thickness_mode": "mm",      # mm | layers
+        "thickness_layers": 3,       # with thickness_mode "layers"
+        "layer_height_mm": 0.0,      # 0 = the project's (or the printer profile's)
+        "first_layer": "include",    # on the bed: include | above (stays the object's)
         "max_colors": 4,             # 0 = no limit
         "merge_tolerance": 0.0,      # Delta E; 0 = off
         "include_strokes": True,
@@ -44,6 +48,8 @@ class Options:
         "apply_width_mm": 0.0,       # 0 = automatic
         "apply_fraction": 0.85,
         "rotation": 0.0,             # degrees, counterclockwise as seen on the face
+        "offset_x_mm": 0.0,          # the design's center on the face (face frame)
+        "offset_y_mm": 0.0,
     }
 
     def __init__(self, **kw):
@@ -52,6 +58,10 @@ class Options:
         self.size_mode = d["size_mode"] if d["size_mode"] in ("width", "height", "original") else "original"
         self.size_mm = _f(d["size_mm"], 100.0, 1.0, 5000.0)
         self.thickness_mm = _f(d["thickness_mm"], 0.6, 0.01, 500.0)
+        self.thickness_mode = "layers" if d["thickness_mode"] == "layers" else "mm"
+        self.thickness_layers = _i(d["thickness_layers"], 3, 1, 500)
+        self.layer_height_mm = _f(d["layer_height_mm"], 0.0, 0.0, 2.0)
+        self.first_layer = "above" if d["first_layer"] == "above" else "include"
         self.max_colors = _i(d["max_colors"], 4, 0, 64)
         self.merge_tolerance = _f(d["merge_tolerance"], 0.0, 0.0, 100.0)
         self.include_strokes = _bool(d["include_strokes"])
@@ -69,6 +79,8 @@ class Options:
         self.apply_width_mm = _f(d["apply_width_mm"], 0.0, 0.0, 5000.0)
         self.apply_fraction = _f(d["apply_fraction"], 0.85, 0.05, 1.0)
         self.rotation = _f(d["rotation"], 0.0, -3600.0, 3600.0) % 360.0
+        self.offset_x_mm = _f(d["offset_x_mm"], 0.0, -5000.0, 5000.0)
+        self.offset_y_mm = _f(d["offset_y_mm"], 0.0, -5000.0, 5000.0)
 
     @classmethod
     def from_dict(cls, d):
