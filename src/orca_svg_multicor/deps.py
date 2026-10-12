@@ -34,6 +34,7 @@ def preload():
         import glob  # noqa: F401  batch
         if os.name == "nt":
             from ctypes import wintypes  # noqa: F401
+        import numpy.ma  # noqa: F401  numpy loads it on first use of some routines
         import shapely.geometry.polygon  # noqa: F401  colors, when merging
         import shapely.ops  # noqa: F401
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.8.1
+
+### Fixed
+- "Non-manifold edges" on the parts in OrcaSlicer (3.8.0, with the new
+  cleanup): the triangulation leaves out points lying on a straight edge,
+  and the walls still used them, so their edges did not meet the caps'. The
+  walls now follow the points the caps use. Outlines touching at a single
+  point (a hole touching another outline, two pieces of a color touching)
+  are parted by a hundred-thousandth of a millimeter, so their walls do not
+  meet either, even when a slicer merges equal vertices.
+
 ## 3.8.0
 
 ### Changed

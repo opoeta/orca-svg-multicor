@@ -86,7 +86,8 @@ def test_touching_holes_still_close():
     if not poly.is_valid:
         pytest.skip("shapely considers this polygon invalid")
     V, F = M.extrude([poly], 1.0)
-    assert signed_volume(V, F) == pytest.approx(poly.area, rel=1e-6)
+    # the touching rings are parted by mesh.PINCH_GAP: a hundred-thousandth of a mm
+    assert signed_volume(V, F) == pytest.approx(poly.area, rel=1e-4)
 
 
 def test_write_stl(tmp_path):
@@ -142,3 +143,27 @@ def test_sharp_tips_go_to_the_neighbor():
     bx0, by0, bx1, by1 = shapely.union_all(out["#000000"]).bounds
     assert bx1 < 10.1                                              # the 6 mm needle is gone
     assert (bx0, by0, by1) == pytest.approx((0, 0, 10), abs=1e-3)  # the square kept its corners
+
+
+def _non_manifold(F):
+    import numpy as np
+    e = np.sort(np.concatenate([F[:, [0, 1]], F[:, [1, 2]], F[:, [2, 0]]]), axis=1)
+    _, count = np.unique(e, axis=0, return_counts=True)
+    return int((count != 2).sum())
+
+
+def test_collinear_points_keep_the_mesh_closed():
+    """earcut drops a point in the middle of an edge; the walls must follow."""
+    from orca_svg_multicor.mesh import extrude, is_watertight
+    square = orient(Polygon([(0, 0), (5, 0), (10, 0), (10, 10), (0, 10)]), 1.0)
+    V, F = extrude([square], 1.0)
+    assert is_watertight(F) and _non_manifold(F) == 0
+
+
+def test_rings_touching_at_a_point_keep_the_mesh_manifold():
+    """A hole touching the outline at a vertex: valid, but its walls met there."""
+    from orca_svg_multicor.mesh import extrude, is_watertight
+    p = orient(Polygon([(0, 0), (10, 0), (10, 10), (0, 10)], [[(0, 5), (4, 3), (4, 7)]]), 1.0)
+    assert p.is_valid
+    V, F = extrude([p], 1.0)
+    assert is_watertight(F) and _non_manifold(F) == 0

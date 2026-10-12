@@ -25,6 +25,39 @@ def _triangulate(poly):
     return verts, np.asarray(tris, dtype=np.int64).reshape(-1, 3)
 
 
+PINCH_GAP = 1e-5      # mm
+
+
+def _unpinched(polys):
+    """
+    Polygons whose rings touch at a point (a hole touching another ring), or
+    that touch another polygon of the part, are valid, but their extrusion is
+    not manifold there: they shrink by PINCH_GAP, which parts what touches
+    and nothing else.
+    """
+    import shapely
+    from shapely.geometry.polygon import orient
+
+    polys = list(polys)
+    # pieces of the same part touching each other at a point: a slicer that
+    # merges equal vertices would join their walls there
+    touching = set()
+    if len(polys) > 1:
+        a, b = shapely.STRtree(polys).query(polys, predicate="touches")
+        touching = set(a.tolist()) | set(b.tolist())
+    out = []
+    for k, poly in enumerate(polys):
+        # rings that touch (at a vertex or in the middle of an edge) make the
+        # outline a non-simple set of lines
+        if k not in touching and (not poly.interiors or shapely.is_simple(poly.boundary)):
+            out.append(poly)
+            continue
+        shrunk = poly.buffer(-PINCH_GAP, join_style=2, mitre_limit=2.0)
+        parts = list(getattr(shrunk, "geoms", [shrunk]))
+        out.extend(orient(q, 1.0) for q in parts if q.geom_type == "Polygon" and q.area > 0)
+    return out
+
+
 def extrude(polys, height, z0=0.0):
     """
     Extrudes Polygons (exterior CCW, holes CW) between z0 and z0 + height.
@@ -35,7 +68,7 @@ def extrude(polys, height, z0=0.0):
     """
     V, F = [], []
     base = 0
-    for poly in polys:
+    for poly in _unpinched(polys):
         pts, tris = _triangulate(poly)
         if pts is None or len(tris) == 0:
             continue
@@ -43,19 +76,24 @@ def extrude(polys, height, z0=0.0):
         Vp = np.concatenate([np.column_stack([pts, np.full(n, z0)]),
                              np.column_stack([pts, np.full(n, z0 + height)])])
         Fp = [tris[:, ::-1], tris + n]          # bottom cap (normal -Z), top cap (+Z)
+        # earcut drops collinear and repeated points: the walls follow the
+        # points the caps use, or their edges would not meet
+        used = np.zeros(n, dtype=bool)
+        used[np.unique(tris)] = True
         offset = 0
         for ring in [poly.exterior] + list(poly.interiors):
             m = len(ring.coords) - 1
             if m < 3:
                 continue
-            idx = np.arange(m)
-            nxt = (idx + 1) % m
-            a0 = offset + idx
-            b0 = offset + nxt
+            a0 = np.arange(offset, offset + m)
+            offset += m
+            a0 = a0[used[a0]]
+            if len(a0) < 3:
+                continue
+            b0 = np.roll(a0, -1)
             a1, b1 = a0 + n, b0 + n
             Fp.append(np.column_stack([a0, b0, b1]))
             Fp.append(np.column_stack([a0, b1, a1]))
-            offset += m
         Fp = np.concatenate(Fp).astype(np.int64)
         # weld coincident vertices inside this polygon (touching rings share points)
         _, first, inverse = np.unique(np.round(Vp, 6), axis=0, return_index=True,

@@ -2,6 +2,18 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.8.1
+
+### Corrigido
+- "Arestas não-manifold" nas peças no OrcaSlicer (3.8.0, com a limpeza nova):
+  a triangulação deixa de fora pontos que ficam sobre uma aresta reta, e as
+  paredes ainda os usavam, então as arestas delas não encontravam as da
+  tampa. Agora as paredes seguem os pontos que a tampa usa. Contornos que se
+  tocam num único ponto (um furo encostando em outro contorno, duas partes de
+  uma cor encostando) são afastados por um centésimo de milésimo de
+  milímetro, para que as paredes também não se encontrem ali, mesmo quando o
+  fatiador junta vértices iguais.
+
 ## 3.8.0
 
 ### Mudou
