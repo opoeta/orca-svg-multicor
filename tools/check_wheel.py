@@ -15,7 +15,6 @@ REQUIRED = [
     "orca_svg_multicor/__init__.py",
     "orca_svg_multicor/capabilities.py",
     "orca_svg_multicor/icon.png",
-    "orca_svg_multicor/icon.svg",
     "orca_svg_multicor/ui/panel.html",
     "orca_svg_multicor/ui/panel.css",
     "orca_svg_multicor/ui/panel.js",
@@ -50,6 +49,9 @@ def check(path):
     for d in DEPS:
         if f"Requires-Dist: {d}" not in meta:
             problems.append(f"METADATA does not require {d}")
+    # OrcaSlicer tries icon.svg before icon.png for the page tab
+    if "orca_svg_multicor/icon.svg" in names:
+        problems.append("icon.svg would replace icon.png on the page tab")
     if any(n.endswith((".pyc", "_dev_data/")) or "/tests/" in n for n in names):
         problems.append("stray files in the wheel")
     # OrcaSlicer's audit hook refuses plugins any path with these words in a name

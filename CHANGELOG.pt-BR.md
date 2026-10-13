@@ -2,6 +2,19 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.15.0
+
+### Mudou
+- **Visual novo**: ícone novo do plugin (anéis de filamento laranja, branco e
+  ciano com nós de curva) na aba da página, no diálogo de Plugins do
+  OrcaSlicer e na OrcaCloud, e todos os ícones da página redesenhados no
+  mesmo estilo: fundo azul-marinho e formas com volume. As vistas
+  (Resultado, Original, No objeto), *Centralizar*, *Preencher*, *Ajustar* e
+  o botão principal também ganharam ícones, e o ícone do botão principal
+  acompanha o destino (aplicar num objeto ou adicionar um novo).
+- Cursores novos para o pincel, o balde e o conta-gotas, com contorno escuro
+  para aparecerem sobre qualquer cor.
+
 ## 3.14.0
 
 ### Novo

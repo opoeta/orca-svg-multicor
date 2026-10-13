@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SVG Multicolor banner</title>
+<style>
+  html, body { margin: 0; background: #061930; }
+  .b { position: relative; width: 1280px; height: 400px; overflow: hidden;
+       background: radial-gradient(900px 500px at 18% 0%, rgba(255,255,255,.10), rgba(255,255,255,0) 70%),
+                   linear-gradient(135deg, #143562 0%, #0B2547 55%, #061930 100%); }
+  .icon { position: absolute; left: 70px; top: 50px; width: 300px; height: 300px;
+          filter: drop-shadow(0 18px 28px rgba(0,0,0,.45)); }
+  h1 { position: absolute; left: 430px; top: 92px; margin: 0; color: #F4F1EC;
+       font: 600 92px/1 "Segoe UI Variable Display", "Segoe UI", sans-serif; letter-spacing: -1.5px; }
+  h1 span { color: #F7801A; }
+  p { position: absolute; left: 434px; top: 214px; margin: 0; color: #9FB3CC;
+      font: 400 30px/1.2 "Segoe UI Variable Text", "Segoe UI", sans-serif; }
+  p b { color: #18BFE3; font-weight: 600; }
+  svg.deco { position: absolute; inset: 0; }
+</style>
+</head>
+<body>
+<div class="b">
+  <svg class="deco" width="1280" height="400" viewBox="0 0 1280 400">
+    <defs>
+      <linearGradient id="rib" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#C4BCB5"/></linearGradient>
+    </defs>
+    <!-- a Bezier path with its two nodes and cross-hairs, as on the icon -->
+    <path d="M760 330C880 250 1000 380 1180 300" fill="none" stroke="#000" stroke-opacity=".3" stroke-width="7" transform="translate(3 5)"/>
+    <path d="M760 330C880 250 1000 380 1180 300" fill="none" stroke="url(#rib)" stroke-width="6" stroke-linecap="round"/>
+    <g stroke-width="4" stroke-dasharray="12 9" stroke-linecap="round">
+      <path d="M760 268V302M760 358V392M698 330H732M788 330H822" stroke="#F7801A"/>
+      <path d="M1180 238V272M1180 328V362M1118 300H1152M1208 300H1242" stroke="#18BFE3"/>
+    </g>
+    <circle cx="764" cy="335" r="17" fill="#000" fill-opacity=".3"/>
+    <circle cx="760" cy="330" r="17" fill="#F6F2EE"/>
+    <circle cx="760" cy="330" r="10" fill="#F7801A"/>
+    <circle cx="756" cy="326" r="3" fill="#FFF" fill-opacity=".9"/>
+    <circle cx="1184" cy="305" r="17" fill="#000" fill-opacity=".3"/>
+    <circle cx="1180" cy="300" r="17" fill="#F6F2EE"/>
+    <circle cx="1180" cy="300" r="10" fill="#18BFE3"/>
+    <circle cx="1176" cy="296" r="3" fill="#FFF" fill-opacity=".9"/>
+  </svg>
+  <img class="icon" src="icon-1254.png" alt="">
+  <h1>SVG <span>Multicolor</span></h1>
+  <p>Vector color. <b>Precise fit.</b> Print-ready layers.</p>
+</div>
+</body>
+</html>

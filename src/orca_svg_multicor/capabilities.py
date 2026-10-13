@@ -36,8 +36,9 @@ from .service import SETTINGS_REV, Service, settings_defaults
 NAME_PAGE = "SVG Multicolor"
 NAME_WINDOW = "SVG Multicolor - window"
 NAME_BATCH = "SVG Multicolor - batch"
-# OrcaSlicer drops the extension and tries <name>.svg before <name>.png, so the
-# crisp icon.svg next to icon.png is the one shown on the page tab.
+# OrcaSlicer drops the extension and tries <name>.svg before <name>.png, and draws
+# the page tab's icon 20 px tall (bilinear). The icon is a rendered picture, so the
+# package has only icon.png, at 40 px (twice the tab, sharp at 100 to 200 % scale).
 ICON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "icon.png")
 ICON_SVG_PATH = ICON_PATH[:-4] + ".svg"
 _PLUGIN_TYPE = getattr(orca, "PluginType", None)
@@ -125,7 +126,7 @@ class _Common:
             mode = self._store()[0]().get("icon_mode") or "path"
         except Exception:
             pass
-        if mode == "svg":
+        if mode == "svg" and os.path.isfile(ICON_SVG_PATH):
             try:
                 with open(ICON_SVG_PATH, encoding="utf-8") as f:
                     return f.read()

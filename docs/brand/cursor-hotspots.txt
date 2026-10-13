@@ -1,0 +1,3 @@
+cursor-brush.svg: hotspot (6, 26) at 32 px
+cursor-bucket.svg: hotspot (24, 25) at 32 px
+cursor-eyedropper.svg: hotspot (6, 26) at 32 px

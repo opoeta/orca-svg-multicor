@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.15.0
+
+### Changed
+- **New look**: a new plugin icon (filament rings in orange, white and cyan
+  with Bezier nodes) on the page tab, the OrcaSlicer Plugins dialog and
+  OrcaCloud, and every icon of the page redrawn to match it: navy tiles with
+  soft 3D shapes. The views (Result, Original, On the object), *Center*,
+  *Fill*, *Fit* and the main button now have icons too, and the main button's
+  icon follows the target (apply to an object, or add a new one).
+- New cursors for the brush, the bucket and the dropper, with a dark outline
+  so they show on any color.
+
 ## 3.14.0
 
 ### Added

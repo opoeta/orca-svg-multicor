@@ -75,8 +75,12 @@ def test_page_ui_icon_and_messages(plugin, tmp_path):
     html = page.get_ui()
     assert '"lang": "pt_BR"' in html                        # follows OrcaSlicer's language
     icon = page.get_icon()
-    assert os.path.isfile(icon)
-    assert os.path.isfile(icon[:-4] + ".svg")      # OrcaSlicer tries <name>.svg first
+    assert os.path.isfile(icon) and icon.endswith(".png")
+    assert not os.path.isfile(icon[:-4] + ".svg")  # OrcaSlicer tries <name>.svg first: none, so the PNG
+    with open(icon, "rb") as f:
+        head = f.read(24)
+    assert head[:8] == b"\x89PNG\r\n\x1a\n"
+    assert int.from_bytes(head[16:20], "big") == int.from_bytes(head[20:24], "big") == 40   # the tab is 20 px
     page.on_message({"action": "init"})
     init = next(m for m in page.posted if m["type"] == "init")
     assert [f["color"] for f in init["filaments"]] == ["#ffffff", "#101010"]

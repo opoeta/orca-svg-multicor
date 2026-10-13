@@ -264,6 +264,7 @@
     $('target_new').hidden = S.target !== 'new';
     $('base_opts').hidden = num($('base_thickness_mm').value, 0) <= 0;
     $('btn_run_label').textContent = t(S.target === 'plate' ? 'out.apply_plate' : 'out.add_plate');
+    $('btn_run_icon').setAttribute('href', S.target === 'plate' ? '#i-apply' : '#i-add');
     $('view_place').hidden = S.target !== 'plate';
   }
 
