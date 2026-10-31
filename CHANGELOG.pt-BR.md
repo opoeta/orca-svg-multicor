@@ -2,6 +2,17 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.17.0
+
+### Adicionado
+- **Réguas e guias**, como no Photoshop e no Illustrator, na vista "No
+  objeto". O botão *Réguas* mostra réguas em mm a partir do canto superior
+  esquerdo da superfície; o botão *Guias* mostra ou esconde as guias. Arraste
+  de uma régua para criar uma guia, arraste a guia para movê-la, arraste de
+  volta para a régua (ou dê duplo clique) para removê-la, ou apague todas com
+  a lixeira. O desenho gruda nas guias pelas bordas e pelo centro. As guias
+  não são salvas com o desenho.
+
 ## 3.16.0
 
 ### Adicionado

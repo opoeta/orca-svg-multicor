@@ -328,5 +328,10 @@
   "color.navy": "navy",
   "color.purple": "purple",
   "color.magenta": "magenta",
-  "color.pink": "pink"
+  "color.pink": "pink",
+  "ruler.rulers": "Rulers",
+  "ruler.rulers_tip": "Show or hide the rulers (mm from the surface's top-left corner)",
+  "ruler.guides": "Guides",
+  "ruler.guides_tip": "Show or hide the guides. Drag from a ruler to make one; the design snaps to them. Drag it back onto the ruler, or double-click, to remove it",
+  "ruler.clear_tip": "Clear all guides"
 }

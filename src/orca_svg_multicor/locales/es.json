@@ -328,5 +328,10 @@
   "color.navy": "azul marino",
   "color.purple": "morado",
   "color.magenta": "magenta",
-  "color.pink": "rosa"
+  "color.pink": "rosa",
+  "ruler.rulers": "Reglas",
+  "ruler.rulers_tip": "Mostrar u ocultar las reglas (mm desde la esquina superior izquierda de la superficie)",
+  "ruler.guides": "Guías",
+  "ruler.guides_tip": "Mostrar u ocultar las guías. Arrastra desde una regla para crear una; el diseño se ajusta a ellas. Arrástrala de vuelta a la regla, o haz doble clic, para quitarla",
+  "ruler.clear_tip": "Borrar todas las guías"
 }

@@ -590,10 +590,15 @@
   function renderPaintBar() {
     var bar = $('paint_bar'), on = currentView() === 'placement' && !!selectedFace();
     bar.hidden = !on;
+    drawRulers();
     var place = $('preview_place');
     ['brush', 'bucket', 'pick'].forEach(function (k) { place.classList.toggle('tool-' + k, on && S.tool === k); });
     place.classList.toggle('picking', on && !!S.picking && (S.tool === 'brush' || S.tool === 'bucket'));
     if (!on) return;
+    $('btn_rulers').setAttribute('aria-pressed', String(!!S.rulers));
+    $('btn_guides').setAttribute('aria-pressed', String(!!S.guidesOn));
+    var gs = guideStore();
+    $('btn_guides_clear').disabled = !(gs.v.length || gs.h.length);
     each('#paint_tools button', function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-tool') === S.tool)); });
     $('paint_size_box').hidden = S.tool !== 'brush';
     // the color the brush and the bucket use: picked, or "auto" (the one next to it)
@@ -625,6 +630,7 @@
     var cy = Math.max(b[1] + h / 2, Math.min(b[1] + b[3] - h / 2, S.vc[1]));
     S.vc = [cx, cy];
     svg.setAttribute('viewBox', [cx - w / 2, cy - h / 2, w, h].map(function (n) { return n.toFixed(3); }).join(' '));
+    renderGuides();
   }
   function rootPoint(svg, e) {
     var pt = svg.createSVGPoint();
@@ -823,6 +829,13 @@
       var w = Math.max.apply(null, xs) - x0, h = Math.max.apply(null, ys) - y0, size = Math.max(w, h);
       var pad = size * 0.06 + 1, fs = size * 0.035 + 0.5, room = face.sides ? pad + fs * 1.6 : pad;
       var vb = [x0 - room, y0 - room, w + 2 * room, h + 2 * room].map(function (n) { return n.toFixed(2); });
+      // where the rulers start: the face's top-left corner as the view shows it
+      var fb = face.bounds || [0, 0, 0, 0], fxs = [], fys = [];
+      [[fb[0], fb[1]], [fb[2], fb[1]], [fb[2], fb[3]], [fb[0], fb[3]]].forEach(function (p) {
+        fxs.push(p[0] * c - p[1] * sn); fys.push(p[0] * sn + p[1] * c);
+      });
+      S.faceOrigin = [Math.min.apply(null, fxs), Math.min.apply(null, fys)];
+      S.turnDeg = turn;
       // zoom (Alt + wheel) stays while the same face is shown the same way
       S.baseVB = vb.map(Number);
       var zkey = paintKey() + '|' + viewTurn();
@@ -929,6 +942,7 @@
     return pt.matrixTransform(space.getScreenCTM().inverse());
   }
   function startDrag(e) {
+    if (e.target.closest && e.target.closest('.guide-hit')) return;      // a guide, not the design
     var face = selectedFace(), svg = $('preview_place').querySelector('svg');
     if (svg && (e.button === 1 || (e.button === 0 && S.spaceDown))) {
       e.preventDefault();                        // no autoscroll on the middle button
@@ -977,10 +991,129 @@
     } else {
       S.frame.ox = drag.ox + dx;
       S.frame.oy = drag.oy - dy;
+      snapToGuides();
     }
     positionDesign();
     renderAnalysisInfo();
   }
+  /* ------------------------------------------------------------ rulers and guides */
+  // Only the view (not saved with the drawing). Rulers count mm from the face's
+  // top-left corner as shown; a guide is a line in the same space, made by
+  // dragging from a ruler, moved by dragging it, removed by dragging it back
+  // onto the ruler (or a double click). The design snaps to the guides.
+  var SNAP_PX = 6;
+  function placeSvg() { return $('preview_place').querySelector('svg'); }
+  function guideStore() {
+    var k = S.zoomKey || '';
+    S.guideSets = S.guideSets || {};
+    return S.guideSets[k] || (S.guideSets[k] = { v: [], h: [] });
+  }
+  function readFlag(k, d) { try { var v = localStorage.getItem(k); return v === null ? d : v === '1'; } catch (e) { return d; } }
+  function saveFlag(k, v) { try { localStorage.setItem(k, v ? '1' : '0'); } catch (e) { /* only the view's memory */ } }
+
+  // a round step between labeled ticks (at least ~60 px apart) and the one between small ticks
+  function niceStep(pxPerMm) {
+    var want = 60 / pxPerMm, p = Math.pow(10, Math.floor(Math.log10(want))), m = want / p;
+    var lead = m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10;
+    return [lead * p, lead * p / (lead === 2 ? 4 : 5)];
+  }
+  // start: mm at the ruler's first pixel; k: px per mm
+  function rulerSvg(len, thick, vertical, start, k) {
+    var st = niceStep(k), step = st[0], sub = st[1], n = Math.round(step / sub);
+    var i0 = Math.floor(start / sub), i1 = Math.ceil((start + len / k) / sub), out = [];
+    for (var i = i0; i <= i1; i++) {
+      var mm = i * sub, px = (mm - start) * k, major = i % n === 0;
+      if (px < 0 || px > len) continue;
+      var a = major ? thick - 10 : thick - 4, q = px.toFixed(1);
+      out.push(vertical ? '<line x1="' + a + '" x2="' + thick + '" y1="' + q + '" y2="' + q + '"/>'
+                        : '<line y1="' + a + '" y2="' + thick + '" x1="' + q + '" x2="' + q + '"/>');
+      if (major) {
+        var label = String(parseFloat(mm.toFixed(3)));
+        out.push(vertical
+          ? '<text transform="translate(8 ' + (px + 3).toFixed(1) + ') rotate(-90)" text-anchor="end">' + label + '</text>'
+          : '<text x="' + (px + 3).toFixed(1) + '" y="9">' + label + '</text>');
+      }
+    }
+    return '<svg width="' + (vertical ? thick : len) + '" height="' + (vertical ? len : thick) + '">' + out.join('') + '</svg>';
+  }
+  function drawRulers() {
+    var on = !!S.rulers && currentView() === 'placement' && !!selectedFace() && !!S.faceOrigin;
+    ['ruler_h', 'ruler_v', 'ruler_corner'].forEach(function (id) { $(id).hidden = !on; });
+    var svg = on && placeSvg(), m = svg && svg.getScreenCTM();
+    if (!m || !(m.a > 0)) return;
+    var hr = $('ruler_h').getBoundingClientRect(), vr = $('ruler_v').getBoundingClientRect(), o = S.faceOrigin;
+    $('ruler_h').innerHTML = rulerSvg(hr.width, hr.height, false, (hr.left - m.e) / m.a - o[0], m.a);
+    $('ruler_v').innerHTML = rulerSvg(vr.height, vr.width, true, (vr.top - m.f) / m.d - o[1], m.d);
+  }
+  function drawGuides() {
+    var svg = placeSvg(), b = S.baseVB;
+    if (!svg || !b) return;
+    var old = svg.querySelector('.guides');
+    if (old) old.parentNode.removeChild(old);
+    if (!S.guidesOn || !S.faceOrigin) return;
+    var g = guideStore(), o = S.faceOrigin, h = '';
+    var x0 = b[0] - 5000, x1 = b[0] + b[2] + 5000, y0 = b[1] - 5000, y1 = b[1] + b[3] + 5000;
+    g.v.forEach(function (x, i) {
+      var a = (o[0] + x).toFixed(3), l = ' x1="' + a + '" x2="' + a + '" y1="' + y0 + '" y2="' + y1 + '"';
+      h += '<line class="guide"' + l + '/><line class="guide-hit" data-axis="v" data-i="' + i + '"' + l + '/>';
+    });
+    g.h.forEach(function (y, i) {
+      var a = (o[1] + y).toFixed(3), l = ' y1="' + a + '" y2="' + a + '" x1="' + x0 + '" x2="' + x1 + '"';
+      h += '<line class="guide"' + l + '/><line class="guide-hit" data-axis="h" data-i="' + i + '"' + l + '/>';
+    });
+    svg.insertAdjacentHTML('beforeend', '<g class="guides">' + h + '</g>');
+  }
+  function renderGuides() { drawGuides(); drawRulers(); }
+
+  // drag a guide (a new one from a ruler, or an existing one)
+  function trackGuide(axis, i) {
+    var svg = placeSvg(), list = guideStore()[axis], o = S.faceOrigin;
+    if (!svg || !o) return;
+    function at(e) { var p = rootPoint(svg, e); return axis === 'v' ? p.x - o[0] : p.y - o[1]; }
+    function move(e) { list[i] = at(e); drawGuides(); }
+    function up(e) {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', up);
+      var r = $(axis === 'v' ? 'ruler_v' : 'ruler_h').getBoundingClientRect();
+      if (axis === 'v' ? e.clientX < r.right : e.clientY < r.bottom) list.splice(i, 1);      // back onto its ruler
+      renderGuides(); renderPaintBar();
+    }
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', up);
+  }
+  function newGuide(axis, e) {
+    if (!placeSvg() || !S.faceOrigin) return;
+    e.preventDefault();
+    var list = guideStore()[axis];
+    list.push(0);
+    S.guidesOn = true; saveFlag('svgm_guides', true);
+    trackGuide(axis, list.length - 1);
+  }
+  // the design's edges and center fall on a guide when within a few pixels
+  function snapToGuides() {
+    var g = guideStore(), face = selectedFace(), svg = placeSvg(), m = svg && svg.getScreenCTM();
+    var fit = face && placement(S.analysis, face, rotation());
+    if (!S.guidesOn || !fit || !m || !(m.a > 0) || !S.faceOrigin || !(g.v.length || g.h.length)) return;
+    var r = (S.turnDeg || 0) * Math.PI / 180, c = Math.cos(r), s = Math.sin(r), o = S.faceOrigin;
+    var px = S.frame.ox, py = -S.frame.oy, cx = px * c - py * s, cy = px * s + py * c;     // center, as the view shows it
+    var hw = (Math.abs(c) * fit.w + Math.abs(s) * fit.h) / 2, hh = (Math.abs(s) * fit.w + Math.abs(c) * fit.h) / 2;
+    var thr = SNAP_PX / m.a;
+    function pull(points, lines) {
+      var best = 0, found = false;
+      points.forEach(function (p) {
+        lines.forEach(function (l) {
+          var d = l - p;
+          if (Math.abs(d) < thr && (!found || Math.abs(d) < Math.abs(best))) { best = d; found = true; }
+        });
+      });
+      return best;
+    }
+    var dx = pull([cx - hw, cx, cx + hw], g.v.map(function (x) { return o[0] + x; }));
+    var dy = pull([cy - hh, cy, cy + hh], g.h.map(function (y) { return o[1] + y; }));
+    S.frame.ox += dx * c + dy * s;           // back into the face's own frame
+    S.frame.oy -= -dx * s + dy * c;
+  }
+
   // arrows move the design on the face (what the screen shows: right, up);
   // 1 mm a press, Shift: 0.1 mm. Not while typing in a field.
   var ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
@@ -1967,6 +2100,22 @@
       renderFramePos();
     });
     $('preview_place').addEventListener('pointerdown', startDrag);
+    S.rulers = readFlag('svgm_rulers', false);
+    S.guidesOn = readFlag('svgm_guides', true);
+    $('btn_rulers').addEventListener('click', function () { S.rulers = !S.rulers; saveFlag('svgm_rulers', S.rulers); renderGuides(); renderPaintBar(); });
+    $('btn_guides').addEventListener('click', function () { S.guidesOn = !S.guidesOn; saveFlag('svgm_guides', S.guidesOn); renderGuides(); renderPaintBar(); });
+    $('btn_guides_clear').addEventListener('click', function () { var g = guideStore(); g.v.length = g.h.length = 0; renderGuides(); renderPaintBar(); });
+    $('ruler_h').addEventListener('pointerdown', function (e) { if (e.button === 0) newGuide('h', e); });
+    $('ruler_v').addEventListener('pointerdown', function (e) { if (e.button === 0) newGuide('v', e); });
+    $('preview_place').addEventListener('pointerdown', function (e) {
+      var hit = e.button === 0 && S.tool === 'move' && e.target.closest && e.target.closest('.guide-hit');
+      if (hit) { e.preventDefault(); trackGuide(hit.getAttribute('data-axis'), Number(hit.getAttribute('data-i'))); }
+    });
+    $('preview_place').addEventListener('dblclick', function (e) {
+      var hit = e.target.closest && e.target.closest('.guide-hit');
+      if (hit) { guideStore()[hit.getAttribute('data-axis')].splice(Number(hit.getAttribute('data-i')), 1); renderGuides(); renderPaintBar(); }
+    });
+    if (window.ResizeObserver) new ResizeObserver(renderGuides).observe($('preview_place'));
     $('preview_place').addEventListener('pointermove', moveDrag);
     $('preview_place').addEventListener('pointerup', endDrag);
     $('preview_place').addEventListener('pointercancel', endDrag);

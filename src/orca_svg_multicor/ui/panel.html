@@ -197,6 +197,10 @@
       <div class="stage" id="preview_result" hidden></div>
       <img class="stage" id="preview_original" alt="" hidden>
       <div class="stage" id="preview_place" hidden></div>
+      <!-- rulers (mm from the face's top-left corner as shown) and guides: only the view -->
+      <div class="ruler-corner" id="ruler_corner" hidden></div>
+      <div class="ruler ruler-h" id="ruler_h" hidden></div>
+      <div class="ruler ruler-v" id="ruler_v" hidden></div>
       <!-- painting on the surface: the drawing's colors, in the same layers -->
       <div class="paint-bar" id="paint_bar" hidden role="toolbar" data-i18n-aria="paint.tools">
         <span class="paint-tools" id="paint_tools">
@@ -208,6 +212,14 @@
                   data-i18n-aria="paint.brush"><svg class="ic"><use href="#i-brush"/></svg></button>
           <button type="button" class="flat icon" data-tool="bucket" aria-pressed="false" data-i18n-title="paint.bucket"
                   data-i18n-aria="paint.bucket"><svg class="ic"><use href="#i-bucket"/></svg></button>
+        </span>
+        <span class="paint-tools" id="guide_tools">
+          <button type="button" class="flat" id="btn_rulers" aria-pressed="false" data-i18n="ruler.rulers"
+                  data-i18n-title="ruler.rulers_tip">Rulers</button>
+          <button type="button" class="flat" id="btn_guides" aria-pressed="true" data-i18n="ruler.guides"
+                  data-i18n-title="ruler.guides_tip">Guides</button>
+          <button type="button" class="flat icon" id="btn_guides_clear" data-i18n-title="ruler.clear_tip"
+                  data-i18n-aria="ruler.clear_tip"><svg class="ic"><use href="#i-trash"/></svg></button>
         </span>
         <label class="paint-size" id="paint_size_box" hidden><span data-i18n="paint.size">Brush</span>
           <span class="unit" data-unit="mm"><input id="paint_size" type="number" min="0.4" max="40" step="0.2" value="2"></span></label>

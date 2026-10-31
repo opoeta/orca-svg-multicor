@@ -328,5 +328,10 @@
   "color.navy": "남색",
   "color.purple": "보라",
   "color.magenta": "마젠타",
-  "color.pink": "분홍"
+  "color.pink": "분홍",
+  "ruler.rulers": "눈금자",
+  "ruler.rulers_tip": "눈금자 표시/숨기기 (표면 왼쪽 위 모서리부터 mm)",
+  "ruler.guides": "안내선",
+  "ruler.guides_tip": "안내선 표시/숨기기. 눈금자에서 끌어 만들면 디자인이 안내선에 붙습니다. 눈금자로 다시 끌거나 더블클릭하면 삭제됩니다",
+  "ruler.clear_tip": "모든 안내선 지우기"
 }

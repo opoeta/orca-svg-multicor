@@ -290,3 +290,18 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
                          cursor: nwse-resize; }
 #preview_place { touch-action: none; }
 #frame_row .note { margin: 0; }
+
+/* rulers and guides (only the view) */
+.ruler, .ruler-corner { position: absolute; z-index: 3; background: color-mix(in srgb, var(--bg) 92%, transparent);
+                        color: var(--muted); user-select: none; -webkit-user-select: none; }
+.ruler-corner { top: 0; left: 0; width: 18px; height: 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ruler-h { top: 0; left: 18px; right: 0; height: 18px; border-bottom: 1px solid var(--line); cursor: row-resize; }
+.ruler-v { top: 18px; left: 0; bottom: 0; width: 18px; border-right: 1px solid var(--line); cursor: col-resize; }
+.ruler svg { display: block; pointer-events: none; }
+.ruler line { stroke: var(--muted); stroke-width: 1; }
+.ruler text { fill: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+.stage .guide { stroke: #18bfe3; stroke-width: 1; vector-effect: non-scaling-stroke; pointer-events: none; }
+.stage .guide-hit { stroke: transparent; stroke-width: 8; vector-effect: non-scaling-stroke; fill: none; pointer-events: stroke; }
+.stage .guide-hit[data-axis="v"] { cursor: col-resize; }
+.stage .guide-hit[data-axis="h"] { cursor: row-resize; }
+#preview_place.tool-brush .guide-hit, #preview_place.tool-bucket .guide-hit, #preview_place.tool-pick .guide-hit { pointer-events: none; }

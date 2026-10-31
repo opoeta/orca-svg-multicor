@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.17.0
+
+### Added
+- **Rulers and guides**, as in Photoshop and Illustrator, in the "On the object"
+  view. The *Rulers* button shows rulers in mm from the surface's top-left
+  corner; the *Guides* button shows or hides the guides. Drag from a ruler to
+  make a guide, drag a guide to move it, drag it back onto the ruler (or
+  double-click) to remove it, or clear them all with the trash button. The
+  design snaps to the guides by its edges and center. Guides are not saved
+  with the drawing.
+
 ## 3.16.0
 
 ### Added

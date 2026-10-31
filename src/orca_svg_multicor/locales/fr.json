@@ -328,5 +328,10 @@
   "color.navy": "bleu marine",
   "color.purple": "violet",
   "color.magenta": "magenta",
-  "color.pink": "rose"
+  "color.pink": "rose",
+  "ruler.rulers": "Règles",
+  "ruler.rulers_tip": "Afficher ou masquer les règles (mm depuis le coin supérieur gauche de la surface)",
+  "ruler.guides": "Repères",
+  "ruler.guides_tip": "Afficher ou masquer les repères. Faites glisser depuis une règle pour en créer un ; le dessin s'y aimante. Faites-le glisser vers la règle, ou double-cliquez, pour le supprimer",
+  "ruler.clear_tip": "Effacer tous les repères"
 }

@@ -328,5 +328,10 @@
   "color.navy": "azul-marinho",
   "color.purple": "roxo",
   "color.magenta": "magenta",
-  "color.pink": "rosa"
+  "color.pink": "rosa",
+  "ruler.rulers": "Réguas",
+  "ruler.rulers_tip": "Mostrar ou ocultar as réguas (mm a partir do canto superior esquerdo da superfície)",
+  "ruler.guides": "Guias",
+  "ruler.guides_tip": "Mostrar ou ocultar as guias. Arraste de uma régua para criar uma; o desenho gruda nelas. Arraste de volta para a régua, ou dê duplo clique, para remover",
+  "ruler.clear_tip": "Limpar todas as guias"
 }

@@ -328,5 +328,10 @@
   "color.navy": "lacivert",
   "color.purple": "mor",
   "color.magenta": "macenta",
-  "color.pink": "pembe"
+  "color.pink": "pembe",
+  "ruler.rulers": "Cetveller",
+  "ruler.rulers_tip": "Cetvelleri göster veya gizle (yüzeyin sol üst köşesinden mm)",
+  "ruler.guides": "Kılavuzlar",
+  "ruler.guides_tip": "Kılavuzları göster veya gizle. Oluşturmak için bir cetvelden sürükleyin; çizim onlara yapışır. Kaldırmak için cetvele geri sürükleyin veya çift tıklayın",
+  "ruler.clear_tip": "Tüm kılavuzları temizle"
 }

@@ -328,5 +328,10 @@
   "color.navy": "blu navy",
   "color.purple": "viola",
   "color.magenta": "magenta",
-  "color.pink": "rosa"
+  "color.pink": "rosa",
+  "ruler.rulers": "Righelli",
+  "ruler.rulers_tip": "Mostra o nascondi i righelli (mm dall'angolo in alto a sinistra della superficie)",
+  "ruler.guides": "Guide",
+  "ruler.guides_tip": "Mostra o nascondi le guide. Trascina da un righello per crearne una; il disegno si aggancia. Trascinala di nuovo sul righello, o fai doppio clic, per rimuoverla",
+  "ruler.clear_tip": "Cancella tutte le guide"
 }

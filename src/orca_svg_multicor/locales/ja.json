@@ -328,5 +328,10 @@
   "color.navy": "紺",
   "color.purple": "紫",
   "color.magenta": "マゼンタ",
-  "color.pink": "ピンク"
+  "color.pink": "ピンク",
+  "ruler.rulers": "定規",
+  "ruler.rulers_tip": "定規の表示/非表示（面の左上隅からのmm）",
+  "ruler.guides": "ガイド",
+  "ruler.guides_tip": "ガイドの表示/非表示。定規からドラッグして作成すると、デザインがガイドに吸着します。定規へドラッグして戻すか、ダブルクリックで削除",
+  "ruler.clear_tip": "すべてのガイドを消去"
 }
