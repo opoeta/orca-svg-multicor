@@ -294,9 +294,15 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 /* rulers and guides (only the view) */
 .ruler, .ruler-corner { position: absolute; z-index: 3; background: color-mix(in srgb, var(--bg) 92%, transparent);
                         color: var(--muted); user-select: none; -webkit-user-select: none; }
-.ruler-corner { top: 0; left: 0; width: 18px; height: 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
-.ruler-h { top: 0; left: 18px; right: 0; height: 18px; border-bottom: 1px solid var(--line); cursor: row-resize; }
-.ruler-v { top: 18px; left: 0; bottom: 0; width: 18px; border-right: 1px solid var(--line); cursor: col-resize; }
+.ruler-corner { width: 18px; height: 18px; }
+.ruler-corner.tl { top: 0; left: 0; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ruler-corner.tr { top: 0; right: 0; border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.ruler-corner.bl { bottom: 0; left: 0; border-right: 1px solid var(--line); border-top: 1px solid var(--line); }
+.ruler-corner.br { bottom: 0; right: 0; border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
+.ruler-t { top: 0; left: 18px; right: 18px; height: 18px; border-bottom: 1px solid var(--line); cursor: row-resize; }
+.ruler-b { bottom: 0; left: 18px; right: 18px; height: 18px; border-top: 1px solid var(--line); cursor: row-resize; }
+.ruler-l { top: 18px; left: 0; bottom: 18px; width: 18px; border-right: 1px solid var(--line); cursor: col-resize; }
+.ruler-r { top: 18px; right: 0; bottom: 18px; width: 18px; border-left: 1px solid var(--line); cursor: col-resize; }
 .ruler svg { display: block; pointer-events: none; }
 .ruler line { stroke: var(--muted); stroke-width: 1; }
 .ruler text { fill: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
@@ -305,3 +311,10 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .stage .guide-hit[data-axis="v"] { cursor: col-resize; }
 .stage .guide-hit[data-axis="h"] { cursor: row-resize; }
 #preview_place.tool-brush .guide-hit, #preview_place.tool-bucket .guide-hit, #preview_place.tool-pick .guide-hit { pointer-events: none; }
+/* with the assistant open the rulers start beside it, where the view is */
+.preview.with-wizard .ruler-corner.tl, .preview.with-wizard .ruler-corner.bl, .preview.with-wizard .ruler-l { left: min(440px, 55%); }
+.preview.with-wizard .ruler-t, .preview.with-wizard .ruler-b { left: calc(min(440px, 55%) + 18px); }
+/* the tools sit inside the rulers */
+.preview.rulers-on .paint-bar { bottom: 30px; }
+.preview.rulers-on:not(.with-wizard) .paint-bar { left: 30px; }
+.preview.rulers-on.with-wizard .paint-bar { left: calc(min(440px, 55%) + 30px); max-width: calc(100% - min(440px, 55%) - 60px); }

@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.17.1
+
+### Changed
+- Rulers now on all four sides of the "On the object" view. A guide can be
+  made from any ruler and removed by dragging it back onto a ruler of the
+  same kind.
+
+### Fixed
+- The left ruler was hidden behind the assistant while it was open; it now
+  starts beside it.
+
 ## 3.17.0
 
 ### Added

@@ -2,6 +2,17 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.17.1
+
+### Mudou
+- Réguas nos quatro lados da vista "No objeto". Uma guia pode ser criada de
+  qualquer régua e removida arrastando-a de volta para uma régua do mesmo
+  tipo.
+
+### Corrigido
+- A régua da esquerda ficava escondida atrás do assistente enquanto ele
+  estava aberto; agora ela começa ao lado dele.
+
 ## 3.17.0
 
 ### Adicionado

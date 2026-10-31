@@ -1018,32 +1018,39 @@
     return [lead * p, lead * p / (lead === 2 ? 4 : 5)];
   }
   // start: mm at the ruler's first pixel; k: px per mm
-  function rulerSvg(len, thick, vertical, start, k) {
+  function rulerSvg(len, thick, vertical, start, k, far) {
     var st = niceStep(k), step = st[0], sub = st[1], n = Math.round(step / sub);
     var i0 = Math.floor(start / sub), i1 = Math.ceil((start + len / k) / sub), out = [];
     for (var i = i0; i <= i1; i++) {
       var mm = i * sub, px = (mm - start) * k, major = i % n === 0;
       if (px < 0 || px > len) continue;
-      var a = major ? thick - 10 : thick - 4, q = px.toFixed(1);
-      out.push(vertical ? '<line x1="' + a + '" x2="' + thick + '" y1="' + q + '" y2="' + q + '"/>'
-                        : '<line y1="' + a + '" y2="' + thick + '" x1="' + q + '" x2="' + q + '"/>');
+      var len2 = major ? 10 : 4, a = far ? 0 : thick - len2, b = far ? len2 : thick, q = px.toFixed(1);   // far: the ticks hang from the view's side
+      out.push(vertical ? '<line x1="' + a + '" x2="' + b + '" y1="' + q + '" y2="' + q + '"/>'
+                        : '<line y1="' + a + '" y2="' + b + '" x1="' + q + '" x2="' + q + '"/>');
       if (major) {
         var label = String(parseFloat(mm.toFixed(3)));
         out.push(vertical
-          ? '<text transform="translate(8 ' + (px + 3).toFixed(1) + ') rotate(-90)" text-anchor="end">' + label + '</text>'
-          : '<text x="' + (px + 3).toFixed(1) + '" y="9">' + label + '</text>');
+          ? '<text transform="translate(' + (far ? 17 : 8) + ' ' + (px + 3).toFixed(1) + ') rotate(-90)" text-anchor="end">' + label + '</text>'
+          : '<text x="' + (px + 3).toFixed(1) + '" y="' + (far ? 17 : 9) + '">' + label + '</text>');
       }
     }
     return '<svg width="' + (vertical ? thick : len) + '" height="' + (vertical ? len : thick) + '">' + out.join('') + '</svg>';
   }
   function drawRulers() {
     var on = !!S.rulers && currentView() === 'placement' && !!selectedFace() && !!S.faceOrigin;
-    ['ruler_h', 'ruler_v', 'ruler_corner'].forEach(function (id) { $(id).hidden = !on; });
+    each('#preview .ruler, #preview .ruler-corner', function (el) { el.hidden = !on; });
+    $('preview').classList.toggle('rulers-on', on);
     var svg = on && placeSvg(), m = svg && svg.getScreenCTM();
     if (!m || !(m.a > 0)) return;
-    var hr = $('ruler_h').getBoundingClientRect(), vr = $('ruler_v').getBoundingClientRect(), o = S.faceOrigin;
-    $('ruler_h').innerHTML = rulerSvg(hr.width, hr.height, false, (hr.left - m.e) / m.a - o[0], m.a);
-    $('ruler_v').innerHTML = rulerSvg(vr.height, vr.width, true, (vr.top - m.f) / m.d - o[1], m.d);
+    var o = S.faceOrigin;
+    ['ruler_t', 'ruler_b'].forEach(function (id) {
+      var r = $(id).getBoundingClientRect();
+      $(id).innerHTML = rulerSvg(r.width, r.height, false, (r.left - m.e) / m.a - o[0], m.a, id === 'ruler_b');
+    });
+    ['ruler_l', 'ruler_r'].forEach(function (id) {
+      var r = $(id).getBoundingClientRect();
+      $(id).innerHTML = rulerSvg(r.height, r.width, true, (r.top - m.f) / m.d - o[1], m.d, id === 'ruler_r');
+    });
   }
   function drawGuides() {
     var svg = placeSvg(), b = S.baseVB;
@@ -1074,8 +1081,11 @@
     function up(e) {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
-      var r = $(axis === 'v' ? 'ruler_v' : 'ruler_h').getBoundingClientRect();
-      if (axis === 'v' ? e.clientX < r.right : e.clientY < r.bottom) list.splice(i, 1);      // back onto its ruler
+      var near = axis === 'v' ? $('ruler_l') : $('ruler_t'), far = axis === 'v' ? $('ruler_r') : $('ruler_b');
+      var a = near.getBoundingClientRect(), z = far.getBoundingClientRect();
+      var onNear = !near.hidden && (axis === 'v' ? e.clientX < a.right : e.clientY < a.bottom);
+      var onFar = !far.hidden && (axis === 'v' ? e.clientX > z.left : e.clientY > z.top);
+      if (onNear || onFar) list.splice(i, 1);      // back onto a ruler
       renderGuides(); renderPaintBar();
     }
     window.addEventListener('pointermove', move);
@@ -2105,8 +2115,9 @@
     $('btn_rulers').addEventListener('click', function () { S.rulers = !S.rulers; saveFlag('svgm_rulers', S.rulers); renderGuides(); renderPaintBar(); });
     $('btn_guides').addEventListener('click', function () { S.guidesOn = !S.guidesOn; saveFlag('svgm_guides', S.guidesOn); renderGuides(); renderPaintBar(); });
     $('btn_guides_clear').addEventListener('click', function () { var g = guideStore(); g.v.length = g.h.length = 0; renderGuides(); renderPaintBar(); });
-    $('ruler_h').addEventListener('pointerdown', function (e) { if (e.button === 0) newGuide('h', e); });
-    $('ruler_v').addEventListener('pointerdown', function (e) { if (e.button === 0) newGuide('v', e); });
+    [['ruler_t', 'h'], ['ruler_b', 'h'], ['ruler_l', 'v'], ['ruler_r', 'v']].forEach(function (p) {
+      $(p[0]).addEventListener('pointerdown', function (e) { if (e.button === 0) newGuide(p[1], e); });
+    });
     $('preview_place').addEventListener('pointerdown', function (e) {
       var hit = e.button === 0 && S.tool === 'move' && e.target.closest && e.target.closest('.guide-hit');
       if (hit) { e.preventDefault(); trackGuide(hit.getAttribute('data-axis'), Number(hit.getAttribute('data-i'))); }
