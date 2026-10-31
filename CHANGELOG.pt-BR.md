@@ -2,6 +2,14 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.15.1
+
+### Corrigido
+- As curvas perdiam a suavidade ao dar zoom na pré-visualização: ela
+  simplificava os contornos uma segunda vez, de forma grosseira em desenhos
+  grandes. Agora desenha os contornos como estão (já simplificados pelo ajuste
+  de Arestas). As peças exportadas não eram afetadas.
+
 ## 3.15.0
 
 ### Mudou

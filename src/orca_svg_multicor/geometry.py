@@ -474,11 +474,10 @@ def preview_svg(layers, pad=2.0):
     x0, y0, x1, y1 = bounds_of({"all": allp})
     w, h = (x1 - x0) + 2 * pad, (y1 - y0) + 2 * pad
     vb = f"{x0 - pad:.2f} {-(y1 + pad):.2f} {w:.2f} {h:.2f}"
-    tol = max(w, h) / 1500.0
     out = [f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="{vb}" '
            f'preserveAspectRatio="xMidYMid meet">']
     for key, color, polys in layers:
-        d = polygons_to_path_d(polys, tol)
+        d = polygons_to_path_d(polys, 0)  # already simplified to precision_mm; zooming shows any extra cut
         if d:
             out.append(f'<path data-key="{key}" fill="{color}" fill-rule="evenodd" '
                        f'stroke="rgba(128,128,128,.6)" stroke-width="0.75" '

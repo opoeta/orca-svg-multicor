@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.15.1
+
+### Fixed
+- Curves lost their smoothness when zooming into the preview: it simplified
+  the outlines a second time, coarsely on large drawings. It now draws them as
+  they are (already simplified to the Edges setting). The exported parts were
+  not affected.
+
 ## 3.15.0
 
 ### Changed
