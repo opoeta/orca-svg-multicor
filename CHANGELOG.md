@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.16.0
+
+### Added
+- **Move the design with the keyboard**: in the "On the object" view, the
+  arrow keys move the design 1 mm at a time, and Shift + arrow moves it
+  0.1 mm for fine adjustment. The direction follows what the screen shows,
+  also with the view turned, and the design stays within the surface.
+
 ## 3.15.1
 
 ### Fixed

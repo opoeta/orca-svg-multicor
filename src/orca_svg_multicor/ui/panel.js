@@ -981,6 +981,22 @@
     positionDesign();
     renderAnalysisInfo();
   }
+  // arrows move the design on the face (what the screen shows: right, up);
+  // 1 mm a press, Shift: 0.1 mm. Not while typing in a field.
+  var ARROWS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] };
+  function nudgeDesign(e) {
+    var dir = ARROWS[e.key];
+    if (!dir || e.ctrlKey || e.altKey || e.metaKey || currentView() !== 'placement' || !selectedFace()) return;
+    var tag = (e.target && e.target.tagName) || '';
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    e.preventDefault();
+    var step = e.shiftKey ? 0.1 : 1, d = screenToFace(dir[0] * step, dir[1] * step);
+    S.frame.ox += d[0];
+    S.frame.oy += d[1];
+    positionDesign();       // clamps to the face through placement()
+    renderAnalysisInfo();
+    rememberSoon();
+  }
   function endDrag() {
     if (pan) { endPan(); return; }
     if (stroke) { endStroke(); return; }
@@ -2029,6 +2045,7 @@
       if (e.key === 'Escape' && !$('wizard').hidden) { e.preventDefault(); closeWizard(); return; }
       if (e.key === 'Escape' && !$('fil_pop').hidden) { e.preventDefault(); closePicker(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
+      nudgeDesign(e);
     });
 
     // coming back to this tab: the plate may have changed in the Prepare tab

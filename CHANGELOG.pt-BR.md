@@ -2,6 +2,14 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.16.0
+
+### Adicionado
+- **Mover o desenho com o teclado**: na vista "No objeto", as setas movem o
+  desenho de 1 em 1 mm, e Shift + seta move 0,1 mm, para o ajuste fino. A
+  direção segue o que a tela mostra, também com a vista girada, e o desenho
+  continua dentro da superfície.
+
 ## 3.15.1
 
 ### Corrigido
