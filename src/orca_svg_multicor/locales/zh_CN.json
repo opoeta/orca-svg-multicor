@@ -333,5 +333,7 @@
   "ruler.rulers_tip": "显示或隐藏标尺（距表面左上角的毫米数）",
   "ruler.guides": "参考线",
   "ruler.guides_tip": "显示或隐藏参考线。从标尺拖出即可创建，图案会吸附到参考线；拖回标尺或双击即可删除",
-  "ruler.clear_tip": "清除所有参考线"
+  "ruler.clear_tip": "清除所有参考线",
+  "paint.choose": "涂色：选择图案中的一种颜色（含其耗材）或自动",
+  "paint.pop_auto": "自动（相邻颜色）"
 }

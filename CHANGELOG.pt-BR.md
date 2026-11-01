@@ -2,6 +2,12 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.17.2
+
+### Adicionado
+- O botão de cor do pintor abre uma lista com as cores do desenho, cada uma
+  com seu filamento, mais a opção Automática.
+
 ## 3.17.1
 
 ### Mudou

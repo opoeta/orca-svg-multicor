@@ -333,5 +333,7 @@
   "ruler.rulers_tip": "Mostrar ou ocultar as réguas (mm a partir do canto superior esquerdo da superfície)",
   "ruler.guides": "Guias",
   "ruler.guides_tip": "Mostrar ou ocultar as guias. Arraste de uma régua para criar uma; o desenho gruda nelas. Arraste de volta para a régua, ou dê duplo clique, para remover",
-  "ruler.clear_tip": "Limpar todas as guias"
+  "ruler.clear_tip": "Limpar todas as guias",
+  "paint.choose": "Cor da tinta: escolha uma das cores do desenho (com o filamento dela) ou automática",
+  "paint.pop_auto": "Automática (a cor vizinha)"
 }

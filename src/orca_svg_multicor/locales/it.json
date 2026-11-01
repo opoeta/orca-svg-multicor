@@ -333,5 +333,7 @@
   "ruler.rulers_tip": "Mostra o nascondi i righelli (mm dall'angolo in alto a sinistra della superficie)",
   "ruler.guides": "Guide",
   "ruler.guides_tip": "Mostra o nascondi le guide. Trascina da un righello per crearne una; il disegno si aggancia. Trascinala di nuovo sul righello, o fai doppio clic, per rimuoverla",
-  "ruler.clear_tip": "Cancella tutte le guide"
+  "ruler.clear_tip": "Cancella tutte le guide",
+  "paint.choose": "Colore del pennello: scegli un colore del disegno (con il suo filamento) o automatico",
+  "paint.pop_auto": "Automatico (il colore vicino)"
 }

@@ -603,11 +603,12 @@
     $('paint_size_box').hidden = S.tool !== 'brush';
     // the color the brush and the bucket use: picked, or "auto" (the one next to it)
     var sw = $('paint_color'), painting = S.tool !== 'move';
-    sw.hidden = !painting;
+    $('paint_color_box').hidden = !painting;
+    if (!painting) closePaintPop();
     sw.classList.toggle('auto', !S.brushColor);
     sw.style.background = S.brushColor ? colorFill(S.brushColor) : '';
     sw.textContent = S.brushColor ? '' : 'A';
-    sw.title = S.brushColor ? t('paint.color') : t('paint.auto');
+    sw.title = t('paint.choose');
     var n = paintOps().length;
     $('paint_undo').disabled = $('paint_clear').disabled = !n;
     var hints = { pick: 'paint.hint_pick', brush: 'paint.hint_brush', bucket: 'paint.hint_bucket' };
@@ -678,6 +679,42 @@
     pan = null;
     S.dragEnd = Date.now();
     $('preview_place').classList.remove('panning');
+  }
+
+  // the paint's color: automatic, or one of the drawing's colors (each prints with its filament)
+  function closePaintPop() {
+    $('paint_pop').hidden = true;
+    $('paint_color').setAttribute('aria-expanded', 'false');
+  }
+  function togglePaintPop() {
+    var pop = $('paint_pop');
+    if (!pop.hidden) { closePaintPop(); return; }
+    pop.textContent = '';
+    function add(key, label, chip, title) {
+      var b = el('button', 'fp-item' + ((S.brushColor || null) === key ? ' on' : ''));
+      b.type = 'button';
+      b.setAttribute('role', 'listitem');
+      b.appendChild(chip);
+      b.appendChild(el('span', null, label));
+      b.title = title || label;
+      b.addEventListener('click', function () { S.brushColor = key; closePaintPop(); renderPaintBar(); });
+      pop.appendChild(b);
+    }
+    var auto = el('i', 'auto');
+    add(null, t('paint.pop_auto'), auto, t('paint.auto'));
+    ((S.analysis && S.analysis.colors) || []).forEach(function (c) {
+      var st = S.rows[c.color];
+      if (!st || !st.enabled) return;
+      var chip = el('i');
+      chip.style.background = st.recolor || c.color;
+      var fil = S.filaments.filter(function (f) { return f.n === st.filament; })[0];
+      add(c.color, st.name + ' · ' + (fil && fil.name ? fil.n + ' ' + fil.name : st.filament), chip);
+    });
+    pop.hidden = false;
+    pop.style.left = '0px';
+    var over = pop.getBoundingClientRect().right - $('preview').getBoundingClientRect().right + 8;
+    if (over > 0) pop.style.left = -over + 'px';       // stays inside the view
+    $('paint_color').setAttribute('aria-expanded', 'true');
   }
 
   function setTool(tool) {
@@ -2138,7 +2175,10 @@
       b.addEventListener('click', function () { setTool(b.getAttribute('data-tool')); });
     });
     $('paint_size').addEventListener('change', renderPaintBar);
-    $('paint_color').addEventListener('click', function () { S.brushColor = null; renderPaintBar(); });
+    $('paint_color').addEventListener('click', togglePaintPop);
+    document.addEventListener('pointerdown', function (e) {
+      if (!$('paint_pop').hidden && !e.target.closest('#paint_color_box')) closePaintPop();
+    });
     ['keydown', 'keyup'].forEach(function (type) {
       window.addEventListener(type, function (e) {
         if (e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') setPicking(e.ctrlKey || e.altKey || e.metaKey);
@@ -2203,6 +2243,7 @@
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !$('wizard').hidden) { e.preventDefault(); closeWizard(); return; }
+      if (e.key === 'Escape' && !$('paint_pop').hidden) { e.preventDefault(); closePaintPop(); return; }
       if (e.key === 'Escape' && !$('fil_pop').hidden) { e.preventDefault(); closePicker(); return; }
       if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { e.preventDefault(); run(); }
       nudgeDesign(e);

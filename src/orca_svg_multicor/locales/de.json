@@ -333,5 +333,7 @@
   "ruler.rulers_tip": "Lineale ein- oder ausblenden (mm ab der linken oberen Ecke der Fläche)",
   "ruler.guides": "Hilfslinien",
   "ruler.guides_tip": "Hilfslinien ein- oder ausblenden. Aus einem Lineal ziehen, um eine zu erstellen; die Zeichnung rastet daran ein. Zurück auf das Lineal ziehen oder doppelklicken, um sie zu entfernen",
-  "ruler.clear_tip": "Alle Hilfslinien löschen"
+  "ruler.clear_tip": "Alle Hilfslinien löschen",
+  "paint.choose": "Malfarbe: eine Farbe der Zeichnung (mit ihrem Filament) oder automatisch wählen",
+  "paint.pop_auto": "Automatisch (die Nachbarfarbe)"
 }

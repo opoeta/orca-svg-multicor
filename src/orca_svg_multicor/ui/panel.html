@@ -226,7 +226,10 @@
         </span>
         <label class="paint-size" id="paint_size_box" hidden><span data-i18n="paint.size">Brush</span>
           <span class="unit" data-unit="mm"><input id="paint_size" type="number" min="0.4" max="40" step="0.2" value="2"></span></label>
-        <button type="button" class="paint-color" id="paint_color" hidden></button>
+        <span class="paint-color-box" id="paint_color_box" hidden>
+          <button type="button" class="paint-color" id="paint_color" aria-haspopup="true" aria-expanded="false"></button>
+          <div class="paint-pop" id="paint_pop" hidden role="list"></div>
+        </span>
         <button type="button" class="flat icon" id="paint_undo" data-i18n-title="paint.undo" data-i18n-aria="paint.undo">
           <svg class="ic"><use href="#i-undo"/></svg></button>
         <button type="button" class="flat icon" id="paint_clear" data-i18n-title="paint.clear" data-i18n-aria="paint.clear">

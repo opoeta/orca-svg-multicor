@@ -1,5 +1,11 @@
 # Changelog
 
+## 3.17.2
+
+### Added
+- The paint color button in the painter opens a list of the drawing's colors,
+  each with its filament, plus Automatic.
+
 ## 3.17.1
 
 ### Changed

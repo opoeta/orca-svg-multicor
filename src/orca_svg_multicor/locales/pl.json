@@ -333,5 +333,7 @@
   "ruler.rulers_tip": "Pokaż lub ukryj linijki (mm od lewego górnego rogu powierzchni)",
   "ruler.guides": "Prowadnice",
   "ruler.guides_tip": "Pokaż lub ukryj prowadnice. Przeciągnij z linijki, aby utworzyć; rysunek przyciąga się do nich. Przeciągnij z powrotem na linijkę lub kliknij dwukrotnie, aby usunąć",
-  "ruler.clear_tip": "Usuń wszystkie prowadnice"
+  "ruler.clear_tip": "Usuń wszystkie prowadnice",
+  "paint.choose": "Kolor farby: wybierz kolor rysunku (z jego filamentem) lub automatyczny",
+  "paint.pop_auto": "Automatyczny (sąsiedni kolor)"
 }
