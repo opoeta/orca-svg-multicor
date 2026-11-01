@@ -2,6 +2,15 @@
 
 [English](CHANGELOG.md) · **Português (Brasil)**
 
+## 3.17.3
+
+### Adicionado
+- "Nova cor…" na lista de cores do pintor: uma cor que não está no SVG, com
+  filamento próprio; imprime como mais uma peça.
+
+### Mudou
+- O balde num desenho de uma cor só pede uma cor antes (abre a lista).
+
 ## 3.17.2
 
 ### Adicionado

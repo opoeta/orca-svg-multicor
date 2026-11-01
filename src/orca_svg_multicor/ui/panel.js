@@ -686,6 +686,23 @@
     $('paint_pop').hidden = true;
     $('paint_color').setAttribute('aria-expanded', 'false');
   }
+  function extraColors() {
+    if (!S.extras || S.extras.svg !== S.svg) S.extras = { svg: S.svg, list: [] };
+    return S.extras.list;
+  }
+  // a color that is not in the SVG: it becomes one more part, with a filament of its own
+  function newExtraColor(value) {
+    var key = String(value).toLowerCase();
+    var known = (S.analysis ? S.analysis.colors : []).some(function (c) { return sameColor(c.color, key); });
+    if (!known && !extraColors().some(function (x) { return x.color === key; })) {
+      var used = {};
+      Object.keys(S.rows).forEach(function (k) { used[S.rows[k].filament] = 1; });
+      extraColors().forEach(function (x) { used[x.filament] = 1; });
+      var pick = filamentList().filter(function (f) { return !used[f.n]; })[0] || filamentList()[0];
+      extraColors().push({ color: key, filament: pick ? pick.n : 1 });
+    }
+    S.brushColor = key;
+  }
   function togglePaintPop() {
     var pop = $('paint_pop');
     if (!pop.hidden) { closePaintPop(); return; }
@@ -702,14 +719,42 @@
     }
     var auto = el('i', 'auto');
     add(null, t('paint.pop_auto'), auto, t('paint.auto'));
+    function filLabel(n) {
+      var fil = S.filaments.filter(function (f) { return f.n === n; })[0];
+      return fil && fil.name ? fil.n + ' ' + fil.name : String(n);
+    }
     ((S.analysis && S.analysis.colors) || []).forEach(function (c) {
       var st = S.rows[c.color];
       if (!st || !st.enabled) return;
       var chip = el('i');
       chip.style.background = st.recolor || c.color;
-      var fil = S.filaments.filter(function (f) { return f.n === st.filament; })[0];
-      add(c.color, st.name + ' · ' + (fil && fil.name ? fil.n + ' ' + fil.name : st.filament), chip);
+      add(c.color, st.name + ' · ' + filLabel(st.filament), chip);
     });
+    // colors made here: not in the SVG, each with the filament it prints with
+    extraColors().forEach(function (x) {
+      var chip = el('i');
+      chip.style.background = x.color;
+      add(x.color, x.color + ' · ' + filLabel(x.filament), chip);
+      var last = pop.lastChild, sel = el('select');
+      sel.setAttribute('aria-label', t('col.filament'));
+      filamentOptions(sel, x.filament);
+      sel.addEventListener('click', function (e) { e.stopPropagation(); });
+      sel.addEventListener('change', function () {
+        x.filament = parseInt(sel.value, 10);
+        last.querySelector('span').textContent = x.color + ' · ' + filLabel(x.filament);
+      });
+      last.appendChild(sel);
+    });
+    var nb = el('button', 'fp-item'), nchip = el('i', 'plus', '+');
+    nb.type = 'button';
+    nb.appendChild(nchip);
+    nb.appendChild(el('span', null, t('paint.new_color')));
+    var np = el('input'); np.type = 'color'; np.className = 'paint-new'; np.value = '#e53935';
+    np.setAttribute('aria-label', t('paint.new_color'));
+    np.addEventListener('change', function () { newExtraColor(np.value); closePaintPop(); renderPaintBar(); });
+    nb.addEventListener('click', function () { np.click(); });
+    nb.appendChild(np);
+    pop.appendChild(nb);
     pop.hidden = false;
     pop.style.left = '0px';
     var over = pop.getBoundingClientRect().right - $('preview').getBoundingClientRect().right + 8;
@@ -812,6 +857,12 @@
   function bucketAt(e, svg) {
     var face = selectedFace(), item = plateItem();
     if (!face || !item || !S.svg) return;
+    // a one-color design has no "color next to it": a color must be chosen (or made) first
+    if (!S.brushColor && S.analysis && S.analysis.colors.length < 2) {
+      setStatus('paint.no_color', null, 'warn');
+      togglePaintPop();
+      return;
+    }
     var msg = jobMessage('paint_fill');
     msg.project = S.faces.project;
     msg.object_id = S.faces.object_id;
@@ -1569,11 +1620,15 @@
 
   function colorsPayload() {
     if (!S.analysis) return [];
-    return S.analysis.colors.map(function (c) {
+    var out = S.analysis.colors.map(function (c) {
       var st = S.rows[c.color];
       return { color: c.color, name: st.name, filament: st.filament, enabled: st.enabled,
                recolor: st.recolor || null };
     });
+    extraColors().forEach(function (x) {
+      out.push({ color: x.color, name: '', filament: x.filament, enabled: true, recolor: null });
+    });
+    return out;
   }
 
   function jobMessage(action) {

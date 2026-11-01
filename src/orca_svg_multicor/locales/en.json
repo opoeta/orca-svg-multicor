@@ -177,7 +177,7 @@
   "paint.clear": "Remove all the paint on this surface",
   "paint.hint_brush": "Click or drag to paint with the color picked. Ctrl + click copies a color.",
   "paint.hint_bucket": "Click an area (of one color, or bare) to give it the color picked. Ctrl + click copies a color.",
-  "paint.no_color": "Pick a color first: click a color of the drawing.",
+  "paint.no_color": "Choose a color first: use the color button (or make a new one) or the dropper.",
   "paint.nothing": "Nothing to change there: that area already has that color, or it is off the surface.",
   "paint.filling": "Filling…",
   "paint.filled": "Filled with the color next to it.",
@@ -335,5 +335,6 @@
   "ruler.guides_tip": "Show or hide the guides. Drag from a ruler to make one; the design snaps to them. Drag it back onto the ruler, or double-click, to remove it",
   "ruler.clear_tip": "Clear all guides",
   "paint.choose": "Paint color: choose one of the drawing's colors (with its filament), or automatic",
-  "paint.pop_auto": "Automatic (the color next to it)"
+  "paint.pop_auto": "Automatic (the color next to it)",
+  "paint.new_color": "New color…"
 }

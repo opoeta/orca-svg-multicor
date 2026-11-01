@@ -595,7 +595,7 @@ def place_design(doc, face, opts, rep=None):
     return place(regions, face, opts.rotation, offset=offset), set(regions), size
 
 
-def paint_fill(svg_path, face, opts, ops, point, color=None, rep=None):
+def paint_fill(svg_path, face, opts, ops, point, color=None, rep=None, extra=()):
     """
     The bucket: (rings, color) of the piece of `face` at `point` (of one
     color, or bare) once the design is placed and painted with `ops`, and
@@ -604,6 +604,7 @@ def paint_fill(svg_path, face, opts, ops, point, color=None, rep=None):
     """
     doc = load_document(svg_path, opts.include_strokes, opts.hidden_layers)
     placed, colors, _size = place_design(doc, face, opts, rep)
+    colors = set(colors) | set(extra)            # extra: colors added on the page, not in the SVG
     if color is not None and color not in colors:
         color = None
     return area_at(paint(placed, face, ops, colors), face, point, color)
@@ -658,7 +659,7 @@ def apply_to_project(svg_path, project_path, object_id, out_path, opts,
         rep.warn("warn.exceeds_face", w=f"{face_w:.2f}", h=f"{face_h:.2f}")
     if paint_ops:
         # painted on the page: part of their colors, in the same layers
-        placed = paint(placed, face, paint_ops, colors)
+        placed = paint(placed, face, paint_ops, set(colors) | set(choices or {}))
         rep.log("log.paint", n=len(paint_ops))
     if not placed:
         raise EngineError("error.nothing_on_face")

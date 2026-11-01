@@ -155,9 +155,13 @@ button.tag.reset { background: transparent; color: var(--accent); border-color: 
 .preview.with-wizard .paint-bar { left: calc(min(440px, 55%) + 16px); max-width: calc(100% - min(440px, 55%) - 32px); }
 .paint-tools { display: inline-flex; gap: 2px; }
 .paint-color-box { position: relative; display: inline-flex; }
-.paint-pop { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 6; width: 240px; max-height: 260px; overflow-y: auto;
+.paint-pop { position: absolute; left: 0; bottom: calc(100% + 8px); z-index: 6; width: 300px; max-height: 260px; overflow-y: auto;
              padding: 4px; display: grid; gap: 1px; background: var(--bg); color: var(--fg); border: 1px solid var(--line);
              border-radius: 6px; box-shadow: 0 6px 24px rgba(0, 0, 0, .35); }
+.paint-pop .fp-item select { margin-left: auto; max-width: 110px; }
+.paint-pop .fp-item { position: relative; }
+.paint-pop .paint-new { position: absolute; left: 0; bottom: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.paint-pop .fp-item i.plus { display: grid; place-items: center; font-style: normal; line-height: 1; color: var(--muted); }
 .paint-pop .fp-item i.auto { background: repeating-linear-gradient(45deg, var(--tint), var(--tint) 3px, transparent 3px, transparent 6px); }
 .paint-tools button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
 .paint-size { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: var(--muted); }

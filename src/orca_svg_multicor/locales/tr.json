@@ -335,5 +335,6 @@
   "ruler.guides_tip": "Kılavuzları göster veya gizle. Oluşturmak için bir cetvelden sürükleyin; çizim onlara yapışır. Kaldırmak için cetvele geri sürükleyin veya çift tıklayın",
   "ruler.clear_tip": "Tüm kılavuzları temizle",
   "paint.choose": "Boya rengi: çizimin renklerinden birini (filamentiyle) veya otomatiği seçin",
-  "paint.pop_auto": "Otomatik (yandaki renk)"
+  "paint.pop_auto": "Otomatik (yandaki renk)",
+  "paint.new_color": "Yeni renk…"
 }

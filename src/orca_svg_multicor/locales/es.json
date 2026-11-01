@@ -335,5 +335,6 @@
   "ruler.guides_tip": "Mostrar u ocultar las guías. Arrastra desde una regla para crear una; el diseño se ajusta a ellas. Arrástrala de vuelta a la regla, o haz doble clic, para quitarla",
   "ruler.clear_tip": "Borrar todas las guías",
   "paint.choose": "Color de la pintura: elige uno de los colores del dibujo (con su filamento) o automático",
-  "paint.pop_auto": "Automático (el color vecino)"
+  "paint.pop_auto": "Automático (el color vecino)",
+  "paint.new_color": "Nuevo color…"
 }

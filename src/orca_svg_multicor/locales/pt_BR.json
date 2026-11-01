@@ -177,7 +177,7 @@
   "paint.clear": "Apagar toda a pintura desta superfície",
   "paint.hint_brush": "Clique ou arraste para pintar com a cor escolhida. Ctrl + clique copia uma cor.",
   "paint.hint_bucket": "Clique numa área (de uma cor, ou vazia) para passá-la para a cor escolhida. Ctrl + clique copia uma cor.",
-  "paint.no_color": "Escolha uma cor antes: clique numa cor do desenho.",
+  "paint.no_color": "Escolha uma cor antes: use o botão de cor (ou crie uma nova) ou o conta-gotas.",
   "paint.nothing": "Nada para mudar aí: essa área já tem essa cor, ou fica fora da superfície.",
   "paint.filling": "Preenchendo…",
   "paint.filled": "Preenchido com a cor vizinha.",
@@ -335,5 +335,6 @@
   "ruler.guides_tip": "Mostrar ou ocultar as guias. Arraste de uma régua para criar uma; o desenho gruda nelas. Arraste de volta para a régua, ou dê duplo clique, para remover",
   "ruler.clear_tip": "Limpar todas as guias",
   "paint.choose": "Cor da tinta: escolha uma das cores do desenho (com o filamento dela) ou automática",
-  "paint.pop_auto": "Automática (a cor vizinha)"
+  "paint.pop_auto": "Automática (a cor vizinha)",
+  "paint.new_color": "Nova cor…"
 }

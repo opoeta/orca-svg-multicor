@@ -89,3 +89,17 @@ def test_the_page_asks_where_the_bucket_fills(svg, tray_project):  # noqa: F811
     assert out[-1]["ok"] and out[-1]["op"]["color"] == BLUE
     svc.handle(dict(msg, point=[0, 0], color=RED))               # already red: nothing to change
     assert out[-1]["ok"] is False and out[-1]["text"]
+
+
+def test_a_color_added_on_the_page_becomes_its_own_region():
+    green = "#00ff00"
+    out = paint(_placed(), _Face(), [{"kind": "brush", "color": green, "width": 2.0, "points": [[0, 0], [8, 0]]}], set(_placed()) | {green})
+    assert green in out and RED in out
+
+
+def test_the_bucket_gives_a_piece_of_a_one_color_design_a_new_color():
+    green = "#00ff00"
+    placed = {RED: [box(-10, -10, -2, 10), box(2, -10, 10, 10)]}
+    rings, color = area_at(placed, _Face(), [5, 0], green)
+    assert color == green and rings
+    assert area_at(placed, _Face(), [5, 0]) is None        # alone, it has no color next to it

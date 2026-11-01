@@ -1,5 +1,14 @@
 # Changelog
 
+## 3.17.3
+
+### Added
+- "New color…" in the painter's color list: a color that is not in the SVG,
+  with its own filament; it prints as one more part.
+
+### Changed
+- The bucket on a one-color design asks for a color first (opens the list).
+
 ## 3.17.2
 
 ### Added

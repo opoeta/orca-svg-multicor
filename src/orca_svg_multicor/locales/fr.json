@@ -335,5 +335,6 @@
   "ruler.guides_tip": "Afficher ou masquer les repères. Faites glisser depuis une règle pour en créer un ; le dessin s'y aimante. Faites-le glisser vers la règle, ou double-cliquez, pour le supprimer",
   "ruler.clear_tip": "Effacer tous les repères",
   "paint.choose": "Couleur de peinture : choisissez une couleur du dessin (avec son filament) ou automatique",
-  "paint.pop_auto": "Automatique (la couleur voisine)"
+  "paint.pop_auto": "Automatique (la couleur voisine)",
+  "paint.new_color": "Nouvelle couleur…"
 }
